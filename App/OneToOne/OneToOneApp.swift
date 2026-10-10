@@ -1,7 +1,10 @@
+import Core
 import SwiftUI
 
 @main
 struct OneToOneApp: App {
+    @State private var model = AppModel(store: LocalStore())
+
     var body: some Scene {
         WindowGroup {
             TabView {
@@ -15,6 +18,7 @@ struct OneToOneApp: App {
                     TrackerView()
                 }
             }
+            .environment(model)
         }
     }
 }
