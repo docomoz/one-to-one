@@ -1,5 +1,4 @@
 import Core
-import DesignSystem
 import SwiftUI
 
 /// Подсказка дня. Если она угадана по циклу, ниже честная подпись «Это прогноз по циклу».
@@ -7,18 +6,13 @@ struct TipCard: View {
     let tip: Tip
 
     var body: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Подсказка дня")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(BrandGradient.primary)
-                Text(tip.text)
-                    .font(.title3.weight(.semibold))
-                if tip.isEstimate {
-                    Text("Это прогноз по циклу")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+        LabeledCard(title: "Подсказка дня") {
+            Text(tip.text)
+                .font(.title3.weight(.semibold))
+            if tip.isEstimate {
+                Text("Это прогноз по циклу")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
     }

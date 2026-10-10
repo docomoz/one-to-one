@@ -1,5 +1,4 @@
 import Core
-import DesignSystem
 import SwiftUI
 
 /// Карточка дня на главной: ему подсказка, ей фаза цикла и подбадривающая фраза.
@@ -22,22 +21,17 @@ private struct HerDayCard: View {
     let forecast: CycleForecast
 
     var body: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Сегодня")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(BrandGradient.primary)
-                if let dayOfCycle = forecast.dayOfCycle, forecast.phase != .unknown {
-                    Text("\(capitalized(forecast.phase.title)), \(dayOfCycle)-й день")
-                        .font(.title3.weight(.semibold))
-                    if let cheer = CheerProvider.cheer(forecast: forecast) {
-                        Text(cheer)
-                            .foregroundStyle(.secondary)
-                    }
-                } else {
-                    Text("Отметь первый день месячных во вкладке «Цикл»")
-                        .font(.title3.weight(.semibold))
+        LabeledCard(title: "Сегодня") {
+            if let dayOfCycle = forecast.dayOfCycle, forecast.phase != .unknown {
+                Text("\(capitalized(forecast.phase.title)), \(dayOfCycle)-й день")
+                    .font(.title3.weight(.semibold))
+                if let cheer = CheerProvider.cheer(forecast: forecast) {
+                    Text(cheer)
+                        .foregroundStyle(.secondary)
                 }
+            } else {
+                Text("Отметь первый день месячных во вкладке «Цикл»")
+                    .font(.title3.weight(.semibold))
             }
         }
     }

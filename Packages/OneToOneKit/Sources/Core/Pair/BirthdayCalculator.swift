@@ -20,7 +20,7 @@ public enum BirthdayCalculator {
     /// Ближайший день рождения не дальше `within` дней. Если у обоих в один день — партнёра.
     public static func upcoming(couple: Couple, meID: UUID?, today: DayKey, within: Int = 30) -> UpcomingBirthday? {
         // Партнёр первым: `min` при равенстве оставляет первый элемент.
-        let people = [couple.man, couple.woman].filter { $0.id != meID } + [couple.man, couple.woman].filter { $0.id == meID }
+        let people = couple.man.id == meID ? [couple.woman, couple.man] : [couple.man, couple.woman]
         let birthdays = people.compactMap { person -> UpcomingBirthday? in
             guard let birthDate = person.birthDate else { return nil }
             return UpcomingBirthday(person: person, isMe: person.id == meID,

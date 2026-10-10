@@ -13,6 +13,7 @@ struct ActionTile: View {
             VStack(spacing: 8) {
                 Image(systemName: systemImage)
                     .font(.title2)
+                    .accessibilityHidden(true)
                 Text(title)
                     .font(.headline)
                     .multilineTextAlignment(.center)
