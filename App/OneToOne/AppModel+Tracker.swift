@@ -10,17 +10,18 @@ struct OrgasmDefaults: Equatable {
 /// Действия трекера: отметить, поправить, удалить секс.
 extension AppModel {
     /// Добавляет ещё одну запись. Если в этот день уже была, будет две: каждая — отдельный раз.
-    func logSex(types: Set<SexType>, orgasmsMan: Int, orgasmsWoman: Int, day: DayKey) {
+    func logSex(types: Set<SexType>, orgasmsMan: Int, orgasmsWoman: Int,
+                condom: Bool? = nil, finish: SexFinish? = nil, day: DayKey) {
         // Пока пары нет (онбординг не пройден), автор записи неизвестен: ставим одноразовый id.
-        let entry = SexEntry(day: day, types: types, orgasmsMan: orgasmsMan,
-                             orgasmsWoman: orgasmsWoman, createdBy: data.meID ?? UUID())
-        update { $0.sexEntries.append(entry) }
+        let entry = SexEntry(day: day, types: types, orgasmsMan: orgasmsMan, orgasmsWoman: orgasmsWoman,
+                             condom: condom, finish: finish, createdBy: data.meID ?? UUID())
+        update { $0.sexEntries.append(entry.withProtectionOnlyIfVaginal) }
     }
 
     func updateSex(_ entry: SexEntry) {
         update { data in
             guard let index = data.sexEntries.firstIndex(where: { $0.id == entry.id }) else { return }
-            data.sexEntries[index] = entry
+            data.sexEntries[index] = entry.withProtectionOnlyIfVaginal
         }
     }
 
