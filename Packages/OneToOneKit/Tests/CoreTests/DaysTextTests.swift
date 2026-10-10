@@ -12,3 +12,11 @@ import Testing
     #expect(daysText(22) == "22 дня")
     #expect(daysText(25) == "25 дней")
 }
+
+@Test func yearsPlural() {
+    #expect(yearsText(1) == "1 год")
+    #expect(yearsText(2) == "2 года")
+    #expect(yearsText(5) == "5 лет")
+    #expect(yearsText(11) == "11 лет")
+    #expect(yearsText(21) == "21 год")
+}

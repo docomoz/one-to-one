@@ -76,6 +76,7 @@ enum AnniversaryCalculator { static func upcoming(since: DayKey?, today: DayKey,
 enum UpcomingEvent: Equatable { case birthday(UpcomingBirthday); case anniversary(UpcomingAnniversary); var daysLeft: Int }
 enum UpcomingEvents { static func list(_ data: AppData, today: DayKey) -> [UpcomingEvent] }
 func daysText(_ count: Int) -> String // «1 день», «2 дня», «5 дней»
+func yearsText(_ count: Int) -> String // «1 год», «2 года», «5 лет»
 
 // День без часового пояса
 struct DayKey: Codable, Hashable, Comparable { let year: Int; let month: Int; let day: Int
