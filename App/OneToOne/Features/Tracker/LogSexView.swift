@@ -41,7 +41,7 @@ struct LogSexView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     LazyVGrid(columns: columns, spacing: 8) {
                         ForEach(SexType.allCases, id: \.self) { type in
-                            TypeChip(title: type.title, isOn: types.contains(type)) {
+                            ChipButton(title: type.title, isOn: types.contains(type)) {
                                 types.formSymmetricDifference([type])
                             }
                         }
@@ -104,34 +104,6 @@ struct LogSexView: View {
         guard let entry else { return }
         model.deleteSex(id: entry.id)
         dismiss()
-    }
-}
-
-/// Кнопка-переключатель вида: выбранная залита градиентом, остальные — сиреневые.
-private struct TypeChip: View {
-    let title: String
-    let isOn: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(isOn ? .white : .primary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 18)
-                .background {
-                    let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    if isOn {
-                        shape.fill(BrandGradient.primary)
-                    } else {
-                        shape.fill(Palette.tile)
-                    }
-                }
-        }
-        .buttonStyle(.plain)
-        .sensoryFeedback(.selection, trigger: isOn)
-        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 }
 
