@@ -35,7 +35,7 @@ private func at(hours: Double) -> Date { Date(timeIntervalSince1970: hours * 360
     let session = data.startPick(mood: .laugh, startedBy: man.id, at: at(hours: 0))
     data.swipe(.yes, movie: movie(1), in: session, by: man.id, at: at(hours: 0))
 
-    data.markWatched(movieID: 1)
+    data.markWatched(movieID: 1, at: at(hours: 1))
 
     #expect(data.currentPick == nil)
 }
@@ -45,7 +45,7 @@ private func at(hours: Double) -> Date { Date(timeIntervalSince1970: hours * 360
     let session = data.startPick(mood: .laugh, startedBy: man.id, at: at(hours: 0))
     data.swipe(.no, movie: movie(1), in: session, by: man.id, at: at(hours: 0))
 
-    data.markWatched(movieID: 1)
+    data.markWatched(movieID: 1, at: at(hours: 1))
 
     #expect(data.currentPick == session)
 }
@@ -54,7 +54,7 @@ private func at(hours: Double) -> Date { Date(timeIntervalSince1970: hours * 360
     var data = pairedData()
     let first = data.startPick(mood: .laugh, startedBy: man.id, at: at(hours: 0))
     data.swipe(.yes, movie: movie(1), in: first, by: man.id, at: at(hours: 0))
-    data.markWatched(movieID: 1)
+    data.markWatched(movieID: 1, at: at(hours: 1))
 
     let second = data.startPick(mood: .romance, startedBy: man.id, at: at(hours: 24))
 

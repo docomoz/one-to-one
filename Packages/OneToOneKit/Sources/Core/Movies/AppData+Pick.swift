@@ -56,9 +56,11 @@ extension AppData {
         ids.compactMap { movieCache[$0] }
     }
 
-    /// «Смотрим»: фильм больше не попадёт в колоду.
-    public mutating func markWatched(movieID: Int) {
+    /// «Смотрим»: фильм больше не попадёт в колоду. Дата нужна, чтобы назавтра спросить «Как вам?»;
+    /// остаётся самая ранняя, так повторное нажатие не откладывает вопрос.
+    public mutating func markWatched(movieID: Int, at date: Date) {
         watched.insert(movieID)
+        watchedAt[movieID] = min(watchedAt[movieID] ?? date, date)
     }
 
     /// Колода для этого человека: оба списка, рекомендации, без просмотренных
