@@ -30,6 +30,13 @@ public struct DayKey: Codable, Hashable, Comparable, Sendable {
         return DayKey(shifted, calendar: Self.utc)
     }
 
+    /// Сколько полных лет исполнилось к дню `today`, если родился в этот день.
+    /// Родившимся 29 февраля в невисокосный год год добавляется 1 марта.
+    public func age(on today: DayKey) -> Int {
+        let years = today.year - year
+        return (today.month, today.day) < (month, day) ? years - 1 : years
+    }
+
     public static func < (lhs: DayKey, rhs: DayKey) -> Bool {
         (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
     }
