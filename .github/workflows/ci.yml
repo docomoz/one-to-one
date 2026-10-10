@@ -1,17 +1,12 @@
 # Проверки на каждый PR: тесты пакета и сборка приложения.
 name: ci
 
-# Если в PR поменялись только тексты (.md) и материалы из docs/, проверки не запускаем: на сборку они не влияют.
+# Проверка `ci` обязательна для merge, поэтому запускается всегда. Если поменялись только тексты (.md) и docs/,
+# задание `ci` пропускается: GitHub считает пропуск успехом, и PR с документами можно влить без сборки.
 on:
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
   push:
     branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
 
 # Новый push в ветку PR отменяет старый запуск: macOS-минуты дорогие. В main каждый запуск доводим до конца.
 concurrency:
@@ -25,7 +20,31 @@ env:
   HOMEBREW_NO_AUTO_UPDATE: 1
 
 jobs:
+  # Дешёвый Linux-раннер решает, есть ли в изменениях что-то кроме документов.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # Если сравнить не получилось (первый push и т. п.), считаем, что код менялся.
+          changed=$(git diff --name-only "$BASE" "$GITHUB_SHA" 2>/dev/null) || changed="unknown"
+          if echo "$changed" | grep -vE '\.md$|^docs/' | grep -q .; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   ci:
+    needs: changes
+    # !cancelled(): если задание changes упало, всё равно собираем, а не пропускаем молча.
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: macos-26
     timeout-minutes: 30
     steps:
