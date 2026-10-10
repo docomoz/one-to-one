@@ -69,6 +69,9 @@ struct Person: Codable, Identifiable, Equatable { let id: UUID; var name: String
 struct Couple: Codable, Equatable { let man: Person; let woman: Person
   static func make(_ a: Person, _ b: Person) throws(CoupleError) -> Couple }
 enum CoupleError: Error, Equatable { case sameSex }
+struct UpcomingBirthday: Equatable { let person: Person; let isMe: Bool; let daysLeft: Int }
+enum BirthdayCalculator { static func upcoming(couple: Couple, meID: UUID?, today: DayKey, within: Int = 30) -> UpcomingBirthday? }
+func daysText(_ count: Int) -> String // «1 день», «2 дня», «5 дней»
 
 // День без часового пояса
 struct DayKey: Codable, Hashable, Comparable { let year: Int; let month: Int; let day: Int
@@ -88,6 +91,7 @@ struct CycleForecast: Equatable { let phase: CyclePhase; let dayOfCycle: Int?; l
 enum CycleCalculator { static func forecast(periodDays: Set<DayKey>, today: DayKey) -> CycleForecast }
 struct Tip: Equatable { let text: String; let isEstimate: Bool }
 enum TipProvider { static func tip(forecast: CycleForecast, herMood: HerMood?) -> Tip }
+enum CheerProvider { static func cheer(forecast: CycleForecast) -> String? } // фраза для неё на главной
 
 // Movies
 struct Movie: Codable, Identifiable, Hashable { let id: Int /* id Кинопоиска */; let title: String; let year: Int?
