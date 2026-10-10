@@ -22,6 +22,9 @@ private final class FakeCatalog: MovieCatalog, @unchecked Sendable {
         if failing { throw URLError(.notConnectedToInternet) }
         return discovered
     }
+    private var _refills = 0
+    var refills: Int { lock.withLock { _refills } }
+    func refillIfNeeded() async { lock.withLock { _refills += 1 } }
 }
 
 private func movie(_ id: Int, _ genres: [String] = ["комедия"]) -> Movie {
@@ -69,4 +72,12 @@ private func movie(_ id: Int, _ genres: [String] = ["комедия"]) -> Movie 
     #expect(movies.prefix(3).map(\.title) == ["Начало", "Эквилибриум", "Тринадцатый этаж"])
     #expect(movies.contains { $0.title == "Зверополис" })
     #expect(stub.requests.count == 2)
+}
+
+@Test func refillRequestedWithRecommendations() async {
+    let catalog = FakeCatalog()
+
+    _ = await DeckLoader.recommendations(seeds: [1], mood: .laugh, catalog: catalog)
+
+    #expect(catalog.refills == 1)
 }
