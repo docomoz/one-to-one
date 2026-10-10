@@ -5,20 +5,23 @@ import SwiftUI
 struct MoviesView: View {
     @Environment(AppModel.self) private var model
     @State private var flow: PickFlowRequest?
+    /// «Сегодня» для плашки «Как вам фильм?»: она появляется на следующий день после «Смотрим».
+    @State private var today = DayKey(.now)
 
     var body: some View {
         NavigationStack {
-            WatchlistView { header }
+            WatchlistView { header(today: today) }
                 .navigationTitle("Фильмы")
                 #if DEBUG
                 .toolbar { debugSwitch }
                 #endif
                 .fullScreenCover(item: $flow) { PickFlowView(session: $0.session) }
+                .onDayChange { today = DayKey(.now) }
         }
     }
 
     @ViewBuilder
-    private var header: some View {
+    private func header(today: DayKey) -> some View {
         let state = PickCardState.make(model.data)
         Section {
             PickCard(state: state,
@@ -28,7 +31,7 @@ struct MoviesView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
         }
-        if let movie = model.movieToRate {
+        if let movie = model.movieToRate(today: today) {
             Section {
                 RateMovieBanner(movie: movie) { verdict in
                     withAnimation { model.rate(movieID: movie.id, verdict) }

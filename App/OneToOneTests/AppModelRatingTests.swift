@@ -97,7 +97,7 @@ private func model(me: Person?, _ change: (inout AppData) -> Void = { _ in }) ->
         $0.markWatched(movieID: 1, at: .now.addingTimeInterval(-2 * 86400))
     }
 
-    #expect(model.movieToRate == comedy(1))
+    #expect(model.movieToRate() == comedy(1))
 }
 
 @MainActor
@@ -107,7 +107,7 @@ private func model(me: Person?, _ change: (inout AppData) -> Void = { _ in }) ->
         $0.markWatched(movieID: 1, at: .now.addingTimeInterval(-2 * 86400))
     }
 
-    #expect(model.movieToRate == nil)
+    #expect(model.movieToRate() == nil)
 }
 
 @MainActor

@@ -56,10 +56,11 @@ extension AppModel {
         update { $0.markWatched(movieID: movieID, at: .now) }
     }
 
-    /// Про какой фильм спросить «Как вам?» сегодня. Без «я» — ни про какой.
-    var movieToRate: Movie? {
+    /// Про какой фильм спросить «Как вам?» в день `today`. Без «я» — ни про какой.
+    /// День передаёт экран: так он перерисуется в полночь, даже если данные не менялись.
+    func movieToRate(today: DayKey = DayKey(.now)) -> Movie? {
         guard let me = data.meID else { return nil }
-        return data.movieToRate(me: me, now: .now)
+        return data.movieToRate(me: me, now: today.date())
     }
 
     /// Моя оценка фильма. Без «я» ничего не делает.
