@@ -60,7 +60,8 @@ public struct KinopoiskCatalog: MovieCatalog {
     private func get<T: Decodable>(_ path: String, _ query: [(String, String)]) async throws -> T {
         var components = URLComponents(url: Self.baseURL.appending(path: path), resolvingAgainstBaseURL: false)!
         if !query.isEmpty { components.percentEncodedQueryItems = query.map(Self.encoded) }
-        var request = URLRequest(url: components.url!)
+        // Без ответа за 10 секунд сдаёмся: колода тогда строится из списков, а не ждёт минуту.
+        var request = URLRequest(url: components.url!, timeoutInterval: 10)
         request.setValue(apiKey, forHTTPHeaderField: "X-API-KEY")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 

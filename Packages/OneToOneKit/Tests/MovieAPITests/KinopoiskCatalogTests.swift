@@ -73,6 +73,13 @@ struct KinopoiskCatalogTests {
         #expect(stub.requests.last?.value(forHTTPHeaderField: "X-API-KEY") == "test-key")
     }
 
+    /// Зависший Кинопоиск не держит колоду минуту: без ответа за 10 секунд колода строится из списков.
+    @Test func requestsTimeOutQuickly() async throws {
+        let (catalog, stub) = try catalog(fixture: "search")
+        _ = try await catalog.search("матрица")
+        #expect(stub.requests.last?.timeoutInterval == 10)
+    }
+
     @Test(arguments: [
         (401, KinopoiskError.unauthorized),
         (403, KinopoiskError.forbidden),
