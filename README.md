@@ -8,3 +8,7 @@ iOS-приложение для пар (можно пользоваться и �
 - [CLAUDE.md](CLAUDE.md): правила проекта для Claude, читается автоматически в каждом чате.
 - [docs/workflow.md](docs/workflow.md): как мы берём задачи и делаем PR.
 - [docs/decisions.md](docs/decisions.md): журнал принятых решений.
+
+## Команда
+- Дарья: [@DariaPrishchepa](https://github.com/DariaPrishchepa)
+- Максюша: [@docomoz](https://github.com/docomoz)
