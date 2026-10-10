@@ -7,18 +7,30 @@ struct OneToOneApp: App {
 
     var body: some Scene {
         WindowGroup {
-            TabView {
-                Tab("Главная", systemImage: "house") {
-                    HomeView()
-                }
-                Tab("Фильмы", systemImage: "film") {
-                    MoviesView()
-                }
-                Tab("Трекер", systemImage: "heart") {
-                    TrackerView()
+            Group {
+                if model.data.isPaired {
+                    tabs
+                } else {
+                    OnboardingView()
                 }
             }
             .environment(model)
+            // Интерфейс только на русском: месяцы в выборе даты тоже, даже если iPhone на другом языке.
+            .environment(\.locale, Locale(identifier: "ru_RU"))
+        }
+    }
+
+    private var tabs: some View {
+        TabView {
+            Tab("Главная", systemImage: "house") {
+                HomeView()
+            }
+            Tab("Фильмы", systemImage: "film") {
+                MoviesView()
+            }
+            Tab("Трекер", systemImage: "heart") {
+                TrackerView()
+            }
         }
     }
 }
