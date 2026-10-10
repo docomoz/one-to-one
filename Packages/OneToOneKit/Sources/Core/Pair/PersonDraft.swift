@@ -43,7 +43,10 @@ extension Couple {
         do {
             return try make(mePerson, partnerPerson)
         } catch {
-            throw .sameSex
+            // switch без default: новый случай CoupleError не скомпилируется, пока его не разберут здесь.
+            switch error {
+            case .sameSex: throw .sameSex
+            }
         }
     }
 }

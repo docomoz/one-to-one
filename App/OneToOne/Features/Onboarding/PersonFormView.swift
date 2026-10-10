@@ -30,7 +30,8 @@ struct PersonFormView: View {
             }
             Section {
                 TextField("Имя", text: $draft.name)
-                    .textContentType(.givenName)
+                    // Подсказка «твоё имя» от клавиатуры нужна только на своём шаге, не для партнёра.
+                    .textContentType(onSexPicked == nil ? .givenName : nil)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .submitLabel(.done)

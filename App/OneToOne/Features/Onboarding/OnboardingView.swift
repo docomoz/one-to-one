@@ -20,7 +20,7 @@ struct OnboardingView: View {
                     case .me:
                         PersonFormView(title: "Как тебя зовут?", draft: $me, buttonTitle: "Дальше") { () throws(OnboardingError) in
                             _ = try me.validated(today: DayKey(.now))
-                            path.append(.partner)
+                            path = [.me, .partner]
                         }
                     case .partner:
                         PersonFormView(

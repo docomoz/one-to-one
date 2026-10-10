@@ -108,3 +108,20 @@ private func tempDirectory() -> URL {
     data.meID = woman.id
     #expect(data.isPaired)
 }
+
+@Test func localStoreKeepsUnreadableFileAside() throws {
+    let directory = tempDirectory()
+    let broken = Data("не JSON".utf8)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    try broken.write(to: directory.appending(path: "AppData.json"))
+    let store = LocalStore(directory: directory)
+
+    #expect(throws: (any Error).self) { try store.load() }
+    try store.save(AppData())
+
+    let names = try FileManager.default.contentsOfDirectory(atPath: directory.path(percentEncoded: false))
+    let backups = names.filter { $0.hasPrefix("AppData-unreadable-") }
+    #expect(backups.count == 1)
+    let backup = try #require(backups.first)
+    #expect(try Data(contentsOf: directory.appending(path: backup)) == broken)
+}

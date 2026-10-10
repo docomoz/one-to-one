@@ -10,11 +10,20 @@ public final class LocalStore: Store {
     }
 
     /// Файла ещё нет (первый запуск) — возвращает пустые данные.
+    /// Файл есть, но не читается — откладывает его в сторону и бросает ошибку,
+    /// чтобы следующее сохранение не стёрло данные пользователя насовсем.
     public func load() throws -> AppData {
         guard FileManager.default.fileExists(atPath: fileURL.path(percentEncoded: false)) else {
             return AppData()
         }
-        return try JSONDecoder().decode(AppData.self, from: Data(contentsOf: fileURL))
+        do {
+            return try JSONDecoder().decode(AppData.self, from: Data(contentsOf: fileURL))
+        } catch {
+            let backup = fileURL.deletingLastPathComponent()
+                .appending(path: "AppData-unreadable-\(Int(Date.now.timeIntervalSince1970)).json")
+            try? FileManager.default.moveItem(at: fileURL, to: backup)
+            throw error
+        }
     }
 
     public func save(_ data: AppData) throws {

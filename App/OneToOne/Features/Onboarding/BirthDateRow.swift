@@ -2,7 +2,7 @@ import Core
 import SwiftUI
 
 /// Строка «Дата рождения». Пока дата не выбрана, показывает «Выбрать».
-/// Нажатие раскрывает колёсики; дата записывается, только когда их покрутили.
+/// Нажатие раскрывает колёсики и сразу выбирает видимую на них дату, чтобы строка и колёсики совпадали.
 struct BirthDateRow: View {
     @Binding var date: DayKey?
     @State private var isPicking = false
@@ -10,6 +10,9 @@ struct BirthDateRow: View {
 
     var body: some View {
         Button {
+            if date == nil {
+                date = DayKey(year: DayKey(.now).year - 25, month: 1, day: 1)
+            }
             withAnimation { isPicking.toggle() }
         } label: {
             LabeledContent("Дата рождения") {
@@ -29,7 +32,7 @@ struct BirthDateRow: View {
 
     private var selection: Binding<Date> {
         Binding(
-            get: { (date ?? DayKey(year: DayKey(.now).year - 25, month: 1, day: 1)).date() },
+            get: { (date ?? DayKey(.now)).date() },
             set: { date = DayKey($0) }
         )
     }
