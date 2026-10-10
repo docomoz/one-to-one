@@ -6,14 +6,16 @@ import SwiftUI
 struct WatchlistView: View {
     @Environment(AppModel.self) private var model
     @State private var showsPartner = false
+    @Environment(\.movieCatalog) private var catalog
     @State private var isSearching = false
 
     var body: some View {
+        let items = items
         List {
             Section {
                 Picker("Чей список", selection: $showsPartner) {
                     Text("Мой список").tag(false)
-                    Text(partnerName.map { "Список: \($0)" } ?? "Партнёра").tag(true)
+                    Text(model.data.partner.map { "Список: \($0.name)" } ?? "Партнёра").tag(true)
                 }
                 .pickerStyle(.segmented)
                 .listRowBackground(Color.clear)
@@ -42,17 +44,12 @@ struct WatchlistView: View {
                     .padding(.bottom, 8)
             }
         }
-        .sheet(isPresented: $isSearching) { MovieSearchView() }
+        .sheet(isPresented: $isSearching) { MovieSearchView(catalog: catalog) }
     }
 
     private var items: [WatchlistItem] {
         guard let owner = showsPartner ? model.data.partnerID : model.data.meID else { return [] }
         return model.data.watchlist(of: owner)
-    }
-
-    private var partnerName: String? {
-        guard let couple = model.data.couple, let partner = model.data.partnerID else { return nil }
-        return [couple.man, couple.woman].first { $0.id == partner }?.name
     }
 
     private var emptyState: some View {

@@ -11,7 +11,8 @@ public enum DeckBuilder {
 
         var seen = watched.union(swipedByMe)
         var deck: [Movie] = []
-        for movie in candidates where deck.count < limit && seen.insert(movie.id).inserted {
+        for movie in candidates where seen.insert(movie.id).inserted {
+            guard deck.count < limit else { break }
             deck.append(movie)
         }
         return deck

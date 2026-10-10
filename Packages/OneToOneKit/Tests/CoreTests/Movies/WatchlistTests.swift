@@ -61,3 +61,14 @@ private let other = Movie(id: 2, title: "Брат", year: 1997, genres: ["дра
     data.meID = nil
     #expect(data.partnerID == nil)
 }
+
+@Test func addToWatchlistKeepsCachedMovie() {
+    var data = AppData()
+    var rated = film
+    rated.ratings = Ratings(imdb: 8.3, kinopoisk: 8.0)
+    data.movieCache[1] = rated
+
+    data.addToWatchlist(film, ownerID: me, addedAt: .now)
+
+    #expect(data.movieCache[1] == rated)
+}

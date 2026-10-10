@@ -9,7 +9,7 @@ enum MovieSearchError {
             "Нет ключа Кинопоиска. Впишите его в Config/Secrets.xcconfig."
         case KinopoiskError.forbidden:
             "Бесплатные запросы к Кинопоиску на сегодня закончились. Попробуйте завтра."
-        case is URLError:
+        case let error as URLError where [.notConnectedToInternet, .networkConnectionLost, .dataNotAllowed].contains(error.code):
             "Нет интернета. Проверьте связь и попробуйте ещё раз."
         default:
             "Кинопоиск не ответил. Попробуйте ещё раз."

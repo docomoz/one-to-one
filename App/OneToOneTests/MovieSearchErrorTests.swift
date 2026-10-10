@@ -9,3 +9,7 @@ import Testing
     #expect(MovieSearchError.message(for: URLError(.notConnectedToInternet)).contains("интернета"))
     #expect(MovieSearchError.message(for: KinopoiskError.http(status: 500)).contains("не ответил"))
 }
+
+@Test func serverTimeoutIsNotOffline() {
+    #expect(MovieSearchError.message(for: URLError(.timedOut)).contains("не ответил"))
+}
