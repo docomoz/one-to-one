@@ -75,7 +75,7 @@ private func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int, _ min: Int) -> Date {
     newYork.timeZone = TimeZone(identifier: "America/New_York")!
 
     for key in [DayKey(year: 2026, month: 3, day: 8), DayKey(year: 2026, month: 12, day: 31)] {
-        #expect(DayKey(key.date(in: newYork), calendar: newYork) == key)
-        #expect(DayKey(key.date(in: moscow), calendar: moscow) == key)
+        #expect(DayKey(key.date(calendar: newYork), calendar: newYork) == key)
+        #expect(DayKey(key.date(calendar: moscow), calendar: moscow) == key)
     }
 }
