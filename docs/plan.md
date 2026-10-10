@@ -53,7 +53,7 @@ App/OneToOne/
   Features/Onboarding|Home|Tracker|Cycle|Movies|Settings|Shared/   экраны
 Packages/OneToOneKit/
   Sources/Core/Pair/                Sex, Person, Couple
-  Sources/Core/Tracker/             SexEntry, Stats, Cycle, Tip
+  Sources/Core/Tracker/             SexEntry, Stats, Cycle, Tip, PregnancyRisk
   Sources/Core/Movies/              Movie, Mood, Watchlist, Swipe, Deck, Match
   Sources/Core/Storage/             AppData, Store, LocalStore, InMemoryStore
   Sources/MovieAPI/                 KinopoiskCatalog, RatingsProvider
@@ -96,6 +96,8 @@ enum CyclePhase: Equatable { case menstruation, follicular, ovulation, luteal, u
 struct CycleForecast: Equatable { let phase: CyclePhase; let dayOfCycle: Int?; let averageLength: Int
   let nextPeriodStart: DayKey? }
 enum CycleCalculator { static func forecast(periodDays: Set<DayKey>, today: DayKey) -> CycleForecast }
+enum PregnancyRisk: Equatable { case high, medium, late, low, unknown }
+enum PregnancyRiskCalculator { static func risk(on day: DayKey, periodDays: Set<DayKey>, today: DayKey) -> PregnancyRisk }
 struct Tip: Equatable { let text: String; let isEstimate: Bool }
 enum TipProvider { static func tip(forecast: CycleForecast, herMood: HerMood?) -> Tip }
 enum CheerProvider { static func cheer(forecast: CycleForecast) -> String? } // фраза для неё на главной
