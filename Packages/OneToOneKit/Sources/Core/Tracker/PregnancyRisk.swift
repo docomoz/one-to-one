@@ -47,6 +47,7 @@ public enum PregnancyRiskCalculator {
 
         let elapsed = lastStart.days(to: day)
         let dayOfCycle: Int
+        var isLateNow = false
         if day <= today {
             // Без заворота по длине: иначе задержку не увидеть.
             dayOfCycle = elapsed + 1
@@ -54,12 +55,21 @@ public enum PregnancyRiskCalculator {
         } else {
             // Будущие циклы идут по прогнозу, как в `CycleCalculator.forecast`.
             dayOfCycle = elapsed % CycleCalculator.averageLength(starts) + 1
+            // Месячные уже задерживаются: прогноз ненадёжен, низкого впереди не обещаем.
+            isLateNow = lastStart.days(to: today) + 1 > longest
         }
 
         if window.contains(dayOfCycle) { return .high }
+        if isLateNow { return .late }
         let edges = (window.lowerBound - margin)...(window.upperBound + margin)
         if edges.contains(dayOfCycle) || !allowsLow { return .medium }
         return .low
+    }
+
+    /// Риск на каждый день месяца: полоски в календаре у неё и у него.
+    public static func risks(in month: Month, periodDays: Set<DayKey>, today: DayKey) -> [DayKey: PregnancyRisk] {
+        let days = month.cells.compactMap { $0 }
+        return Dictionary(uniqueKeysWithValues: days.map { ($0, risk(on: $0, periodDays: periodDays, today: today)) })
     }
 
     /// Промежутки между соседними началами, только 21–40 дней (длиннее — видимо, забыли отметить), последние 6.
