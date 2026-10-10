@@ -77,3 +77,59 @@ private func model(me: Person) -> (AppModel, InMemoryStore) {
     #expect(model.startPick(mood: .laugh) == nil)
     #expect(try store.load().sessions.isEmpty)
 }
+
+/// Каталог, который считает запросы: у Кинопоиска всего 200 в день.
+private final class CountingCatalog: MovieCatalog, @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+    var requests: Int { lock.withLock { count } }
+
+    func search(_ query: String) async throws -> [Movie] { [] }
+    func recommendations(for id: Int) async throws -> [Movie] { lock.withLock { count += 1 }; return [] }
+    func discover(genres: [String]) async throws -> [Movie] {
+        lock.withLock { count += 1 }
+        return [Movie(id: 2, title: "Брат", year: 1997, genres: ["комедия"], overview: "", posterURL: nil)]
+    }
+}
+
+@MainActor
+@Test func deckAsksCatalogOncePerPick() async throws {
+    let (model, _) = model(me: man)
+    let catalog = CountingCatalog()
+    let session = try #require(model.startPick(mood: .laugh))
+
+    _ = await model.deck(for: session, catalog: catalog)
+    let afterFirst = catalog.requests
+    model.swipe(.no, movie: film, in: session)
+    let again = await model.deck(for: session, catalog: catalog)
+
+    #expect(afterFirst > 0)
+    #expect(catalog.requests == afterFirst)
+    #expect(again.map(\.id) == [2])
+}
+
+/// Каталог без сети в первый раз и с сетью потом.
+private final class OfflineThenOnlineCatalog: MovieCatalog, @unchecked Sendable {
+    private let lock = NSLock()
+    private var online = false
+    func goOnline() { lock.withLock { online = true } }
+
+    func search(_ query: String) async throws -> [Movie] { [] }
+    func recommendations(for id: Int) async throws -> [Movie] { [] }
+    func discover(genres: [String]) async throws -> [Movie] {
+        guard lock.withLock({ online }) else { throw URLError(.notConnectedToInternet) }
+        return [Movie(id: 2, title: "Брат", year: 1997, genres: ["комедия"], overview: "", posterURL: nil)]
+    }
+}
+
+@MainActor
+@Test func deckRetriesAfterNoNetwork() async throws {
+    let (model, _) = model(me: man)
+    let catalog = OfflineThenOnlineCatalog()
+    let session = try #require(model.startPick(mood: .laugh))
+
+    #expect(await model.deck(for: session, catalog: catalog).isEmpty)
+    catalog.goOnline()
+
+    #expect(await model.deck(for: session, catalog: catalog).map(\.id) == [2])
+}

@@ -39,6 +39,11 @@ extension AppModel {
         return matched
     }
 
+    /// Подбор, который сейчас идёт. `nil`, если его нет или фильм из него уже смотрят.
+    var currentPick: PickSession? {
+        data.currentPick
+    }
+
     func matches(in session: PickSession) -> [Int] {
         data.matches(in: session)
     }
@@ -52,10 +57,18 @@ extension AppModel {
     }
 
     /// Колода для меня: оба списка плюс рекомендации каталога. Нет сети — только списки.
-    /// Каждый вызов — до 6 запросов к Кинопоиску (200 в день бесплатно), поэтому зови один раз на подбор.
+    /// Рекомендации (до 6 запросов к Кинопоиску из 200 в день) просим один раз на подбор,
+    /// дальше берём запомненные: колоду открывают много раз, и оба из пары видят одни и те же.
     func deck(for session: PickSession, catalog: some MovieCatalog) async -> [Movie] {
-        let recommendations = await DeckLoader.recommendations(seeds: data.recommendationSeeds(),
+        let recommendations: [Movie]
+        if let saved = recommendationsByPick[session.id] {
+            recommendations = saved
+        } else {
+            recommendations = await DeckLoader.recommendations(seeds: data.recommendationSeeds(),
                                                                mood: session.mood, catalog: catalog)
+            // Пусто — скорее всего, не было сети: в следующий раз попросим снова.
+            if !recommendations.isEmpty { recommendationsByPick[session.id] = recommendations }
+        }
         return data.deck(for: session, recommendations: recommendations, me: data.meID ?? UUID())
     }
 }

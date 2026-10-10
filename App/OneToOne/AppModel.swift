@@ -1,4 +1,5 @@
 import Core
+import Foundation
 import Observation
 import OSLog
 
@@ -7,6 +8,8 @@ import OSLog
 final class AppModel {
     private(set) var data: AppData
     @ObservationIgnored private let store: Store
+    /// Рекомендации Кинопоиска по подборам: просим их один раз на подбор, лимит 200 запросов в день.
+    @ObservationIgnored var recommendationsByPick: [UUID: [Movie]] = [:]
 
     init(store: Store) {
         self.store = store

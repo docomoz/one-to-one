@@ -5,6 +5,7 @@ import SwiftUI
 struct OneToOneApp: App {
     @State private var model = AppModel(store: LocalStore())
     @State private var tab = AppTab.home
+    @State private var pickFlow: PickFlowRequest?
 
     var body: some Scene {
         WindowGroup {
@@ -24,7 +25,8 @@ struct OneToOneApp: App {
     private var tabs: some View {
         TabView(selection: $tab) {
             Tab("Главная", systemImage: "house", value: .home) {
-                HomeView(pickMovie: { tab = .movies })
+                // «Выбрать фильм» открывает подбор: идущий или выбор настроения, как карточка на «Фильмах».
+                HomeView(pickMovie: { pickFlow = PickFlowRequest(session: model.currentPick) })
             }
             Tab("Фильмы", systemImage: "film", value: .movies) {
                 MoviesView()
@@ -41,6 +43,7 @@ struct OneToOneApp: App {
                 }
             }
         }
+        .fullScreenCover(item: $pickFlow) { PickFlowView(session: $0.session) }
     }
 }
 
