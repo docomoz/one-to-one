@@ -18,6 +18,7 @@ iOS-приложение для пар (можно пользоваться и �
   - Один раз: `brew install xcodegen`.
   - Логика: `cd Packages/OneToOneKit && swift test`
   - Приложение: `xcodegen generate && xcodebuild test -project OneToOne.xcodeproj -scheme OneToOne -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - CI тесты приложения на симуляторе не запускает, только собирает приложение. Перед PR с изменениями экранов запускай их локально командой выше.
   - `OneToOne.xcodeproj` генерируется из `project.yml` и в git не хранится. После `git pull` выполняй `xcodegen generate`.
   - Ключи API и команда для подписи: скопируй `Config/Secrets.example.xcconfig` в `Config/Secrets.xcconfig` и впиши свои.
 
