@@ -16,7 +16,7 @@ import Testing
     #expect(rgb.blue == 30.0 / 255)
 }
 
-@Test func tileBackgroundHasLightAndDarkVariants() {
-    #expect(Palette.tileLight == 0xF4F0F7)
-    #expect(Palette.tileDark != Palette.tileLight)
+@Test func tileIsLilacInLightThemeAndPlumInDark() {
+    #expect(Palette.tileHex(isDark: false) == 0xF4F0F7)
+    #expect(Palette.tileHex(isDark: true) == 0x2A2231)
 }

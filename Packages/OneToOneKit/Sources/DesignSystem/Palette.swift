@@ -6,29 +6,12 @@ import UIKit
 import AppKit
 #endif
 
-/// Фирменные цвета «Яркого градиента» (вариант B из docs/design/visual-style.html).
-public enum BrandColor: CaseIterable, Sendable {
-    case yellow, orange, pink, purple, blue
-
-    var hex: UInt32 {
-        switch self {
-        case .yellow: 0xFEDA75
-        case .orange: 0xFA7E1E
-        case .pink: 0xD62976
-        case .purple: 0x962FBF
-        case .blue: 0x4F5BD5
-        }
-    }
-
-    public var color: Color { Color(hex: hex) }
-}
-
 /// Цвета поверхностей. Фон экрана берём системный, чтобы тёмная тема работала сама.
 public enum Palette {
     static let tileLight: UInt32 = 0xF4F0F7
     static let tileDark: UInt32 = 0x2A2231
 
-    /// Фон экрана: белый в светлой теме, чёрный в тёмной.
+    /// Фон экрана: системный фон, на iPhone белый в светлой теме и чёрный в тёмной.
     public static var background: Color {
         #if canImport(UIKit)
         Color(uiColor: .systemBackground)
@@ -38,25 +21,22 @@ public enum Palette {
     }
 
     /// Фон плашек и карточек: светло-сиреневый днём, тёмно-сливовый ночью.
-    public static var tile: Color { adaptive(light: tileLight, dark: tileDark) }
+    public static var tile: Color { adaptive(tileHex) }
 
-    private static func adaptive(light: UInt32, dark: UInt32) -> Color {
+    static func tileHex(isDark: Bool) -> UInt32 {
+        isDark ? tileDark : tileLight
+    }
+
+    /// Цвет, который сам перекрашивается при смене темы.
+    private static func adaptive(_ hex: @escaping @Sendable (_ isDark: Bool) -> UInt32) -> Color {
         #if canImport(UIKit)
         Color(uiColor: UIColor { traits in
-            UIColor(Color(hex: traits.userInterfaceStyle == .dark ? dark : light))
+            UIColor(Color(hex: hex(traits.userInterfaceStyle == .dark)))
         })
         #else
         Color(nsColor: NSColor(name: nil) { appearance in
-            let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            return NSColor(Color(hex: isDark ? dark : light))
+            NSColor(Color(hex: hex(appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua)))
         })
         #endif
-    }
-}
-
-extension Color {
-    init(hex: UInt32) {
-        let rgb = RGB(hex: hex)
-        self.init(.sRGB, red: rgb.red, green: rgb.green, blue: rgb.blue)
     }
 }

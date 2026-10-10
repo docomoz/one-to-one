@@ -18,6 +18,9 @@ public struct GradientButton: View {
 
 /// Отдельный стиль, чтобы кнопка темнела при нажатии, как родные кнопки iPhone.
 private struct GradientButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
@@ -25,13 +28,22 @@ private struct GradientButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(BrandGradient.primary, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .opacity(configuration.isPressed ? 0.8 : 1)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .opacity(opacity(isPressed: configuration.isPressed))
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+
+    private func opacity(isPressed: Bool) -> Double {
+        if !isEnabled { return 0.4 }
+        return isPressed ? 0.8 : 1
     }
 }
 
 #Preview {
-    GradientButton(title: "Выбрать фильм") {}
-        .padding()
+    VStack {
+        GradientButton(title: "Выбрать фильм") {}
+        GradientButton(title: "Недоступна") {}
+            .disabled(true)
+    }
+    .padding()
 }
