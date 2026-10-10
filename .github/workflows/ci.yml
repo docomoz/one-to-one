@@ -45,12 +45,13 @@ jobs:
           cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
           xcodegen generate
 
-      # Приложение только собираем, без симулятора: его загрузка на раннере занимает от 1 до 10 минут,
-      # а сами тесты приложения пока идут доли секунды. Тесты App/OneToOneTests запускаем локально (см. CLAUDE.md).
+      # Собираем приложение и его тесты, но не запускаем симулятор: его загрузка на раннере занимает от 1 до 10 минут,
+      # а сами тесты приложения пока идут доли секунды. `build-for-testing` компилирует и тесты, так что сломанный тест
+      # всё равно уронит CI. Запускаем тесты App/OneToOneTests локально (см. CLAUDE.md).
       # Вернуть `xcodebuild test` с `-destination 'platform=iOS Simulator,name=iPhone 17'`, когда появятся настоящие тесты экранов.
-      - name: Сборка приложения
+      - name: Сборка приложения и тестов
         run: |
-          xcodebuild build \
+          xcodebuild build-for-testing \
             -project OneToOne.xcodeproj \
             -scheme OneToOne \
             -destination 'generic/platform=iOS Simulator' \
