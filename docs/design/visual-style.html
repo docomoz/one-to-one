@@ -1,0 +1,68 @@
+<h2>Какое направление стиля ближе?</h2>
+<p class="subtitle">Один и тот же главный экран в трёх стилях по мотивам ваших любимых приложений. Кликните понравившийся. Можно сказать «вот это, но с тем».</p>
+
+<style>
+  .ph { width: 210px; height: 400px; border-radius: 30px; padding: 22px 16px; display: flex; flex-direction: column; gap: 12px; margin: 0 auto; font-family: -apple-system, system-ui, sans-serif; box-sizing: border-box; }
+  .ph .hi { font-size: 13px; opacity: .7; }
+  .ph .num { font-size: 52px; font-weight: 800; line-height: 1; }
+  .ph .lbl { font-size: 12px; opacity: .75; }
+  .ph .row { display: flex; gap: 8px; }
+  .ph .tile { flex: 1; border-radius: 16px; padding: 10px; font-size: 11px; }
+  .ph .cta { margin-top: auto; border-radius: 18px; padding: 14px; text-align: center; font-weight: 700; font-size: 14px; }
+
+  .a { background: #0b0b0b; color: #f5f5f5; }
+  .a .tile { background: #1c1c1c; }
+  .a .cta { background: #f5f5f5; color: #0b0b0b; }
+  .a .num { letter-spacing: -2px; }
+
+  .b { background: #fff; color: #1a1a1a; }
+  .b .num { background: linear-gradient(90deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .b .tile { background: #f4f0f7; }
+  .b .cta { background: linear-gradient(90deg,#fa7e1e,#d62976,#962fbf); color: #fff; }
+
+  .c { background: linear-gradient(160deg,#cfe8ff,#e9d9ff 60%,#ffd9ec); color: #1d2340; }
+  .c .tile { background: rgba(255,255,255,.65); }
+  .c .cta { background: #2aabee; color: #fff; }
+  .c .num::after { content: " 🔥"; font-size: 30px; }
+</style>
+
+<div class="cards">
+  <div class="card" data-choice="threads" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph a">
+        <div class="hi">Вы вдвоём · октябрь</div>
+        <div class="num">12</div>
+        <div class="lbl">раз в этом месяце</div>
+        <div class="row"><div class="tile">Оргазмы<br><b>М 14 · Д 11</b></div><div class="tile">Сегодня<br><b>Скорее да 😏</b></div></div>
+        <div class="cta">Выбрать фильм</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A. Строгий контраст</h3><p>Как Threads: чёрно-белое, крупные цифры, минимум цвета. Дорого и сдержанно.</p></div>
+  </div>
+
+  <div class="card" data-choice="instagram" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph b">
+        <div class="hi">Вы вдвоём · октябрь</div>
+        <div class="num">12</div>
+        <div class="lbl">раз в этом месяце</div>
+        <div class="row"><div class="tile">Оргазмы<br><b>М 14 · Д 11</b></div><div class="tile">Сегодня<br><b>Скорее да 😏</b></div></div>
+        <div class="cta">Выбрать фильм</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B. Яркий градиент</h3><p>Как Instagram: светлый фон, сочный градиент на главном. Тёпло и игриво.</p></div>
+  </div>
+
+  <div class="card" data-choice="telegram" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph c">
+        <div class="hi">Вы вдвоём · октябрь</div>
+        <div class="num">12</div>
+        <div class="lbl">раз в этом месяце</div>
+        <div class="row"><div class="tile">Оргазмы<br><b>М 14 · Д 11</b></div><div class="tile">Сегодня<br><b>Скорее да 😏</b></div></div>
+        <div class="cta">Выбрать фильм</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C. Мягкий и живой</h3><p>Как Telegram: пастельный фон, полупрозрачные плашки, эмодзи и анимации-стикеры.</p></div>
+  </div>
+</div>
