@@ -12,7 +12,7 @@
 **Стек:**
 - SwiftUI, iOS 26, Swift 6, Swift Testing.
 - XcodeGen: проект описан текстом в `project.yml`.
-- Внешние сервисы: TMDB, OMDb, kinopoisk.dev.
+- Внешние сервисы: Кинопоиск (poiskkino.dev, бывший kinopoisk.dev), OMDb.
 - CloudKit через `CKSyncEngine`.
 
 **Спецификация:** [docs/spec.md](spec.md).
@@ -55,7 +55,7 @@ Packages/OneToOneKit/
   Sources/Core/Tracker/             SexEntry, Stats, Cycle, Tip
   Sources/Core/Movies/              Movie, Mood, Watchlist, Swipe, Deck, Match
   Sources/Core/Storage/             AppData, Store, LocalStore, InMemoryStore
-  Sources/MovieAPI/                 TMDBCatalog, RatingsProvider
+  Sources/MovieAPI/                 KinopoiskCatalog, RatingsProvider
   Sources/DesignSystem/             цвета, градиент, компоненты
   Sources/Sync/                     CloudKit (задачи 16–18)
   Tests/…                           зеркально Sources
@@ -90,10 +90,10 @@ struct Tip: Equatable { let text: String; let isEstimate: Bool }
 enum TipProvider { static func tip(forecast: CycleForecast, herMood: HerMood?) -> Tip }
 
 // Movies
-struct Movie: Codable, Identifiable, Hashable { let id: Int /* TMDB id */; let title: String; let year: Int?
-  let genreIDs: [Int]; let overview: String; let posterPath: String?; var imdbID: String? }
-struct Ratings: Equatable { var imdb: Double?; var kinopoisk: Double? }
-enum Mood: String, Codable, CaseIterable { case laugh, light, thrill, cry, immerse, romance; var genreIDs: [Int] }
+struct Movie: Codable, Identifiable, Hashable { let id: Int /* id Кинопоиска */; let title: String; let year: Int?
+  let genres: [String]; let overview: String; let posterURL: URL?; var imdbID: String?; var ratings: Ratings }
+struct Ratings: Codable, Hashable { var imdb: Double?; var kinopoisk: Double? }
+enum Mood: String, Codable, CaseIterable { case laugh, light, thrill, cry, immerse, romance; var genres: [String] }
 struct WatchlistItem: Codable, Equatable { let movie: Movie; let ownerID: UUID; let addedAt: Date; let fromLater: Bool }
 enum SwipeAction: String, Codable { case no, yes, later }
 struct PickSession: Codable, Identifiable, Equatable { let id: UUID; let mood: Mood; let startedBy: UUID; let startedAt: Date }
@@ -113,14 +113,13 @@ final class InMemoryStore: Store  // для тестов и превью
 
 // MovieAPI
 protocol MovieCatalog: Sendable { func search(_ query: String) async throws -> [Movie]
-  func recommendations(for id: Int) async throws -> [Movie]; func discover(genreIDs: [Int]) async throws -> [Movie]
-  func externalIMDbID(for id: Int) async throws -> String? }
-struct TMDBCatalog: MovieCatalog { init(apiKey: String, session: URLSession = .shared) }
+  func recommendations(for id: Int) async throws -> [Movie]; func discover(genres: [String]) async throws -> [Movie] }
+struct KinopoiskCatalog: MovieCatalog { init(apiKey: String, session: URLSession = .shared) }
 protocol RatingsProvider: Sendable { func ratings(for movie: Movie) async -> Ratings } // ошибки → nil, не throw
-struct CombinedRatingsProvider: RatingsProvider { init(omdbKey: String, kinopoiskKey: String, session: URLSession = .shared) }
+struct OMDbFallbackRatingsProvider: RatingsProvider { init(omdbKey: String, session: URLSession = .shared) }
 ```
 
-**Настроения → жанры TMDB:** laugh «Посмеяться» [35] · light «Что-то лёгкое» [35, 10751, 16] · thrill «Пощекотать нервы» [53, 27] · cry «Поплакать» [18] · immerse «Залипнуть» [878, 9648, 12] · romance «Романтика» [10749].
+**Настроения → жанры Кинопоиска:** laugh «Посмеяться» [комедия] · light «Что-то лёгкое» [комедия, семейный, мультфильм] · thrill «Пощекотать нервы» [триллер, ужасы] · cry «Поплакать» [драма] · immerse «Залипнуть» [фантастика, детектив, приключения] · romance «Романтика» [мелодрама].
 
 ## Потоки и порядок
 
@@ -144,7 +143,7 @@ struct CombinedRatingsProvider: RatingsProvider { init(omdbKey: String, kinopois
 ### Задача 1. Каркас проекта (#9)
 **Цель:** приложение запускается в симулаторе с тремя пустыми вкладками («Главная», «Фильмы», «Трекер»), тесты пакета проходят.
 **Файлы:**
-- создать `project.yml`, `App/OneToOne/OneToOneApp.swift`, `Packages/OneToOneKit/Package.swift` (цели `Core`, `MovieAPI`, `DesignSystem` с тестами, платформы iOS 26 и macOS 26), `Config/Secrets.example.xcconfig` (`TMDB_API_KEY`, `OMDB_API_KEY`, `KINOPOISK_API_KEY`);
+- создать `project.yml`, `App/OneToOne/OneToOneApp.swift`, `Packages/OneToOneKit/Package.swift` (цели `Core`, `MovieAPI`, `DesignSystem` с тестами, платформы iOS 26 и macOS 26), `Config/Secrets.example.xcconfig` (`KINOPOISK_API_KEY`, `OMDB_API_KEY`);
 - дополнить `.gitignore` строками `OneToOne.xcodeproj/` и `Config/Secrets.xcconfig`.
 **Тесты:** `CoreTests/SmokeTests.swift`: `@Test func packageBuilds() { #expect(true) }`.
 **Готово когда:**
@@ -284,30 +283,35 @@ struct CombinedRatingsProvider: RatingsProvider { init(omdbKey: String, kinopois
 
 ## Поток Б — Фильмы
 
-### Задача 11. Каталог фильмов (TMDB) (#19)
+### Задача 11. Каталог фильмов (Кинопоиск) (#19)
 **Цель:** искать фильмы и получать рекомендации на русском.
-**Файлы:** `Sources/MovieAPI/TMDBCatalog.swift`, `Tests/MovieAPITests/` с JSON-образцами ответов и подменой `URLProtocol`.
+**Файлы:** `Sources/MovieAPI/KinopoiskCatalog.swift`, `Tests/MovieAPITests/` с JSON-образцами ответов и подменой `URLProtocol`.
 **Интерфейсы:**
-- `MovieCatalog`, `TMDBCatalog(apiKey:)`;
-- запросы с `language=ru-RU`;
-- `/search/movie`, `/movie/{id}/recommendations`, `/discover/movie?with_genres=`, `/movie/{id}/external_ids`.
+- `MovieCatalog`, `KinopoiskCatalog(apiKey:)`;
+- база `https://api.poiskkino.dev/v1.5`, ключ в заголовке `X-API-KEY`;
+- `search`: `/movie/search?query=`;
+- `recommendations`: `/movie/{id}` → поле `similarMovies`;
+- `discover`: `/movie?genres.name=…&type=movie&rating.kp=6-10&sortField=votes.kp&sortType=-1`;
+- из ответа сразу берём `rating.kp`, `rating.imdb`, `externalId.imdb`, `poster.url`, `genres`, `shortDescription` (если пусто, `description`). Отдельный запрос за рейтингами не нужен.
+- Бесплатно 200 запросов в день: просим только нужные поля (`selectFields`) и кладём фильмы в `movieCache`.
 **Тесты:**
-- `parsesSearch`: из образца получаются title, year, posterPath;
-- `sendsRussianLanguage`;
-- `throwsOnHTTPError`: на 401 бросает ошибку;
-- `externalIMDbID`.
-**Руками:** зарегистрироваться на themoviedb.org и вписать ключ в свой `Config/Secrets.xcconfig`.
+- `parsesSearch`: из образца получаются title, year, posterURL, genres, оба рейтинга, imdbID;
+- `sendsAPIKeyHeader`;
+- `throwsOnHTTPError`: на 401 и 403 (лимит) бросает ошибку;
+- `recommendationsFromSimilarMovies`;
+- `discoverSendsGenres`.
+**Руками:** ключ из Telegram-бота @poiskkinodev_bot в свой `Config/Secrets.xcconfig`.
 **Зависит от:** 4
 
 ### Задача 12. Рейтинги IMDb и Кинопоиска (#20)
 **Цель:** у карточки есть рейтинги, а если их нет, ничего не ломается.
-**Файлы:** `Sources/MovieAPI/CombinedRatingsProvider.swift`, тесты.
-**Интерфейсы:**
-- OMDb `?i={imdbID}` → `imdbRating`;
-- kinopoisk.dev поиск по imdb id → `rating.kp`;
-- запросы идут параллельно, на любую ошибку получаем `nil`.
-**Тесты:** `bothRatings`, `kinopoiskFailsImdbStays`, `noImdbIDGivesEmpty`, `garbageRatingIsNil` («N/A» → nil).
-**Руками:** ключи omdbapi.com и kinopoisk.dev в `Secrets.xcconfig`.
+**Файлы:** `Sources/MovieAPI/OMDbFallbackRatingsProvider.swift`, тесты.
+**Как работает:**
+- оба рейтинга уже приходят с фильмом из каталога (задача 11);
+- если `ratings.imdb` пустой, а `imdbID` есть, спрашиваем OMDb `?i={imdbID}` → `imdbRating`;
+- на любую ошибку OMDb рейтинг IMDb просто остаётся пустым.
+**Тесты:** `catalogRatingsKept` (OMDb не вызывается), `omdbFillsMissingImdb`, `omdbFailsKeepsKinopoisk`, `noImdbIDNoRequest`, `garbageRatingIsNil` («N/A» → nil).
+**Руками:** ключ omdbapi.com в `Secrets.xcconfig`.
 **Зависит от:** 11
 
 ### Задача 13. Списки и колода (#21)
@@ -337,7 +341,7 @@ struct CombinedRatingsProvider: RatingsProvider { init(omdbKey: String, kinopois
 - `swipe(_ action: SwipeAction, movie: Movie, in session: PickSession) -> Bool` (true — случилось совпадение);
 - `markWatched(movieID:)`;
 - `later` добавляет фильм в мой список с `fromLater = true`;
-- `deck(for session: PickSession, catalog: MovieCatalog) async -> [Movie]`: рекомендации = `catalog.recommendations` для 5 последних фильмов, которые получили ♥ или добавлены в списки, плюс `catalog.discover(genreIDs: mood.genreIDs)`. Если сеть упала, рекомендаций нет, и колода строится из списков. Всё это идёт в `DeckBuilder.build`.
+- `deck(for session: PickSession, catalog: MovieCatalog) async -> [Movie]`: рекомендации = `catalog.recommendations` для 5 последних фильмов, которые получили ♥ или добавлены в списки, плюс `catalog.discover(genres: mood.genres)`. Если сеть упала, рекомендаций нет, и колода строится из списков. Всё это идёт в `DeckBuilder.build`.
 **Тесты:**
 - `matchWhenBothYes`;
 - `noMatchWhenOneNo`;
