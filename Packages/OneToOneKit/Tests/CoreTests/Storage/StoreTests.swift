@@ -84,3 +84,14 @@ private func tempDirectory() -> URL {
     #expect(data.watched.isEmpty)
     #expect(data.movieCache.isEmpty)
 }
+
+@Test func appDataDecodesFileWithMissingFields() throws {
+    // Старый файл, сохранённый до того, как в AppData появились новые поля.
+    let old = Data(#"{"watched": [326]}"#.utf8)
+
+    let data = try JSONDecoder().decode(AppData.self, from: old)
+
+    var expected = AppData()
+    expected.watched = [326]
+    #expect(data == expected)
+}

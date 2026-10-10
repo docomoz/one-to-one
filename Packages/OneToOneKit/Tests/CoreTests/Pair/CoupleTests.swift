@@ -17,3 +17,13 @@ private let woman2 = Person(id: UUID(), name: "Аня", sex: .female)
     #expect(couple.man == man1)
     #expect(couple.woman == woman1)
 }
+
+@Test func coupleDecodingRejectsSameSex() throws {
+    let json = """
+    {"man": {"id": "\(man1.id)", "name": "Максим", "sex": "male"},
+     "woman": {"id": "\(man2.id)", "name": "Иван", "sex": "male"}}
+    """
+    #expect(throws: CoupleError.sameSex) {
+        try JSONDecoder().decode(Couple.self, from: Data(json.utf8))
+    }
+}

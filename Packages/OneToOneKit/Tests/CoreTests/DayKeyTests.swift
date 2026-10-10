@@ -33,3 +33,11 @@ private func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int, _ min: Int) -> Date {
     #expect(DayKey(year: 2025, month: 12, day: 31) < DayKey(year: 2026, month: 1, day: 1))
     #expect(DayKey(year: 2026, month: 1, day: 31) < DayKey(year: 2026, month: 2, day: 1))
 }
+
+@Test func dayKeyAlwaysUsesGregorianYear() {
+    // В настройках iPhone можно выбрать буддийский календарь: там сейчас 2569 год.
+    var buddhist = Calendar(identifier: .buddhist)
+    buddhist.timeZone = moscow.timeZone
+
+    #expect(DayKey(date(2026, 3, 14, 12, 0), calendar: buddhist) == DayKey(year: 2026, month: 3, day: 14))
+}

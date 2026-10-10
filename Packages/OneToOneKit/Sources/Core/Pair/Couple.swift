@@ -16,6 +16,13 @@ public struct Couple: Codable, Equatable, Sendable {
         self.man = man
         self.woman = woman
     }
+
+    /// Пару из файла или iCloud тоже проверяем: двое одного пола — ошибка.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self = try Couple.make(try container.decode(Person.self, forKey: .man),
+                               try container.decode(Person.self, forKey: .woman))
+    }
 }
 
 public enum CoupleError: Error, Equatable {

@@ -13,9 +13,12 @@ public struct DayKey: Codable, Hashable, Comparable, Sendable {
         self.day = day
     }
 
-    /// День, на который приходится момент `date` по местному календарю.
+    /// День, на который приходится момент `date` в часовом поясе `calendar`.
+    /// Год и месяц всегда григорианские, даже если в настройках iPhone выбран другой календарь.
     public init(_ date: Date, calendar: Calendar = .current) {
-        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
+        let parts = gregorian.dateComponents([.year, .month, .day], from: date)
         self.init(year: parts.year!, month: parts.month!, day: parts.day!)
     }
 
