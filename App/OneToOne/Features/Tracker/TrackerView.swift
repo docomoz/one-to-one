@@ -57,7 +57,7 @@ struct TrackerView: View {
     }
 }
 
-/// Строка списка: день, виды и оргазмы.
+/// Строка списка: день, виды, защита (если отмечена) и оргазмы.
 private struct EntryRow: View {
     let entry: SexEntry
 
@@ -67,6 +67,11 @@ private struct EntryRow: View {
                 .font(.subheadline.bold())
             Text(SexType.allCases.filter(entry.types.contains).map(\.title).joined(separator: ", "))
                 .font(.subheadline)
+            if let protection = entry.protectionText {
+                Text(protection)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Text("Оргазмы: он \(entry.orgasmsMan) · она \(entry.orgasmsWoman)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
