@@ -4,7 +4,7 @@ import SwiftUI
 /// Вкладка «Фильмы»: сверху карточка вечера и совпадения, ниже списки.
 struct MoviesView: View {
     @Environment(AppModel.self) private var model
-    @State private var flow: FlowRequest?
+    @State private var flow: PickFlowRequest?
 
     var body: some View {
         NavigationStack {
@@ -22,8 +22,8 @@ struct MoviesView: View {
         let state = PickCardState.make(model.data)
         Section {
             PickCard(state: state,
-                     onOpen: { flow = FlowRequest(session: model.currentPick) },
-                     onNewPick: { flow = FlowRequest(session: nil) })
+                     onOpen: { flow = PickFlowRequest(session: model.currentPick) },
+                     onNewPick: { flow = PickFlowRequest(session: nil) })
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -50,12 +50,6 @@ struct MoviesView: View {
         return model.data.meID == couple.man.id ? couple.man.name : couple.woman.name
     }
     #endif
-}
-
-/// Что открыть поверх вкладки: идущий подбор или новый (`nil` — начать с настроения).
-private struct FlowRequest: Identifiable {
-    let id = UUID()
-    let session: PickSession?
 }
 
 #Preview {

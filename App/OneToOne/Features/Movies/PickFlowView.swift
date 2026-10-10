@@ -1,4 +1,5 @@
 import Core
+import Foundation
 import SwiftUI
 
 /// Весь подбор поверх вкладки: настроение → свайпы → совпадение.
@@ -27,4 +28,10 @@ struct PickFlowView: View {
             }
         }
     }
+}
+
+/// Что открыть поверх экрана: идущий подбор или новый (`nil` — начать с настроения).
+struct PickFlowRequest: Identifiable {
+    let id = UUID()
+    let session: PickSession?
 }
