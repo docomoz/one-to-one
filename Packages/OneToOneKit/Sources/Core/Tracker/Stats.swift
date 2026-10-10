@@ -10,4 +10,15 @@ public struct Stats: Equatable, Sendable {
     public let currentStreak: Int
     /// Самая длинная серия дней подряд за всё время.
     public let bestStreak: Int
+
+    public init(total: Int, thisMonth: Int, orgasmsMan: Int, orgasmsWoman: Int,
+                typeCounts: [SexType: Int], currentStreak: Int, bestStreak: Int) {
+        self.total = total
+        self.thisMonth = thisMonth
+        self.orgasmsMan = orgasmsMan
+        self.orgasmsWoman = orgasmsWoman
+        self.typeCounts = typeCounts
+        self.currentStreak = currentStreak
+        self.bestStreak = bestStreak
+    }
 }

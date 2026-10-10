@@ -1,0 +1,141 @@
+import Core
+import DesignSystem
+import SwiftUI
+
+/// Отметка секса за 3 касания: открыть, выбрать вид, «Сохранить».
+/// Если передать `entry`, экран правит эту запись и умеет её удалить.
+struct LogSexView: View {
+    let entry: SexEntry?
+
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    @State private var types: Set<SexType> = []
+    @State private var orgasmsMan = 1
+    @State private var orgasmsWoman = 1
+    @State private var date = Date.now
+    @State private var isConfirmingDelete = false
+
+    init(entry: SexEntry? = nil) {
+        self.entry = entry
+    }
+
+    private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    LazyVGrid(columns: columns, spacing: 8) {
+                        ForEach(SexType.allCases, id: \.self) { type in
+                            TypeChip(title: type.title, isOn: types.contains(type)) {
+                                types.formSymmetricDifference([type])
+                            }
+                        }
+                    }
+
+                    Card {
+                        VStack(spacing: 4) {
+                            Stepper("Оргазмы у него: \(orgasmsMan)", value: $orgasmsMan, in: 0...20)
+                            Divider()
+                            Stepper("Оргазмы у неё: \(orgasmsWoman)", value: $orgasmsWoman, in: 0...20)
+                        }
+                    }
+
+                    Card {
+                        DatePicker("Когда", selection: $date, in: ...Date.now)
+                    }
+
+                    if entry != nil {
+                        Button("Удалить запись", role: .destructive) { isConfirmingDelete = true }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 8)
+                    }
+                }
+                .padding(20)
+            }
+            .safeAreaInset(edge: .bottom) {
+                GradientButton(title: "Сохранить", action: save)
+                    .disabled(types.isEmpty)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
+            }
+            .background(Palette.background)
+            .navigationTitle(entry == nil ? "Отметить" : "Запись")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Отмена", role: .cancel) { dismiss() }
+                }
+            }
+            .confirmationDialog("Удалить запись?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
+                Button("Удалить", role: .destructive, action: delete)
+            }
+        }
+        .onAppear(perform: fill)
+    }
+
+    private func fill() {
+        if let entry {
+            types = entry.types
+            orgasmsMan = entry.orgasmsMan
+            orgasmsWoman = entry.orgasmsWoman
+            date = entry.date
+        } else {
+            let defaults = model.orgasmDefaults
+            orgasmsMan = defaults.man
+            orgasmsWoman = defaults.woman
+        }
+    }
+
+    private func save() {
+        if var edited = entry {
+            edited.types = types
+            edited.orgasmsMan = orgasmsMan
+            edited.orgasmsWoman = orgasmsWoman
+            edited.date = date
+            model.updateSex(edited)
+        } else {
+            model.logSex(types: types, orgasmsMan: orgasmsMan, orgasmsWoman: orgasmsWoman, date: date)
+        }
+        dismiss()
+    }
+
+    private func delete() {
+        guard let entry else { return }
+        model.deleteSex(id: entry.id)
+        dismiss()
+    }
+}
+
+/// Кнопка-переключатель вида: выбранная залита градиентом, остальные — сиреневые.
+private struct TypeChip: View {
+    let title: String
+    let isOn: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(isOn ? .white : .primary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background {
+                    let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    if isOn {
+                        shape.fill(BrandGradient.primary)
+                    } else {
+                        shape.fill(Palette.tile)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: isOn)
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+}
+
+#Preview("Новая") {
+    LogSexView()
+        .environment(AppModel(store: InMemoryStore()))
+}
