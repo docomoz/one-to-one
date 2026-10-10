@@ -26,7 +26,8 @@
       ],
       "externalId": {
         "imdb": "tt0133093"
-      }
+      },
+      "isSeries": false
     },
     {
       "id": 400787,
@@ -60,7 +61,8 @@
       ],
       "externalId": {
         "imdb": "tt0106062"
-      }
+      },
+      "isSeries": true
     },
     {
       "id": 299,
@@ -88,14 +90,15 @@
       ],
       "externalId": {
         "imdb": "tt0234215"
-      }
+      },
+      "isSeries": false
     },
     {
       "id": 12345,
       "name": null,
       "alternativeName": "Edge Case",
       "year": null,
-      "type": "cartoon",
+      "type": "anime",
       "shortDescription": "",
       "description": "Полное описание вместо короткого",
       "rating": {
@@ -110,7 +113,8 @@
       ],
       "externalId": {
         "imdb": null
-      }
+      },
+      "isSeries": false
     }
   ],
   "total": 314,

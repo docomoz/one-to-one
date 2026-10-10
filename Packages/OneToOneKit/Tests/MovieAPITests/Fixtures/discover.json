@@ -35,7 +35,8 @@
       ],
       "externalId": {
         "imdb": "tt2948356"
-      }
+      },
+      "isSeries": false
     },
     {
       "id": 4860213,
@@ -63,7 +64,23 @@
       ],
       "externalId": {
         "imdb": "tt17526714"
-      }
+      },
+      "isSeries": false
+    },
+    {
+      "name": "Без id"
+    },
+    {
+      "id": 777,
+      "name": "Странный жанр",
+      "type": "movie",
+      "isSeries": false,
+      "genres": [
+        {},
+        {
+          "name": "драма"
+        }
+      ]
     }
   ],
   "total": null,

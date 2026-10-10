@@ -1,17 +1,17 @@
 import Foundation
 import Core
 
-/// Ответ Кинопоиска со списком фильмов (поиск и подборка).
+/// Ответ Кинопоиска со списком фильмов.
 struct KinopoiskPage: Decodable {
-    let docs: [KinopoiskMovie]
+    let docs: Lossy<KinopoiskMovie>
 }
 
-/// Фильм в ответе Кинопоиска. Все поля необязательные: у «похожих» их меньше,
+/// Фильм в ответе Кинопоиска. Поля, кроме `id`, необязательные: у «похожих» их меньше,
 /// а у редких фильмов многое бывает пустым.
 struct KinopoiskMovie: Decodable {
     struct Rating: Decodable { let kp: Double?; let imdb: Double? }
     struct Poster: Decodable { let url: String? }
-    struct Genre: Decodable { let name: String }
+    struct Genre: Decodable { let name: String? }
     struct ExternalID: Decodable { let imdb: String? }
 
     let id: Int
@@ -20,13 +20,14 @@ struct KinopoiskMovie: Decodable {
     let enName: String?
     let year: Int?
     let type: String?
+    let isSeries: Bool?
     let shortDescription: String?
     let description: String?
     let rating: Rating?
     let poster: Poster?
     let genres: [Genre]?
     let externalId: ExternalID?
-    let similarMovies: [KinopoiskMovie]?
+    let similarMovies: Lossy<KinopoiskMovie>?
 
     /// Фильм для приложения или `nil`, если у него нет ни одного названия.
     var movie: Movie? {
@@ -35,13 +36,34 @@ struct KinopoiskMovie: Decodable {
             id: id,
             title: title,
             year: year,
-            genres: genres?.map(\.name) ?? [],
+            genres: genres?.compactMap(\.name.nonEmpty) ?? [],
             overview: shortDescription.nonEmpty ?? description.nonEmpty ?? "",
             posterURL: poster?.url.nonEmpty.flatMap(URL.init(string:)),
             imdbID: externalId?.imdb.nonEmpty,
             ratings: Ratings(imdb: rating?.imdb.positive, kinopoisk: rating?.kp.positive)
         )
     }
+}
+
+/// Массив, который пропускает элементы, которые не удалось прочитать,
+/// чтобы одна кривая запись не ломала весь ответ.
+struct Lossy<Element: Decodable>: Decodable {
+    let items: [Element]
+
+    init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var items: [Element] = []
+        while !container.isAtEnd {
+            if let item = try? container.decode(Element.self) {
+                items.append(item)
+            } else {
+                _ = try? container.decode(Skip.self)
+            }
+        }
+        self.items = items
+    }
+
+    private struct Skip: Decodable {}
 }
 
 private extension Optional<String> {
