@@ -25,13 +25,21 @@ public struct DayKey: Codable, Hashable, Comparable, Sendable {
     /// День через `days` дней (отрицательное число — назад).
     public func adding(days: Int) -> DayKey {
         // Считаем в UTC: там нет перехода на летнее время, сутки всегда ровно 24 часа.
-        let start = Self.utc.date(from: DateComponents(year: year, month: month, day: day))!
-        let shifted = Self.utc.date(byAdding: .day, value: days, to: start)!
+        let shifted = Self.utc.date(byAdding: .day, value: days, to: utcDate)!
         return DayKey(shifted, calendar: Self.utc)
+    }
+
+    /// Сколько дней от этого дня до `other` (отрицательное число, если `other` раньше).
+    public func days(to other: DayKey) -> Int {
+        Self.utc.dateComponents([.day], from: utcDate, to: other.utcDate).day!
     }
 
     public static func < (lhs: DayKey, rhs: DayKey) -> Bool {
         (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
+    }
+
+    private var utcDate: Date {
+        Self.utc.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
     private static let utc: Calendar = {

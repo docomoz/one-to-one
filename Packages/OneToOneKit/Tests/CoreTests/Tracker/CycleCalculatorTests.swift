@@ -31,10 +31,10 @@ private func day(_ month: Int, _ day: Int, year: Int = 2026) -> DayKey {
 
 @Test func clampsLength() {
     let sixtyDaysApart: Set = [day(8, 1), day(9, 30)]
-    let tenDaysApart: Set = [day(9, 20), day(9, 30)]
+    let fifteenDaysApart: Set = [day(9, 15), day(9, 30)]
 
     #expect(CycleCalculator.forecast(periodDays: sixtyDaysApart, today: day(10, 10)).averageLength == 40)
-    #expect(CycleCalculator.forecast(periodDays: tenDaysApart, today: day(10, 10)).averageLength == 21)
+    #expect(CycleCalculator.forecast(periodDays: fifteenDaysApart, today: day(10, 10)).averageLength == 21)
 }
 
 @Test func markedDayIsMenstruation() {
@@ -88,4 +88,21 @@ private func day(_ month: Int, _ day: Int, year: Int = 2026) -> DayKey {
     let forecast = CycleCalculator.forecast(periodDays: [day(10, 20)], today: day(10, 10))
 
     #expect(forecast.phase == .unknown)
+}
+
+@Test func forgottenDayInsidePeriodIsSamePeriod() {
+    // 3 октября забыли отметить: это всё ещё одни месячные, а не новый цикл.
+    let marks: Set = [day(9, 3), day(10, 1), day(10, 2), day(10, 4), day(10, 5)]
+
+    let forecast = CycleCalculator.forecast(periodDays: marks, today: day(10, 10))
+
+    #expect(forecast == CycleForecast(phase: .follicular, dayOfCycle: 10, averageLength: 28, nextPeriodStart: day(10, 29)))
+}
+
+@Test func shortCycleKeepsMenstruationOverOvulation() {
+    // При длине 21 окно овуляции 5–9 задевает 5-й день месячных.
+    let marks: Set = [day(9, 1), day(9, 22)]
+
+    #expect(CycleCalculator.forecast(periodDays: marks, today: day(9, 26)).phase == .menstruation)
+    #expect(CycleCalculator.forecast(periodDays: marks, today: day(9, 27)).phase == .ovulation)
 }
