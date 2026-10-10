@@ -56,7 +56,8 @@ Packages/OneToOneKit/
   Sources/Core/Tracker/             SexEntry, Stats, Cycle, Tip
   Sources/Core/Movies/              Movie, Mood, Watchlist, Swipe, Deck, Match
   Sources/Core/Storage/             AppData, Store, LocalStore, InMemoryStore
-  Sources/MovieAPI/                 KinopoiskCatalog, RatingsProvider
+  Sources/MovieAPI/                 KinopoiskCatalog, RatingsProvider, CachingCatalog, movies.json
+  Sources/UpdateMovies/             скрипт обновления movies.json (swift run UpdateMovies)
   Sources/DesignSystem/             цвета, градиент, компоненты
   Sources/Sync/                     CloudKit (задачи 16–18)
   Tests/…                           зеркально Sources
@@ -128,6 +129,12 @@ protocol MovieCatalog: Sendable { func search(_ query: String) async throws -> [
 struct KinopoiskCatalog: MovieCatalog { init(apiKey: String, session: URLSession = .shared) }
 protocol RatingsProvider: Sendable { func ratings(for movie: Movie) async -> Ratings } // ошибки → nil, не throw
 struct OMDbFallbackRatingsProvider: RatingsProvider { init(omdbKey: String, session: URLSession = .shared) }
+// Офлайн-каталог (#55): у MovieCatalog ещё localMovies(genres:) async -> [Movie] и refillIfNeeded() async, по умолчанию пусто
+protocol MovieFeed: Sendable { func top(page: Int) async throws -> [Movie]; func newReleases(year: Int) async throws -> [Movie] }
+actor CachingCatalog: MovieCatalog { init(remote: some MovieCatalog & MovieFeed, file: CatalogCacheFile, base: [Movie]) }
+struct CatalogCache: Codable { var entries: [Int: Entry]; var lastRefill: DayKey?; var nextTopPage: Int
+  mutating func add(_ movies: [Movie], at: Date, limit: Int = 2000); func movies(genres: [String], base: [Movie], limit: Int = 40) -> [Movie] }
+enum BaseCatalog { static func load(from: URL? = bundledURL) -> [Movie] }
 ```
 
 **Настроения → жанры Кинопоиска:** laugh «Посмеяться» [комедия] · light «Что-то лёгкое» [комедия, семейный, мультфильм] · thrill «Пощекотать нервы» [триллер, ужасы] · cry «Поплакать» [драма] · immerse «Залипнуть» [фантастика, детектив, приключения] · romance «Романтика» [мелодрама].

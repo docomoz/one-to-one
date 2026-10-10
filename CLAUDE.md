@@ -21,6 +21,7 @@ iOS-приложение для пар (можно пользоваться и �
   - CI тесты приложения на симуляторе не запускает, только собирает приложение и тесты (`build-for-testing`). Перед PR с изменениями экранов запускай их локально командой выше.
   - `OneToOne.xcodeproj` генерируется из `project.yml` и в git не хранится. После `git pull` выполняй `xcodegen generate`.
   - Ключи API и команда для подписи: скопируй `Config/Secrets.example.xcconfig` в `Config/Secrets.xcconfig` и впиши свои.
+  - Базовый каталог фильмов для подбора без сети (`Packages/OneToOneKit/Sources/MovieAPI/Resources/movies.json`, топ-150 Кинопоиска) обновляй раз в месяц: `cd Packages/OneToOneKit && swift run UpdateMovies` (нужен ключ Кинопоиска в `Config/Secrets.xcconfig`, тратит 3 запроса).
 
 ## Как работаем
 - Одна задача = один issue = одна ветка = один PR. Ветки: `feat/…`, `fix/…`, `chore/…`, `docs/…`.
