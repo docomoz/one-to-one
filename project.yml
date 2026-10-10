@@ -2,7 +2,7 @@
 name: OneToOne
 options:
   bundleIdPrefix: com.docomoz
-  developmentRegion: ru
+  developmentLanguage: ru # язык разработки; ключ developmentRegion XcodeGen молча игнорирует
   createIntermediateGroups: true
   deploymentTarget:
     iOS: "26.0"
