@@ -1,0 +1,60 @@
+# Описание Xcode-проекта. OneToOne.xcodeproj генерируется командой `xcodegen generate` и в git не хранится.
+name: OneToOne
+options:
+  bundleIdPrefix: com.docomoz
+  developmentRegion: ru
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+packages:
+  OneToOneKit:
+    path: Packages/OneToOneKit
+targets:
+  OneToOne:
+    type: application
+    platform: iOS
+    sources: [App/OneToOne]
+    configFiles:
+      Debug: Config/App.xcconfig
+      Release: Config/App.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.docomoz.onetoone
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: one-to-one
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+    dependencies:
+      - package: OneToOneKit
+        product: Core
+      - package: OneToOneKit
+        product: MovieAPI
+      - package: OneToOneKit
+        product: DesignSystem
+  OneToOneTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [App/OneToOneTests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: OneToOne
+schemes:
+  OneToOne:
+    build:
+      targets:
+        OneToOne: all
+    test:
+      targets:
+        - OneToOneTests
+        - package: OneToOneKit/CoreTests
+        - package: OneToOneKit/MovieAPITests
+        - package: OneToOneKit/DesignSystemTests
