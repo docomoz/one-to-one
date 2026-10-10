@@ -19,7 +19,7 @@ iOS-приложение для пар (можно пользоваться и �
   - Логика: `cd Packages/OneToOneKit && swift test`
   - Приложение: `xcodegen generate && xcodebuild test -project OneToOne.xcodeproj -scheme OneToOne -destination 'platform=iOS Simulator,name=iPhone 17'`
   - `OneToOne.xcodeproj` генерируется из `project.yml` и в git не хранится. После `git pull` выполняй `xcodegen generate`.
-  - Ключи API: скопируй `Config/Secrets.example.xcconfig` в `Config/Secrets.xcconfig` и впиши свои.
+  - Ключи API и команда для подписи: скопируй `Config/Secrets.example.xcconfig` в `Config/Secrets.xcconfig` и впиши свои.
 
 ## Как работаем
 - Одна задача = один issue = одна ветка = один PR. Ветки: `feat/…`, `fix/…`, `chore/…`, `docs/…`.

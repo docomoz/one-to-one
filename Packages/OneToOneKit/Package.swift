@@ -3,7 +3,6 @@ import PackageDescription
 
 let package = Package(
     name: "OneToOneKit",
-    defaultLocalization: "ru",
     platforms: [.iOS(.v26), .macOS(.v26)],
     products: [
         .library(name: "Core", targets: ["Core"]),
