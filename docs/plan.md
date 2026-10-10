@@ -132,7 +132,7 @@ struct OMDbFallbackRatingsProvider: RatingsProvider { init(omdbKey: String, sess
 // Офлайн-каталог (#55): у MovieCatalog ещё localMovies(genres:) async -> [Movie] и refillIfNeeded() async, по умолчанию пусто
 protocol MovieFeed: Sendable { func top(page: Int) async throws -> [Movie]; func newReleases(year: Int) async throws -> [Movie] }
 actor CachingCatalog: MovieCatalog { init(remote: some MovieCatalog & MovieFeed, file: CatalogCacheFile, base: [Movie]) }
-struct CatalogCache: Codable { var entries: [Int: Entry]; var lastRefill: DayKey?; var nextTopPage: Int
+struct CatalogCache: Codable { var entries: [Int: Entry]; var lastRefill: DayKey?; var nextTopPage: Int? // nil — первая страница после базы
   mutating func add(_ movies: [Movie], at: Date, limit: Int = 2000); func movies(genres: [String], base: [Movie], limit: Int = 40) -> [Movie] }
 enum BaseCatalog { static func load(from: URL? = bundledURL) -> [Movie] }
 ```

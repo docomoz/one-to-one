@@ -12,8 +12,8 @@ public struct CatalogCache: Codable, Equatable, Sendable {
     public var entries: [Int: Entry] = [:]
     /// День последней удачной догрузки: догружаем не чаще раза в день.
     public var lastRefill: DayKey?
-    /// Какую страницу топа просить следующей. Первые три уже в базе `movies.json`.
-    public var nextTopPage = 4
+    /// Какую страницу топа просить следующей. `nil` — первую после базы `movies.json` (в ней по 50 на страницу).
+    public var nextTopPage: Int?
 
     public init() {}
 

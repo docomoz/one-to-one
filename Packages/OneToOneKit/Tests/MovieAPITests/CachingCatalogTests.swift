@@ -11,6 +11,11 @@ private func movie(_ id: Int, _ genres: [String] = ["комедия"]) -> Movie 
 private final class FakeRemote: MovieCatalog, MovieFeed, @unchecked Sendable {
     private let lock = NSLock()
     private var _failing = false
+    private var _newReleasesFailing = false
+    var newReleasesFailing: Bool {
+        get { lock.withLock { _newReleasesFailing } }
+        set { lock.withLock { _newReleasesFailing = newValue } }
+    }
     private var _topPages: [Int] = []
     private var _years: [Int] = []
     var topResult = [movie(100)]
@@ -34,6 +39,7 @@ private final class FakeRemote: MovieCatalog, MovieFeed, @unchecked Sendable {
     func newReleases(year: Int) async throws -> [Movie] {
         lock.withLock { _years.append(year) }
         try check()
+        if newReleasesFailing { throw URLError(.timedOut) }
         return [movie(200)]
     }
 }
@@ -45,6 +51,9 @@ private final class Clock: @unchecked Sendable {
     var now: Date { lock.withLock { _now } }
     func nextDay() { lock.withLock { _now = _now.addingTimeInterval(24 * 3600) } }
 }
+
+/// База как после скрипта: 150 фильмов, то есть первые три страницы топа.
+private let fullBase = (1000..<1150).map { movie($0, ["драма"]) }
 
 private func tempFile() -> CatalogCacheFile {
     CatalogCacheFile(url: FileManager.default.temporaryDirectory.appending(path: "caching-\(UUID().uuidString).json"))
@@ -84,7 +93,7 @@ private func catalog(_ remote: FakeRemote, file: CatalogCacheFile = tempFile(), 
 @Test func refillOncePerDay() async {
     let remote = FakeRemote()
     let clock = Clock()
-    let catalog = catalog(remote, clock: clock)
+    let catalog = catalog(remote, clock: clock, base: fullBase)
 
     await catalog.refillIfNeeded()
     await catalog.refillIfNeeded()
@@ -103,17 +112,36 @@ private func catalog(_ remote: FakeRemote, file: CatalogCacheFile = tempFile(), 
     let remote = FakeRemote()
     remote.failing = true
     let file = tempFile()
-    let catalog = catalog(remote, file: file)
+    let catalog = catalog(remote, file: file, base: fullBase)
 
     await catalog.refillIfNeeded()
     #expect(file.load().lastRefill == nil)
-    #expect(file.load().nextTopPage == 4)
 
     remote.failing = false
     await catalog.refillIfNeeded()
     #expect(remote.topPages == [4, 4])
     #expect(file.load().nextTopPage == 5)
     #expect(file.load().lastRefill != nil)
+}
+
+@Test func partialRefillCountsDay() async {
+    let remote = FakeRemote()
+    remote.newReleasesFailing = true
+    let catalog = catalog(remote, base: fullBase)
+
+    await catalog.refillIfNeeded()
+    await catalog.refillIfNeeded()
+
+    #expect(remote.topPages == [4])
+    #expect(remote.years == [2026])
+}
+
+@Test func refillStartsFromFirstPageWithEmptyBase() async {
+    let remote = FakeRemote()
+
+    await catalog(remote, base: []).refillIfNeeded()
+
+    #expect(remote.topPages == [1])
 }
 
 @Test func emptyTopPageWrapsToFirst() async {

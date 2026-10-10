@@ -36,11 +36,13 @@ public actor CachingCatalog: MovieCatalog {
     }
 
     /// Не чаще раза в день: 2 запроса — следующая страница топа и новинки года.
-    /// Если что-то не пришло (нет сети, лимит), день не засчитываем и попробуем в следующий раз.
+    /// Если не пришло ничего (нет сети, лимит), день не засчитываем и попробуем в следующий раз.
+    /// Пришло хоть что-то — день засчитан: иначе каждое открытие колоды тратило бы ещё 2 запроса.
     public func refillIfNeeded() async {
         let today = DayKey(now())
         guard cache.lastRefill != today else { return }
-        let page = cache.nextTopPage
+        // Пустая база (скрипт ещё не запускали) — начинаем с самого популярного, с первой страницы.
+        let page = cache.nextTopPage ?? base.count / 50 + 1
         let year = Calendar.current.component(.year, from: now())
 
         async let top = try? remote.top(page: page)
@@ -53,7 +55,7 @@ public actor CachingCatalog: MovieCatalog {
             cache.nextTopPage = topMovies.isEmpty ? 1 : page + 1
         }
         if let freshMovies { cache.add(freshMovies, at: now()) }
-        if topMovies != nil, freshMovies != nil { cache.lastRefill = today }
+        if topMovies != nil || freshMovies != nil { cache.lastRefill = today }
         file.save(cache)
     }
 
