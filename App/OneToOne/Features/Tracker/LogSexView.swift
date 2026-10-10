@@ -4,6 +4,7 @@ import SwiftUI
 
 /// Отметка секса за 3 касания: открыть, выбрать вид, «Сохранить».
 /// Если передать `entry`, экран правит эту запись и умеет её удалить.
+/// После незащищённого раза в рискованный день шторка не закрывается, а показывает подсказку.
 struct LogSexView: View {
     let entry: SexEntry?
 
@@ -13,6 +14,9 @@ struct LogSexView: View {
     @State private var orgasmsMan: Int
     @State private var orgasmsWoman: Int
     @State private var date: Date
+    @State private var condom: Bool?
+    @State private var finish: SexFinish?
+    @State private var hint: EmergencyHint?
     @State private var isConfirmingDelete = false
 
     /// Новая запись: виды не выбраны, оргазмы как в прошлый раз, день — сегодня.
@@ -31,11 +35,21 @@ struct LogSexView: View {
         _orgasmsMan = State(initialValue: entry.orgasmsMan)
         _orgasmsWoman = State(initialValue: entry.orgasmsWoman)
         _date = State(initialValue: entry.day.date())
+        _condom = State(initialValue: entry.condom)
+        _finish = State(initialValue: entry.finish)
     }
 
     private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
 
     var body: some View {
+        if let hint {
+            EmergencyHintView(hint: hint) { dismiss() }
+        } else {
+            form
+        }
+    }
+
+    private var form: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -45,6 +59,11 @@ struct LogSexView: View {
                                 types.formSymmetricDifference([type])
                             }
                         }
+                    }
+
+                    if types.contains(.vaginal) {
+                        Card { ProtectionPicker(condom: $condom, finish: $finish) }
+                            .transition(.opacity)
                     }
 
                     Card {
@@ -66,6 +85,7 @@ struct LogSexView: View {
                     }
                 }
                 .padding(20)
+                .animation(.default, value: types.contains(.vaginal))
             }
             .safeAreaInset(edge: .bottom) {
                 GradientButton(title: "Сохранить", action: save)
@@ -88,16 +108,23 @@ struct LogSexView: View {
     }
 
     private func save() {
+        let day = DayKey(date)
         if var edited = entry {
             edited.types = types
             edited.orgasmsMan = orgasmsMan
             edited.orgasmsWoman = orgasmsWoman
-            edited.day = DayKey(date)
+            edited.condom = condom
+            edited.finish = finish
+            edited.day = day
             model.updateSex(edited)
         } else {
-            model.logSex(types: types, orgasmsMan: orgasmsMan, orgasmsWoman: orgasmsWoman, day: DayKey(date))
+            model.logSex(types: types, orgasmsMan: orgasmsMan, orgasmsWoman: orgasmsWoman,
+                         condom: condom, finish: finish, day: day)
         }
-        dismiss()
+        // Риск считаем на день записи: секс могли отметить задним числом.
+        hint = EmergencyHint.hint(types: types, condom: condom, finish: finish, day: day,
+                                  periodDays: model.data.periodDays, today: DayKey(.now))
+        if hint == nil { dismiss() }
     }
 
     private func delete() {
