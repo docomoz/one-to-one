@@ -17,6 +17,15 @@ targets:
     type: application
     platform: iOS
     sources: [App/OneToOne]
+    # XcodeGen создаёт этот файл сам; Xcode дополняет его ключами из INFOPLIST_KEY_… ниже.
+    info:
+      path: Config/Info.plist
+      properties:
+        # Ключ из Config/Secrets.xcconfig. Нет файла — ключ пустой, и поиск фильмов покажет ошибку.
+        KinopoiskAPIKey: $(KINOPOISK_API_KEY)
+        # Иначе XcodeGen впишет 1.0 и 1 вместо MARKETING_VERSION и CURRENT_PROJECT_VERSION.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     configFiles:
       Debug: Config/App.xcconfig
       Release: Config/App.xcconfig
