@@ -15,7 +15,7 @@ struct LogSexView: View {
     @State private var date: Date
     @State private var isConfirmingDelete = false
 
-    /// Новая запись: виды не выбраны, оргазмы как в прошлый раз, дата — сейчас.
+    /// Новая запись: виды не выбраны, оргазмы как в прошлый раз, день — сегодня.
     init(defaults: OrgasmDefaults) {
         entry = nil
         _types = State(initialValue: [])
@@ -30,7 +30,7 @@ struct LogSexView: View {
         _types = State(initialValue: entry.types)
         _orgasmsMan = State(initialValue: entry.orgasmsMan)
         _orgasmsWoman = State(initialValue: entry.orgasmsWoman)
-        _date = State(initialValue: entry.date)
+        _date = State(initialValue: entry.day.date())
     }
 
     private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
@@ -56,7 +56,7 @@ struct LogSexView: View {
                     }
 
                     Card {
-                        DatePicker("Когда", selection: $date, in: ...Date.now)
+                        DatePicker("Когда", selection: $date, in: ...Date.now, displayedComponents: .date)
                     }
 
                     if entry != nil {
@@ -92,10 +92,10 @@ struct LogSexView: View {
             edited.types = types
             edited.orgasmsMan = orgasmsMan
             edited.orgasmsWoman = orgasmsWoman
-            edited.date = date
+            edited.day = DayKey(date)
             model.updateSex(edited)
         } else {
-            model.logSex(types: types, orgasmsMan: orgasmsMan, orgasmsWoman: orgasmsWoman, date: date)
+            model.logSex(types: types, orgasmsMan: orgasmsMan, orgasmsWoman: orgasmsWoman, day: DayKey(date))
         }
         dismiss()
     }

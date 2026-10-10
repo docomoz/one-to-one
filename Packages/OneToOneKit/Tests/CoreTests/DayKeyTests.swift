@@ -47,3 +47,14 @@ private func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int, _ min: Int) -> Date {
     #expect(DayKey(year: 2026, month: 12, day: 31).days(to: DayKey(year: 2027, month: 1, day: 1)) == 1)
     #expect(DayKey(year: 2026, month: 10, day: 10).days(to: DayKey(year: 2026, month: 10, day: 1)) == -9)
 }
+
+@Test func dayKeyRoundTripsThroughDate() {
+    // Нью-Йорк: 8 марта 2026 переход на летнее время, полночи в этот день может «не быть».
+    var newYork = Calendar(identifier: .gregorian)
+    newYork.timeZone = TimeZone(identifier: "America/New_York")!
+
+    for key in [DayKey(year: 2026, month: 3, day: 8), DayKey(year: 2026, month: 12, day: 31)] {
+        #expect(DayKey(key.date(in: newYork), calendar: newYork) == key)
+        #expect(DayKey(key.date(in: moscow), calendar: moscow) == key)
+    }
+}

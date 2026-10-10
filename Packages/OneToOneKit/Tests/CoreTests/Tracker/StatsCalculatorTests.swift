@@ -2,23 +2,16 @@ import Foundation
 import Testing
 @testable import Core
 
-private let moscow: Calendar = {
-    var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = TimeZone(identifier: "Europe/Moscow")!
-    return calendar
-}()
-
 private let october10 = DayKey(year: 2026, month: 10, day: 10)
 
-/// Запись в полдень по Москве, чтобы день не съезжал из-за часового пояса.
 private func entry(_ month: Int, _ day: Int, types: Set<SexType> = [.vaginal],
                    man: Int = 1, woman: Int = 1) -> SexEntry {
-    let date = moscow.date(from: DateComponents(year: 2026, month: month, day: day, hour: 12))!
-    return SexEntry(date: date, types: types, orgasmsMan: man, orgasmsWoman: woman, createdBy: UUID())
+    SexEntry(day: DayKey(year: 2026, month: month, day: day), types: types,
+             orgasmsMan: man, orgasmsWoman: woman, createdBy: UUID())
 }
 
 private func stats(_ entries: [SexEntry], today: DayKey = october10) -> Stats {
-    StatsCalculator.stats(entries, today: today, calendar: moscow)
+    StatsCalculator.stats(entries, today: today)
 }
 
 @Test func emptyStats() {
@@ -40,12 +33,11 @@ private func stats(_ entries: [SexEntry], today: DayKey = october10) -> Stats {
     #expect(result.thisMonth == 3)
 }
 
-@Test func monthUsesLocalCalendar() {
-    // 1 октября 00:30 по Москве — это ещё 30 сентября по UTC, но для пары уже октябрь.
-    let date = moscow.date(from: DateComponents(year: 2026, month: 10, day: 1, hour: 0, minute: 30))!
-    let lateNight = SexEntry(date: date, types: [.vaginal], orgasmsMan: 1, orgasmsWoman: 1, createdBy: UUID())
+@Test func twoEntriesSameDayCountTwice() {
+    let result = stats([entry(10, 9), entry(10, 9)])
 
-    #expect(stats([lateNight]).thisMonth == 1)
+    #expect(result.total == 2)
+    #expect(result.thisMonth == 2)
 }
 
 @Test func sumsOrgasms() {

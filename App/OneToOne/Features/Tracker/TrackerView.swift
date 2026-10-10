@@ -13,7 +13,7 @@ struct TrackerView: View {
         NavigationStack {
             List {
                 Section {
-                    StatsView(stats: StatsCalculator.stats(model.data.sexEntries, today: today, calendar: .current))
+                    StatsView(stats: StatsCalculator.stats(model.data.sexEntries, today: today))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -51,18 +51,19 @@ struct TrackerView: View {
         }
     }
 
+    /// Новые дни сверху, внутри дня — последняя добавленная запись сверху.
     private var sortedEntries: [SexEntry] {
-        model.data.sexEntries.sorted { $0.date > $1.date }
+        model.data.sexEntries.reversed().sorted { $0.day > $1.day }
     }
 }
 
-/// Строка списка: дата, виды и оргазмы.
+/// Строка списка: день, виды и оргазмы.
 private struct EntryRow: View {
     let entry: SexEntry
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(entry.date, format: .dateTime.day().month(.wide).hour().minute())
+            Text(entry.day.date(), format: .dateTime.weekday(.wide).day().month(.wide))
                 .font(.subheadline.bold())
             Text(SexType.allCases.filter(entry.types.contains).map(\.title).joined(separator: ", "))
                 .font(.subheadline)

@@ -1,9 +1,9 @@
 import Foundation
 
-/// Считает статистику по записям. «Сегодня» и календарь приходят снаружи, чтобы тесты не зависели от часов.
+/// Считает статистику по записям. «Сегодня» приходит снаружи, чтобы тесты не зависели от часов.
 public enum StatsCalculator {
-    public static func stats(_ entries: [SexEntry], today: DayKey, calendar: Calendar) -> Stats {
-        let days = entries.map { DayKey($0.date, calendar: calendar) }
+    public static func stats(_ entries: [SexEntry], today: DayKey) -> Stats {
+        let days = entries.map(\.day)
         let uniqueDays = Set(days)
         var typeCounts = Dictionary(uniqueKeysWithValues: SexType.allCases.map { ($0, 0) })
         for entry in entries {
