@@ -61,7 +61,7 @@
 - Test: `Packages/OneToOneKit/Tests/CoreTests/Tracker/CycleCalculatorTests.swift`
 
 **Interfaces:**
-- Produces: `CycleCalculator.phase(on day: DayKey, periodDays: Set<DayKey>) -> CyclePhase` (public) — то же, что `forecast(periodDays:today: day).phase`.
+- Produces: `CycleCalculator.phase(on day: DayKey, periodDays: Set<DayKey>) -> CyclePhase` (public). Если после дня уже были следующие месячные и цикл 21–40 дней — по настоящей длине цикла; иначе `forecast(periodDays:today: day).phase`. Тесты ещё `pastDayUsesActualNextStart`, `pastDayWithMissedPeriodFallsBackToForecast` (добавлены после ревью).
 
 - [ ] **Step 1: тесты**
   - `phaseBeforeFirstMarkIsUnknown`: отметки 1–4 октября, `phase(on: 30 сентября)` → `.unknown`.

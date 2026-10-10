@@ -40,9 +40,16 @@ public enum CycleCalculator {
         return CycleForecast(phase: phase, dayOfCycle: dayOfCycle, averageLength: length, nextPeriodStart: next)
     }
 
-    /// Фаза на любой день: для прошлых — как считалось тогда, для будущих — по прогнозу.
+    /// Фаза на любой день. Если после дня уже были следующие месячные, считаем по настоящей
+    /// длине этого цикла; иначе (и если цикл длиннее 40 дней — месячные, видимо, забыли) по прогнозу.
     public static func phase(on day: DayKey, periodDays: Set<DayKey>) -> CyclePhase {
-        forecast(periodDays: periodDays, today: day).phase
+        if periodDays.contains(day) { return .menstruation }
+        let starts = periodStarts(periodDays)
+        if let next = starts.first(where: { $0 > day }), let start = starts.last(where: { $0 <= day }),
+           lengthRange.contains(start.days(to: next)) {
+            return phase(dayOfCycle: start.days(to: day) + 1, length: start.days(to: next))
+        }
+        return forecast(periodDays: periodDays, today: day).phase
     }
 
     /// Фаза по дню цикла: 1–5 месячные, (L−16)…(L−12) овуляция, до неё фолликулярная, после лютеиновая.

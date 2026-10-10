@@ -27,8 +27,11 @@ private func forecast(_ phase: CyclePhase, day: Int? = 10) -> CycleForecast {
 func estimateFlagForPhase(_ phase: CyclePhase) {
     let tip = TipProvider.tip(forecast: forecast(phase), herMood: nil)
 
+    let threeDays = (1...3).map { TipProvider.tip(forecast: forecast(phase, day: $0), herMood: nil).text }
+
     #expect(tip.isEstimate)
     #expect(!tip.text.isEmpty)
+    #expect(Set(threeDays).count == 3)
 }
 
 @Test func unknownPhaseText() {
