@@ -70,3 +70,11 @@ private func ids(_ movies: [Movie]) -> [Int] { movies.map(\.id) }
 @Test func emptyWhenNothingToShow() {
     #expect(DeckBuilder.build(lists: [], recommendations: [], mood: .cry, watched: [], swipedByMe: []).isEmpty)
 }
+
+/// «Похожие» у Кинопоиска приходят без жанров: такие не отбрасываем, а ставим после подходящих.
+@Test func recommendationsWithoutGenresGoAfterFitting() {
+    let deck = DeckBuilder.build(lists: [],
+                                 recommendations: [movie(10, []), movie(11, ["ужасы"]), movie(12)],
+                                 mood: .laugh, watched: [], swipedByMe: [])
+    #expect(ids(deck) == [12, 10])
+}
