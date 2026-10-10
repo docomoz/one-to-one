@@ -54,3 +54,11 @@ private func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int, _ min: Int) -> Date {
     #expect(birth.age(on: DayKey(year: 2026, month: 2, day: 28)) == 17)
     #expect(birth.age(on: DayKey(year: 2026, month: 3, day: 1)) == 18)
 }
+
+@Test func dayKeyDateRoundTripsInAnyCalendar() {
+    let key = DayKey(year: 1996, month: 5, day: 12)
+    var buddhist = Calendar(identifier: .buddhist)
+    buddhist.timeZone = moscow.timeZone
+    #expect(DayKey(key.date(calendar: moscow), calendar: moscow) == key)
+    #expect(DayKey(key.date(calendar: buddhist), calendar: buddhist) == key)
+}

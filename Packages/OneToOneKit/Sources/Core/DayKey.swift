@@ -22,6 +22,14 @@ public struct DayKey: Codable, Hashable, Comparable, Sendable {
         self.init(year: parts.year!, month: parts.month!, day: parts.day!)
     }
 
+    /// Полдень этого дня в часовом поясе `calendar`: для системного выбора даты.
+    /// Полдень, а не полночь, чтобы переход на летнее время не сдвинул день.
+    public func date(calendar: Calendar = .current) -> Date {
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
+        return gregorian.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
+    }
+
     /// День через `days` дней (отрицательное число — назад).
     public func adding(days: Int) -> DayKey {
         // Считаем в UTC: там нет перехода на летнее время, сутки всегда ровно 24 часа.
