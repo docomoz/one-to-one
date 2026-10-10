@@ -15,8 +15,10 @@ struct DateRow: View {
         Button {
             if date == nil {
                 date = initial
+                withAnimation { isPicking = true }
+            } else {
+                withAnimation { isPicking.toggle() }
             }
-            withAnimation { isPicking.toggle() }
         } label: {
             LabeledContent(title) {
                 Text(date.map { $0.date().formatted(.dateTime.day().month(.wide).year().locale(locale)) } ?? "Выбрать")
@@ -24,6 +26,10 @@ struct DateRow: View {
             }
         }
         .tint(.primary)
+        // Дату убрали снаружи (например, «Убрать дату»): колёсики закрываем.
+        .onChange(of: date) { _, new in
+            if new == nil { isPicking = false }
+        }
 
         if isPicking {
             DatePicker(title, selection: selection, in: range, displayedComponents: .date)

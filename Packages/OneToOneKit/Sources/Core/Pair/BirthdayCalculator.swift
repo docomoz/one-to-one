@@ -1,7 +1,7 @@
 import Foundation
 
 /// Ближайший день рождения в паре: чей он и сколько до него дней.
-public struct UpcomingBirthday: Equatable, Sendable {
+public struct UpcomingBirthday: Hashable, Sendable {
     public let person: Person
     /// `true`, если это день рождения того, кто держит телефон.
     public let isMe: Bool

@@ -35,7 +35,7 @@ struct HomeView: View {
 
                     DayCard(forecast: forecast, herMood: model.data.herMoods[today], isWoman: model.data.meIsWoman)
 
-                    ForEach(Array(UpcomingEvents.list(model.data, today: today).enumerated()), id: \.offset) { _, event in
+                    ForEach(UpcomingEvents.list(model.data, today: today), id: \.self) { event in
                         Card {
                             Text(event.text)
                                 .font(.headline)

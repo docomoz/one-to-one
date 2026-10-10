@@ -1,7 +1,7 @@
 import Foundation
 
 /// Событие пары, до которого осталось немного дней: день рождения или годовщина.
-public enum UpcomingEvent: Equatable, Sendable {
+public enum UpcomingEvent: Hashable, Sendable {
     case birthday(UpcomingBirthday)
     case anniversary(UpcomingAnniversary)
 

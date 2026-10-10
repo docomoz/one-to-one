@@ -1,7 +1,7 @@
 import Foundation
 
 /// Один человек из пары.
-public struct Person: Codable, Identifiable, Equatable, Sendable {
+public struct Person: Codable, Identifiable, Hashable, Sendable {
     public let id: UUID
     public var name: String
     public var sex: Sex

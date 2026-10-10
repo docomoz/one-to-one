@@ -49,7 +49,8 @@ App/OneToOne/
   AppModel.swift                    @Observable, держит AppData, сохраняет через Store
   AppModel+Tracker.swift            действия трекера (поток А)
   AppModel+Movies.swift             действия фильмов (поток Б)
-  Features/Onboarding|Home|Tracker|Cycle|Movies/   экраны
+  AppModel+Pair.swift               действия пары: дата «вместе с»
+  Features/Onboarding|Home|Tracker|Cycle|Movies|Settings|Shared/   экраны
 Packages/OneToOneKit/
   Sources/Core/Pair/                Sex, Person, Couple
   Sources/Core/Tracker/             SexEntry, Stats, Cycle, Tip
