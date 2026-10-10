@@ -3,14 +3,16 @@ import DesignSystem
 import SwiftUI
 
 /// Сетка месяца: залитые дни — отмеченные месячные, обведённые — прогноз,
-/// точка — есть симптомы. Нажатие выбирает день.
+/// точка — есть симптомы, мягкая заливка — цвет фазы. Нажатие выбирает день;
+/// без `selected` дни не нажимаются (только просмотр), а обведено «сегодня».
 struct MonthGridView: View {
     @Binding var month: Month
-    @Binding var selected: DayKey
+    var selected: Binding<DayKey>?
     let today: DayKey
     let periodDays: Set<DayKey>
-    let predictedDays: Set<DayKey>
-    let symptomDays: Set<DayKey>
+    var predictedDays: Set<DayKey> = []
+    var symptomDays: Set<DayKey> = []
+    var phases: [DayKey: CyclePhase] = [:]
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
     private let weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
@@ -34,12 +36,13 @@ struct MonthGridView: View {
                     if let day {
                         DayCell(day: day,
                                 isToday: day == today,
-                                isSelected: day == selected,
+                                // Без выбора обводим «сегодня», иначе его легко потерять среди цветных дней.
+                                isSelected: day == (selected?.wrappedValue ?? today),
                                 isPeriod: periodDays.contains(day),
                                 isPredicted: predictedDays.contains(day) && !periodDays.contains(day),
-                                hasSymptoms: symptomDays.contains(day)) {
-                            selected = day
-                        }
+                                hasSymptoms: symptomDays.contains(day),
+                                phase: phases[day],
+                                action: selected.map { binding in { binding.wrappedValue = day } })
                     } else {
                         Color.clear.frame(height: 44)
                     }
@@ -56,38 +59,54 @@ private struct DayCell: View {
     let isPeriod: Bool
     let isPredicted: Bool
     let hasSymptoms: Bool
-    let action: () -> Void
+    let phase: CyclePhase?
+    /// `nil` — день не нажимается.
+    let action: (() -> Void)?
     @Environment(\.locale) private var locale
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 2) {
-                Text("\(day.day)")
-                    .font(.callout.weight(isToday ? .bold : .regular))
-                    .foregroundStyle(isPeriod ? .white : .primary)
-                    .frame(width: 34, height: 34)
-                    .background {
-                        if isPeriod {
-                            Circle().fill(BrandGradient.primary)
-                        } else if isPredicted {
-                            Circle().strokeBorder(BrandGradient.primary, style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
-                        }
-                    }
-                    .overlay {
-                        if isSelected {
-                            Circle().strokeBorder(.primary, lineWidth: 2).padding(-3)
-                        }
-                    }
-                Circle()
-                    .fill(hasSymptoms ? BrandColor.purple.color : .clear)
-                    .frame(width: 5, height: 5)
-            }
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .contentShape(Rectangle())
+        if let action {
+            Button(action: action) { content }
+                .buttonStyle(.plain)
+                .accessibilityLabel(accessibilityText)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+        } else {
+            content
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(accessibilityText)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(accessibilityText)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var content: some View {
+        VStack(spacing: 2) {
+            Text("\(day.day)")
+                .font(.callout.weight(isToday ? .bold : .regular))
+                .foregroundStyle(isPeriod ? .white : .primary)
+                .frame(width: 34, height: 34)
+                .background {
+                    if isPeriod {
+                        Circle().fill(BrandGradient.primary)
+                    } else if isPredicted {
+                        Circle().strokeBorder(BrandGradient.primary, style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
+                    }
+                }
+                .overlay {
+                    if isSelected {
+                        Circle().strokeBorder(.primary, lineWidth: 2).padding(-3)
+                    }
+                }
+            Circle()
+                .fill(hasSymptoms ? BrandColor.purple.color : .clear)
+                .frame(width: 5, height: 5)
+        }
+        .frame(maxWidth: .infinity, minHeight: 44)
+        .background {
+            if let tint = phase?.tint(colorScheme) {
+                RoundedRectangle(cornerRadius: 10, style: .continuous).fill(tint)
+            }
+        }
+        .contentShape(Rectangle())
     }
 
     private var accessibilityText: String {
@@ -95,6 +114,7 @@ private struct DayCell: View {
         if isToday { parts.append("сегодня") }
         if isPeriod { parts.append("месячные") }
         if isPredicted { parts.append("прогноз месячных") }
+        if let phase, phase != .unknown { parts.append(phase.shortTitle.lowercased()) }
         if hasSymptoms { parts.append("есть симптомы") }
         return parts.joined(separator: ", ")
     }
