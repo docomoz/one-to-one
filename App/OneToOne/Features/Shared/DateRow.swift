@@ -1,21 +1,24 @@
 import Core
 import SwiftUI
 
-/// Строка «Дата рождения». Пока дата не выбрана, показывает «Выбрать».
-/// Нажатие раскрывает колёсики и сразу выбирает видимую на них дату, чтобы строка и колёсики совпадали.
-struct BirthDateRow: View {
+/// Строка с датой («Дата рождения», «Вместе с»). Пока дата не выбрана, показывает «Выбрать».
+/// Нажатие раскрывает колёсики и сразу выбирает `initial`, чтобы строка и колёсики совпадали.
+struct DateRow: View {
+    let title: String
     @Binding var date: DayKey?
+    /// Дата, которую строка ставит при первом нажатии.
+    let initial: DayKey
     @State private var isPicking = false
     @Environment(\.locale) private var locale
 
     var body: some View {
         Button {
             if date == nil {
-                date = DayKey(year: DayKey(.now).year - 25, month: 1, day: 1)
+                date = initial
             }
             withAnimation { isPicking.toggle() }
         } label: {
-            LabeledContent("Дата рождения") {
+            LabeledContent(title) {
                 Text(date.map { $0.date().formatted(.dateTime.day().month(.wide).year().locale(locale)) } ?? "Выбрать")
                     .foregroundStyle(date == nil ? Color.accentColor : .secondary)
             }
@@ -23,7 +26,7 @@ struct BirthDateRow: View {
         .tint(.primary)
 
         if isPicking {
-            DatePicker("Дата рождения", selection: selection, in: range, displayedComponents: .date)
+            DatePicker(title, selection: selection, in: range, displayedComponents: .date)
                 .datePickerStyle(.wheel)
                 .labelsHidden()
                 .frame(maxWidth: .infinity)

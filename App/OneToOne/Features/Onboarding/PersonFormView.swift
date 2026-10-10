@@ -35,7 +35,8 @@ struct PersonFormView: View {
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .submitLabel(.done)
-                BirthDateRow(date: $draft.birthDate)
+                DateRow(title: "Дата рождения", date: $draft.birthDate,
+                        initial: DayKey(year: DayKey(.now).year - 25, month: 1, day: 1))
             } footer: {
                 if let error {
                     Text(error.message)
