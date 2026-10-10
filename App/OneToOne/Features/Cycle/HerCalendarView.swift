@@ -1,0 +1,88 @@
+import Core
+import DesignSystem
+import SwiftUI
+
+/// Вкладка «Цикл» для неё: фаза и прогноз, сетка месяца и карточка выбранного дня.
+struct HerCalendarView: View {
+    @Environment(AppModel.self) private var model
+    @State private var today = DayKey(.now)
+    @State private var selected = DayKey(.now)
+    @State private var month = Month(DayKey(.now))
+
+    var body: some View {
+        let forecast = CycleCalculator.forecast(periodDays: model.data.periodDays, today: today)
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Card { ForecastSummary(forecast: forecast) }
+
+                    MonthGridView(month: $month, selected: $selected, today: today,
+                                  periodDays: model.data.periodDays,
+                                  predictedDays: forecast.predictedPeriodDays,
+                                  symptomDays: Set(model.data.symptoms.keys))
+
+                    Card { dayCard }
+                }
+                .padding(20)
+            }
+            .background(Palette.background)
+            .navigationTitle("Цикл")
+            // В полночь пересчитываем «сегодня», иначе фаза и прогноз застынут.
+            .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
+                today = DayKey(.now)
+            }
+        }
+    }
+
+    private var dayCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(selected == today ? "Сегодня" : selected.date().formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                .font(.title3.bold())
+
+            if selected <= today {
+                Toggle("Месячные", isOn: Binding(
+                    get: { model.data.periodDays.contains(selected) },
+                    set: { _ in model.togglePeriodDay(selected) }))
+                    .font(.headline)
+                    .tint(BrandColor.pink.color)
+            }
+
+            if selected == today {
+                HerMoodPicker(mood: model.data.herMoods[today]) { model.setHerMood($0, for: today) }
+            }
+
+            SymptomPicker(selected: model.data.symptoms[selected] ?? [],
+                          customSymptoms: model.data.customSymptoms) {
+                model.toggleSymptom($0, on: selected)
+            }
+        }
+    }
+}
+
+/// «Сегодня: фолликулярная фаза, 10-й день» и «Месячные ≈ 29 октября».
+private struct ForecastSummary: View {
+    let forecast: CycleForecast
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let dayOfCycle = forecast.dayOfCycle, let next = forecast.nextPeriodStart {
+                Text("Сегодня: \(forecast.phase.title), \(dayOfCycle)-й день")
+                    .font(.headline)
+                Text("Месячные ≈ \(next.date().formatted(.dateTime.day().month(.wide)))")
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Отметь первый день месячных, и тут появится прогноз")
+                    .font(.headline)
+            }
+        }
+    }
+}
+
+#Preview {
+    var data = AppData()
+    let today = DayKey(.now)
+    data.periodDays = Set((0..<5).map { today.adding(days: -12 + $0) })
+    data.symptoms = [today.adding(days: -11): [.preset(.cramps)]]
+    return HerCalendarView()
+        .environment(AppModel(store: InMemoryStore(data)))
+}

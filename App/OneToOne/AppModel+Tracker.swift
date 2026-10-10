@@ -37,3 +37,18 @@ extension AppModel {
         return OrgasmDefaults(man: latest.orgasmsMan, woman: latest.orgasmsWoman)
     }
 }
+
+/// Действия календаря цикла: отметки дня, которые ставит она.
+extension AppModel {
+    func togglePeriodDay(_ day: DayKey) {
+        update { $0.togglePeriodDay(day) }
+    }
+
+    func setHerMood(_ mood: HerMood?, for day: DayKey) {
+        update { $0.setHerMood(mood, for: day) }
+    }
+
+    func toggleSymptom(_ symptom: Symptom, on day: DayKey) {
+        update { $0.toggleSymptom(symptom, on: day) }
+    }
+}
