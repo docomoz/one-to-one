@@ -5,6 +5,11 @@ public enum SexType: String, Codable, CaseIterable, Sendable {
     case vaginal, anal, cunnilingus, blowjob
 }
 
+/// Куда кончил. Не `none`: такой случай путается с `nil` («не ответили»).
+public enum SexFinish: String, Codable, CaseIterable, Sendable {
+    case inside, outside, didNotFinish
+}
+
 /// Одна отметка секса. Время не храним, только день: за день может быть сколько угодно записей.
 public struct SexEntry: Codable, Identifiable, Equatable, Sendable {
     public let id: UUID
@@ -12,15 +17,22 @@ public struct SexEntry: Codable, Identifiable, Equatable, Sendable {
     public var types: Set<SexType>
     public var orgasmsMan: Int
     public var orgasmsWoman: Int
+    /// Был ли презерватив. Спрашиваем только при «Классике»; `nil` — не ответили или старая запись.
+    public var condom: Bool?
+    /// Куда кончил. Тоже только при «Классике», `nil` — не ответили.
+    public var finish: SexFinish?
     public let createdBy: UUID
 
     public init(id: UUID = UUID(), day: DayKey, types: Set<SexType>,
-                orgasmsMan: Int, orgasmsWoman: Int, createdBy: UUID) {
+                orgasmsMan: Int, orgasmsWoman: Int,
+                condom: Bool? = nil, finish: SexFinish? = nil, createdBy: UUID) {
         self.id = id
         self.day = day
         self.types = types
         self.orgasmsMan = orgasmsMan
         self.orgasmsWoman = orgasmsWoman
+        self.condom = condom
+        self.finish = finish
         self.createdBy = createdBy
     }
 }

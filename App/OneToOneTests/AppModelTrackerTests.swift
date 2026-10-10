@@ -42,6 +42,42 @@ private func makeModel(meID: UUID = UUID()) -> (AppModel, InMemoryStore) {
 }
 
 @MainActor
+@Test func logSexSavesProtection() throws {
+    let (model, store) = makeModel()
+
+    model.logSex(types: [.vaginal], orgasmsMan: 1, orgasmsWoman: 1, condom: false, finish: .inside, day: today)
+
+    let saved = try #require(try store.load().sexEntries.first)
+    #expect(saved.condom == false)
+    #expect(saved.finish == .inside)
+}
+
+@MainActor
+@Test func logSexWithoutVaginalDropsProtection() throws {
+    let (model, store) = makeModel()
+
+    model.logSex(types: [.blowjob], orgasmsMan: 1, orgasmsWoman: 1, condom: false, finish: .inside, day: today)
+
+    let saved = try #require(try store.load().sexEntries.first)
+    #expect(saved.condom == nil)
+    #expect(saved.finish == nil)
+}
+
+@MainActor
+@Test func updateSexWithoutVaginalDropsProtection() throws {
+    let (model, store) = makeModel()
+    model.logSex(types: [.vaginal], orgasmsMan: 1, orgasmsWoman: 1, condom: false, finish: .inside, day: today)
+    var edited = model.data.sexEntries[0]
+    edited.types = [.anal]
+
+    model.updateSex(edited)
+
+    let saved = try #require(try store.load().sexEntries.first)
+    #expect(saved.condom == nil)
+    #expect(saved.finish == nil)
+}
+
+@MainActor
 @Test func deleteSexRemovesOnlyThatEntry() throws {
     let (model, store) = makeModel()
     model.logSex(types: [.vaginal], orgasmsMan: 1, orgasmsWoman: 1, day: today)
