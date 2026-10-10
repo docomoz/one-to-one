@@ -83,7 +83,7 @@ private func at(hours: Double) -> Date { Date(timeIntervalSince1970: hours * 360
 
 @Test func markWatchedRemembersMovie() {
     var data = pairedData()
-    data.markWatched(movieID: 7)
+    data.markWatched(movieID: 7, at: at(hours: 1))
     #expect(data.watched == [7])
 }
 
@@ -91,7 +91,7 @@ private func at(hours: Double) -> Date { Date(timeIntervalSince1970: hours * 360
     var data = pairedData()
     data.addToWatchlist(movie(1), ownerID: man.id, addedAt: at(hours: 0))
     data.addToWatchlist(movie(2), ownerID: woman.id, addedAt: at(hours: 0))
-    data.markWatched(movieID: 1)
+    data.markWatched(movieID: 1, at: at(hours: 1))
     let session = data.startPick(mood: .laugh, startedBy: man.id, at: at(hours: 1))
 
     let deck = data.deck(for: session, recommendations: [movie(1), movie(3)], me: man.id)
@@ -132,7 +132,7 @@ private func at(hours: Double) -> Date { Date(timeIntervalSince1970: hours * 360
     data.swipe(.no, movie: movie(1), in: session, by: man.id, at: at(hours: 2))
     data.swipe(.yes, movie: movie(2), in: session, by: man.id, at: at(hours: 3))
     data.swipe(.yes, movie: movie(3), in: session, by: woman.id, at: at(hours: 4))
-    data.markWatched(movieID: 3)
+    data.markWatched(movieID: 3, at: at(hours: 1))
 
     #expect(data.recommendationSeeds() == [2])
 }

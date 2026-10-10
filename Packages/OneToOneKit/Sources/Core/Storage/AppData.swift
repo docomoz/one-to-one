@@ -20,6 +20,10 @@ public struct AppData: Codable, Equatable, Sendable {
     public var swipes: [Swipe] = []
     /// Id фильмов Кинопоиска, которые уже посмотрели.
     public var watched: Set<Int> = []
+    /// Когда нажали «Смотрим»: самая ранняя дата, если нажимали несколько раз или на обоих телефонах.
+    public var watchedAt: [Int: Date] = [:]
+    /// Оценки просмотренных фильмов, у каждого свои.
+    public var ratings: [MovieRating] = []
     public var movieCache: [Int: Movie] = [:]
 
     public init() {}
@@ -50,6 +54,8 @@ public struct AppData: Codable, Equatable, Sendable {
         sessions = try container.decodeIfPresent([PickSession].self, forKey: .sessions) ?? []
         swipes = try container.decodeIfPresent([Swipe].self, forKey: .swipes) ?? []
         watched = try container.decodeIfPresent(Set<Int>.self, forKey: .watched) ?? []
+        watchedAt = try container.decodeIfPresent([Int: Date].self, forKey: .watchedAt) ?? [:]
+        ratings = try container.decodeIfPresent([MovieRating].self, forKey: .ratings) ?? []
         movieCache = try container.decodeIfPresent([Int: Movie].self, forKey: .movieCache) ?? [:]
     }
 }
