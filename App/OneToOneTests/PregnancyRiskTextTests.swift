@@ -39,3 +39,17 @@ import Testing
     #expect(PregnancyRisk.low.dayAccessibility == nil)
     #expect(PregnancyRisk.unknown.dayAccessibility == nil)
 }
+
+/// Календарь получает риск на каждый день месяца, тот же, что считает Core.
+@Test func monthRisksCoverEveryDay() {
+    let today = DayKey(year: 2026, month: 10, day: 10)
+    let periodDays: Set<DayKey> = [DayKey(year: 2026, month: 9, day: 28)]
+    let month = Month(today)
+    let risks = month.pregnancyRisks(periodDays: periodDays, today: today)
+
+    let days = month.cells.compactMap { $0 }
+    #expect(risks.count == days.count)
+    for day in days {
+        #expect(risks[day] == PregnancyRiskCalculator.risk(on: day, periodDays: periodDays, today: today))
+    }
+}

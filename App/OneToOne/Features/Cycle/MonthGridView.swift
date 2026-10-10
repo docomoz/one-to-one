@@ -3,7 +3,7 @@ import DesignSystem
 import SwiftUI
 
 /// Сетка месяца: залитые дни — отмеченные месячные, обведённые — прогноз,
-/// точка — есть симптомы, мягкая заливка — цвет фазы. Нажатие выбирает день;
+/// точка — есть симптомы, мягкая заливка — цвет фазы, полоска — высокий или средний риск беременности. Нажатие выбирает день;
 /// без `selected` дни не нажимаются (только просмотр), а обведено «сегодня».
 struct MonthGridView: View {
     @Binding var month: Month
@@ -13,6 +13,7 @@ struct MonthGridView: View {
     var predictedDays: Set<DayKey> = []
     var symptomDays: Set<DayKey> = []
     var phases: [DayKey: CyclePhase] = [:]
+    var risks: [DayKey: PregnancyRisk] = [:]
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
     private let weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
@@ -42,6 +43,7 @@ struct MonthGridView: View {
                                 isPredicted: predictedDays.contains(day) && !periodDays.contains(day),
                                 hasSymptoms: symptomDays.contains(day),
                                 phase: phases[day],
+                                risk: risks[day],
                                 action: selected.map { binding in { binding.wrappedValue = day } })
                     } else {
                         Color.clear.frame(height: 44)
@@ -60,6 +62,7 @@ private struct DayCell: View {
     let isPredicted: Bool
     let hasSymptoms: Bool
     let phase: CyclePhase?
+    let risk: PregnancyRisk?
     /// `nil` — день не нажимается.
     let action: (() -> Void)?
     @Environment(\.locale) private var locale
@@ -79,7 +82,8 @@ private struct DayCell: View {
     }
 
     private var content: some View {
-        VStack(spacing: 2) {
+        // Кольцо выбора выступает на 3 пункта: без запаса оно касается полоски риска.
+        VStack(spacing: 6) {
             Text("\(day.day)")
                 .font(.callout.weight(isToday ? .bold : .regular))
                 .foregroundStyle(isPeriod ? .white : .primary)
@@ -96,9 +100,13 @@ private struct DayCell: View {
                         Circle().strokeBorder(.primary, lineWidth: 2).padding(-3)
                     }
                 }
-            Circle()
-                .fill(hasSymptoms ? BrandColor.purple.color : .clear)
-                .frame(width: 5, height: 5)
+            HStack(spacing: 3) {
+                // Зелёной полоски нет: «пустой» день не должен выглядеть разрешением.
+                RiskMark(color: risk?.markColor)
+                Circle()
+                    .fill(hasSymptoms ? BrandColor.purple.color : .clear)
+                    .frame(width: 5, height: 5)
+            }
         }
         .frame(maxWidth: .infinity, minHeight: 44)
         .background {
@@ -116,6 +124,7 @@ private struct DayCell: View {
         if isPredicted { parts.append("прогноз месячных") }
         if let phase, phase != .unknown { parts.append(phase.shortTitle.lowercased()) }
         if hasSymptoms { parts.append("есть симптомы") }
+        if let riskText = risk?.dayAccessibility { parts.append(riskText) }
         return parts.joined(separator: ", ")
     }
 }

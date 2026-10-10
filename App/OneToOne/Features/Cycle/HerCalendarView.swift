@@ -20,7 +20,9 @@ struct HerCalendarView: View {
                     MonthGridView(month: $month, selected: $selected, today: today,
                                   periodDays: model.data.periodDays,
                                   predictedDays: forecast.predictedPeriodDays,
-                                  symptomDays: Set(model.data.symptoms.keys))
+                                  symptomDays: Set(model.data.symptoms.keys),
+                                  risks: month.pregnancyRisks(periodDays: model.data.periodDays, today: today))
+                    RiskLegend()
 
                     Card { dayCard }
                 }
@@ -48,6 +50,10 @@ struct HerCalendarView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(selected == today ? "Сегодня" : selected.date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(locale)))
                 .font(.title3.bold())
+
+            Text("Риск беременности: \(PregnancyRiskCalculator.risk(on: selected, periodDays: model.data.periodDays, today: today).shortTitle)")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
             if selected <= today {
                 Toggle("Месячные", isOn: Binding(

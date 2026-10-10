@@ -18,9 +18,11 @@ struct HisCalendarView: View {
                     TipCard(tip: TipProvider.tip(forecast: forecast, herMood: model.data.herMoods[today]))
 
                     MonthGridView(month: $month, today: today, periodDays: periodDays,
-                                  phases: phases(in: month, periodDays: periodDays))
+                                  phases: phases(in: month, periodDays: periodDays),
+                                  risks: month.pregnancyRisks(periodDays: periodDays, today: today))
 
                     PhaseLegend()
+                    RiskLegend()
                 }
                 .padding(20)
             }

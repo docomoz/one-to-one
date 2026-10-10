@@ -13,6 +13,13 @@ struct TrackerView: View {
         NavigationStack {
             List {
                 Section {
+                    RiskCard(risk: PregnancyRiskCalculator.risk(on: today, periodDays: model.data.periodDays, today: today))
+                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
+
+                Section {
                     StatsView(stats: StatsCalculator.stats(model.data.sexEntries, today: today))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                         .listRowBackground(Color.clear)
