@@ -106,3 +106,19 @@ private func day(_ month: Int, _ day: Int, year: Int = 2026) -> DayKey {
     #expect(CycleCalculator.forecast(periodDays: marks, today: day(9, 26)).phase == .menstruation)
     #expect(CycleCalculator.forecast(periodDays: marks, today: day(9, 27)).phase == .ovulation)
 }
+
+@Test func phaseBeforeFirstMarkIsUnknown() {
+    let marks: Set = [day(10, 1), day(10, 2), day(10, 3), day(10, 4)]
+
+    #expect(CycleCalculator.phase(on: day(9, 30), periodDays: marks) == .unknown)
+}
+
+@Test func phaseOnFutureDay() {
+    let marks: Set = [day(10, 1), day(10, 2), day(10, 3), day(10, 4)]
+
+    #expect(CycleCalculator.phase(on: day(10, 2), periodDays: marks) == .menstruation)
+    #expect(CycleCalculator.phase(on: day(10, 10), periodDays: marks) == .follicular)
+    #expect(CycleCalculator.phase(on: day(10, 14), periodDays: marks) == .ovulation)
+    #expect(CycleCalculator.phase(on: day(10, 20), periodDays: marks) == .luteal)
+    #expect(CycleCalculator.phase(on: day(10, 29), periodDays: marks) == .menstruation)
+}

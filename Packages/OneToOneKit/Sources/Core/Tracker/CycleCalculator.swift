@@ -40,6 +40,11 @@ public enum CycleCalculator {
         return CycleForecast(phase: phase, dayOfCycle: dayOfCycle, averageLength: length, nextPeriodStart: next)
     }
 
+    /// Фаза на любой день: для прошлых — как считалось тогда, для будущих — по прогнозу.
+    public static func phase(on day: DayKey, periodDays: Set<DayKey>) -> CyclePhase {
+        forecast(periodDays: periodDays, today: day).phase
+    }
+
     /// Фаза по дню цикла: 1–5 месячные, (L−16)…(L−12) овуляция, до неё фолликулярная, после лютеиновая.
     static func phase(dayOfCycle: Int, length: Int) -> CyclePhase {
         let ovulation = (length - 16)...(length - 12)
