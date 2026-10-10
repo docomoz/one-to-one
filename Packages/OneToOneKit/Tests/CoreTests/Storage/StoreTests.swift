@@ -95,3 +95,16 @@ private func tempDirectory() -> URL {
     expected.watched = [326]
     #expect(data == expected)
 }
+
+@Test func appDataIsPairedOnlyWithOwnMeID() throws {
+    let man = Person(name: "Максим", sex: .male)
+    let woman = Person(name: "Даша", sex: .female)
+    var data = AppData()
+    #expect(!data.isPaired)
+    data.couple = try Couple.make(man, woman)
+    #expect(!data.isPaired)
+    data.meID = UUID()
+    #expect(!data.isPaired)
+    data.meID = woman.id
+    #expect(data.isPaired)
+}
