@@ -9,12 +9,20 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
     final class Stub: @unchecked Sendable {
         let status: Int
         let body: Data
+        /// Ответы по куску адреса запроса (`similarMovies`); ни один не подошёл — отдаём `body`.
+        let routes: [String: Data]
         private let lock = NSLock()
         private var _requests: [URLRequest] = []
 
-        init(status: Int, body: Data) {
+        init(status: Int, body: Data, routes: [String: Data] = [:]) {
             self.status = status
             self.body = body
+            self.routes = routes
+        }
+
+        func body(for request: URLRequest) -> Data {
+            let url = request.url?.absoluteString ?? ""
+            return routes.first { url.contains($0.key) }?.value ?? body
         }
 
         var requests: [URLRequest] { lock.withLock { _requests } }
@@ -27,15 +35,11 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) private static var stubs: [String: Stub] = [:]
 
     /// Сессия, которая отвечает `status` и телом из `Fixtures/<fixture>.json` (или `body`).
-    static func session(status: Int = 200, fixture: String? = nil,
-                        body: Data = Data()) throws -> (URLSession, Stub) {
-        var body = body
-        if let fixture {
-            let url = try #require(Bundle.module.url(forResource: fixture, withExtension: "json",
-                                                     subdirectory: "Fixtures"))
-            body = try Data(contentsOf: url)
-        }
-        let stub = Stub(status: status, body: body)
+    /// `routes` — свои образцы для запросов, в адресе которых есть ключ: `["similarMovies": "similar"]`.
+    static func session(status: Int = 200, fixture: String? = nil, body: Data = Data(),
+                        routes: [String: String] = [:]) throws -> (URLSession, Stub) {
+        let body = try fixture.map(load) ?? body
+        let stub = Stub(status: status, body: body, routes: try routes.mapValues(load))
         let id = UUID().uuidString
         lock.withLock { stubs[id] = stub }
 
@@ -43,6 +47,12 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
         config.protocolClasses = [StubURLProtocol.self]
         config.httpAdditionalHeaders = [idHeader: id]
         return (URLSession(configuration: config), stub)
+    }
+
+    private static func load(_ fixture: String) throws -> Data {
+        let url = try #require(Bundle.module.url(forResource: fixture, withExtension: "json",
+                                                 subdirectory: "Fixtures"))
+        return try Data(contentsOf: url)
     }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -58,7 +68,7 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
         let response = HTTPURLResponse(url: request.url!, statusCode: stub.status,
                                        httpVersion: nil, headerFields: nil)!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: stub.body)
+        client?.urlProtocol(self, didLoad: stub.body(for: request))
         client?.urlProtocolDidFinishLoading(self)
     }
 
