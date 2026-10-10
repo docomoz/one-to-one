@@ -2,7 +2,8 @@ import Core
 import DesignSystem
 import SwiftUI
 
-/// Вкладка «Цикл» для него: подсказка дня и календарь, где каждый день закрашен цветом фазы.
+/// Вкладка «Цикл» для него: подсказка дня и календарь, где каждый день закрашен цветом фазы,
+/// а дни высокого и среднего риска беременности отмечены полоской.
 /// Только просмотр: без её настроения по дням и без симптомов.
 struct HisCalendarView: View {
     @Environment(AppModel.self) private var model
@@ -18,9 +19,11 @@ struct HisCalendarView: View {
                     TipCard(tip: TipProvider.tip(forecast: forecast, herMood: model.data.herMoods[today]))
 
                     MonthGridView(month: $month, today: today, periodDays: periodDays,
-                                  phases: phases(in: month, periodDays: periodDays))
+                                  phases: phases(in: month, periodDays: periodDays),
+                                  risks: PregnancyRiskCalculator.risks(in: month, periodDays: periodDays, today: today))
 
                     PhaseLegend()
+                    RiskLegend()
                 }
                 .padding(20)
             }
