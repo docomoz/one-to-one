@@ -71,8 +71,9 @@ struct SwipeDeckView: View {
             }
             MovieCardView(movie: deck[index])
                 .overlay(alignment: .top) { dragLabel }
-                .offset(offset)
+                // Сначала наклон, потом сдвиг: иначе карточка крутится вокруг старого центра и едет дугой.
                 .rotationEffect(.degrees(offset.width / 20))
+                .offset(offset)
                 .gesture(drag)
                 .id(deck[index].id)
                 .accessibilityAction(named: "Да") { perform(.yes) }

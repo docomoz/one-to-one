@@ -14,11 +14,21 @@ struct DeckEndView: View {
             list(title: "Совпали", movies: movies)
         case .liked(let movies):
             list(title: "Кто-то из вас лайкнул", movies: movies)
-        case .empty(let partnerName):
+        case .noMovies:
+            ContentUnavailableView(
+                "Пока нечего свайпать",
+                systemImage: "popcorn",
+                description: Text("Добавьте фильмы в свой список или проверьте интернет: тогда появятся рекомендации."))
+        case .waitForPartner(let partnerName):
             ContentUnavailableView(
                 "Колода кончилась",
                 systemImage: "rectangle.stack",
                 description: Text("Подождите, пока посвайпает \(partnerName), или начните новый подбор."))
+        case .nothingLiked:
+            ContentUnavailableView(
+                "Ничего не понравилось",
+                systemImage: "rectangle.stack",
+                description: Text("Начните новый подбор с другим настроением."))
         }
     }
 

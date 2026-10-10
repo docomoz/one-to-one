@@ -33,9 +33,23 @@ private func started() -> (AppData, PickSession) {
     #expect(DeckEnd.make(data, session: session) == .liked([brat]))
 }
 
-@Test func deckEndEmptyWithPartnerName() {
+@Test func deckEndWaitsForPartnerWhoHasNotSwiped() {
     var (data, session) = started()
     data.swipe(.no, movie: brat, in: session, by: man.id, at: .now)
 
-    #expect(DeckEnd.make(data, session: session) == .empty(partnerName: "Даша"))
+    #expect(DeckEnd.make(data, session: session) == .waitForPartner(partnerName: "Даша"))
+}
+
+@Test func deckEndNoMoviesWhenNobodySwiped() {
+    let (data, session) = started()
+
+    #expect(DeckEnd.make(data, session: session) == .noMovies)
+}
+
+@Test func deckEndNothingLikedWhenBothSwiped() {
+    var (data, session) = started()
+    data.swipe(.no, movie: brat, in: session, by: man.id, at: .now)
+    data.swipe(.later, movie: amelie, in: session, by: woman.id, at: .now)
+
+    #expect(DeckEnd.make(data, session: session) == .nothingLiked)
 }
