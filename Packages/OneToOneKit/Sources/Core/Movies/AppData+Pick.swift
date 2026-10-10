@@ -38,6 +38,24 @@ extension AppData {
         return MatchFinder.likedByAnyone(swipes(in: session).filter { pair.contains($0.personID) })
     }
 
+    /// Подбор, который сейчас идёт: последний, пока не посмотрели фильм, получивший в нём ♥.
+    /// Так «Смотрим» сам закрывает подбор, а новый подбор сразу становится текущим.
+    public var currentPick: PickSession? {
+        guard let last = sessions.last else { return nil }
+        let liked = MatchFinder.likedByAnyone(swipes(in: last))
+        return liked.contains(where: watched.contains) ? nil : last
+    }
+
+    /// Свайпал ли человек хоть раз в этом подборе.
+    public func hasSwiped(in session: PickSession, person personID: UUID) -> Bool {
+        swipes.contains { $0.sessionID == session.id && $0.personID == personID }
+    }
+
+    /// Фильмы из кэша в том же порядке. Каких нет в кэше, пропускаем.
+    public func movies(_ ids: [Int]) -> [Movie] {
+        ids.compactMap { movieCache[$0] }
+    }
+
     /// «Смотрим»: фильм больше не попадёт в колоду.
     public mutating func markWatched(movieID: Int) {
         watched.insert(movieID)
