@@ -10,15 +10,7 @@ struct StatsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("\(stats.thisMonth)")
-                    .font(.system(size: 96, weight: .heavy))
-                    .foregroundStyle(BrandGradient.text)
-                Text("раз в этом месяце")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .accessibilityElement(children: .combine)
+            MonthCounter(count: stats.thisMonth)
 
             LazyVGrid(columns: columns, spacing: 8) {
                 StatTile(title: "Серия, дней", value: "\(stats.currentStreak)")
