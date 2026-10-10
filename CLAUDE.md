@@ -14,7 +14,12 @@ iOS-приложение для пар (можно пользоваться и �
 ## Стек
 - SwiftUI, только iOS. Минимальная версия iOS: решим в `docs/decisions.md`.
 - Бэкенд с аккаунтами и синхронизацией пары: выбираем на этапе спецификации.
-- Сборка и тесты: команды допишем, когда появится Xcode-проект.
+- Сборка и тесты:
+  - Один раз: `brew install xcodegen`.
+  - Логика: `cd Packages/OneToOneKit && swift test`
+  - Приложение: `xcodegen generate && xcodebuild test -project OneToOne.xcodeproj -scheme OneToOne -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - `OneToOne.xcodeproj` генерируется из `project.yml` и в git не хранится. После `git pull` выполняй `xcodegen generate`.
+  - Ключи API: скопируй `Config/Secrets.example.xcconfig` в `Config/Secrets.xcconfig` и впиши свои.
 
 ## Как работаем
 - Одна задача = один issue = одна ветка = один PR. Ветки: `feat/…`, `fix/…`, `chore/…`, `docs/…`.
