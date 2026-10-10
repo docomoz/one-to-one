@@ -337,7 +337,7 @@ struct OMDbFallbackRatingsProvider: RatingsProvider { init(omdbKey: String, sess
 **Цель:** вся логика вечера с фильмом, без экранов.
 **Файлы:** `Core/Movies/{PickSession,Swipe,MatchFinder}.swift`, дополнения в `AppModel+Movies.swift`.
 **Интерфейсы:**
-- `startPick(mood:) -> PickSession`;
+- `startPick(mood:) -> PickSession?` (nil, пока не пройдено знакомство);
 - `swipe(_ action: SwipeAction, movie: Movie, in session: PickSession) -> Bool` (true — случилось совпадение);
 - `markWatched(movieID:)`;
 - `later` добавляет фильм в мой список с `fromLater = true`;
