@@ -1,0 +1,73 @@
+{
+  "docs": [
+    {
+      "id": 775276,
+      "name": "Зверополис",
+      "alternativeName": "Zootopia",
+      "year": 2016,
+      "type": "cartoon",
+      "shortDescription": "Отважная крольчиха делает карьеру в полиции звериного города. Оскароносная комедия с серьезным подтекстом",
+      "description": "Добро пожаловать в Зверополис – современный город, населенный самыми разными жив",
+      "rating": {
+        "kp": 8.318,
+        "imdb": 8
+      },
+      "poster": {
+        "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/4716873/893bba73-3105-4944-8d18-a38f929f2759/300x450",
+        "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/4716873/893bba73-3105-4944-8d18-a38f929f2759/600x900"
+      },
+      "genres": [
+        {
+          "name": "мультфильм"
+        },
+        {
+          "name": "комедия"
+        },
+        {
+          "name": "детектив"
+        },
+        {
+          "name": "приключения"
+        },
+        {
+          "name": "семейный"
+        }
+      ],
+      "externalId": {
+        "imdb": "tt2948356"
+      }
+    },
+    {
+      "id": 4860213,
+      "name": "Субстанция",
+      "alternativeName": "The Substance",
+      "year": 2024,
+      "type": "movie",
+      "shortDescription": "Вы когда-нибудь мечтали стать лучшей версией себя? Фильм-сенсация с «Оскаром» за лучший грим и прически",
+      "description": "Слава голливудской звезды Элизабет Спаркл осталась в прошлом, хотя она всё ещё в",
+      "rating": {
+        "kp": 6.289,
+        "imdb": 7.2
+      },
+      "poster": {
+        "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/10703959/49123e40-fc14-4849-8d0a-aca4ed2bb0bb/300x450",
+        "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/10703959/49123e40-fc14-4849-8d0a-aca4ed2bb0bb/600x900"
+      },
+      "genres": [
+        {
+          "name": "ужасы"
+        },
+        {
+          "name": "драма"
+        }
+      ],
+      "externalId": {
+        "imdb": "tt17526714"
+      }
+    }
+  ],
+  "total": null,
+  "limit": 10,
+  "page": null,
+  "pages": null
+}
