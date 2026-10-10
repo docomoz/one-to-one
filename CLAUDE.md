@@ -22,6 +22,11 @@ iOS-приложение для пар (можно пользоваться и �
 - Принятое решение (библиотека, архитектура, отказ от фичи) записываем одной строкой в `docs/decisions.md` с причиной.
 - Новые фичи и изменения поведения: сначала скил brainstorming, потом writing-plans, потом TDD (Superpowers).
 
+## Доска задач
+- Доска: https://github.com/users/DariaPrishchepa/projects/1 (номер 1, владелец `DariaPrishchepa`), колонки Todo, In Progress, Done.
+- Доска не привязана к репозиторию (разные владельцы), поэтому каждый новый issue добавляй на неё сам: `gh project item-add 1 --owner DariaPrishchepa --url <ссылка на issue>`.
+- Взял задачу: назначь пользователя assignee и переведи в In Progress (`gh project item-edit`, поле Status; id полей смотри через `gh project field-list 1 --owner DariaPrishchepa`). После merge: Done.
+
 ## Режим обучения
 Когда делаешь что-то неочевидное, добавь одну строку «💡 Принцип: …» о том, почему так лучше. Не больше 1–2 на ответ.
 
