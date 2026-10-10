@@ -124,3 +124,23 @@ private func at(hours: Double) -> Date { Date(timeIntervalSince1970: hours * 360
 
     #expect(data.recommendationSeeds() == [3, 10, 4, 2, 1])
 }
+
+@Test func recommendationSeedsSkipChangedMindAndWatched() {
+    var data = pairedData()
+    let session = data.startPick(mood: .laugh, startedBy: man.id, at: at(hours: 0))
+    data.swipe(.yes, movie: movie(1), in: session, by: man.id, at: at(hours: 1))
+    data.swipe(.no, movie: movie(1), in: session, by: man.id, at: at(hours: 2))
+    data.swipe(.yes, movie: movie(2), in: session, by: man.id, at: at(hours: 3))
+    data.swipe(.yes, movie: movie(3), in: session, by: woman.id, at: at(hours: 4))
+    data.markWatched(movieID: 3)
+
+    #expect(data.recommendationSeeds() == [2])
+}
+
+@Test func likedByAnyoneOnlyFromCouple() {
+    var data = pairedData()
+    let session = data.startPick(mood: .laugh, startedBy: man.id, at: at(hours: 0))
+    data.swipe(.yes, movie: movie(1), in: session, by: UUID(), at: at(hours: 0))
+
+    #expect(data.likedByAnyone(in: session).isEmpty)
+}

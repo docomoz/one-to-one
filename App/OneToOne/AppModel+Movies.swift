@@ -22,12 +22,12 @@ extension AppModel {
 
 /// Вечер с фильмом: подбор, свайпы, совпадения, «Смотрим».
 extension AppModel {
-    func startPick(mood: Mood) -> PickSession {
-        // Пока пары нет (знакомство не пройдено), автор подбора неизвестен: ставим одноразовый id.
-        let me = data.meID ?? UUID()
+    /// Пока непонятно, кто «я» (знакомство не пройдено), подбор не начинается: свайпать в нём всё равно нельзя.
+    func startPick(mood: Mood) -> PickSession? {
+        guard let me = data.meID else { return nil }
         var session: PickSession?
         update { session = $0.startPick(mood: mood, startedBy: me, at: .now) }
-        return session!
+        return session
     }
 
     /// Возвращает `true`, если этот свайп дал совпадение. Без «я» ничего не делает.
@@ -52,6 +52,7 @@ extension AppModel {
     }
 
     /// Колода для меня: оба списка плюс рекомендации каталога. Нет сети — только списки.
+    /// Каждый вызов — до 6 запросов к Кинопоиску (200 в день бесплатно), поэтому зови один раз на подбор.
     func deck(for session: PickSession, catalog: some MovieCatalog) async -> [Movie] {
         let recommendations = await DeckLoader.recommendations(seeds: data.recommendationSeeds(),
                                                                mood: session.mood, catalog: catalog)

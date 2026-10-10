@@ -30,7 +30,7 @@ private func model(me: Person) -> (AppModel, InMemoryStore) {
 @Test func startPickSaves() throws {
     let (model, store) = model(me: man)
 
-    let session = model.startPick(mood: .laugh)
+    let session = try #require(model.startPick(mood: .laugh))
 
     #expect(try store.load().sessions == [session])
     #expect(session.startedBy == man.id)
@@ -39,7 +39,7 @@ private func model(me: Person) -> (AppModel, InMemoryStore) {
 @MainActor
 @Test func swipeSavesAndReportsMatch() throws {
     let (model, store) = model(me: man)
-    let session = model.startPick(mood: .laugh)
+    let session = try #require(model.startPick(mood: .laugh))
     model.update { $0.swipe(.yes, movie: film, in: session, by: woman.id, at: .now) }
 
     #expect(model.swipe(.yes, movie: film, in: session))
@@ -48,9 +48,9 @@ private func model(me: Person) -> (AppModel, InMemoryStore) {
 }
 
 @MainActor
-@Test func laterSwipeGoesToMyList() {
+@Test func laterSwipeGoesToMyList() throws {
     let (model, _) = model(me: woman)
-    let session = model.startPick(mood: .laugh)
+    let session = try #require(model.startPick(mood: .laugh))
 
     model.swipe(.later, movie: film, in: session)
 
@@ -61,10 +61,19 @@ private func model(me: Person) -> (AppModel, InMemoryStore) {
 @Test func markWatchedSavesAndLeavesDeck() async throws {
     let (model, store) = model(me: man)
     model.addToWatchlist(film)
-    let session = model.startPick(mood: .laugh)
+    let session = try #require(model.startPick(mood: .laugh))
 
     model.markWatched(movieID: 1)
 
     #expect(try store.load().watched == [1])
     #expect(await model.deck(for: session, catalog: OneMovieCatalog()).map(\.id) == [2])
+}
+
+@MainActor
+@Test func startPickWithoutMeDoesNothing() throws {
+    let store = InMemoryStore()
+    let model = AppModel(store: store)
+
+    #expect(model.startPick(mood: .laugh) == nil)
+    #expect(try store.load().sessions.isEmpty)
 }

@@ -59,3 +59,14 @@ private func swipe(_ person: Person, _ movieID: Int, _ action: SwipeAction, hour
     let swipes = [swipe(woman, 3, .yes, hours: 0), swipe(woman, 3, .no, hours: 1)]
     #expect(MatchFinder.likedByAnyone(swipes).isEmpty)
 }
+
+@Test func reswipeDoesNotReorderMatches() {
+    let swipes = [swipe(man, 1, .yes, hours: 0), swipe(woman, 1, .yes, hours: 1),
+                  swipe(man, 2, .yes, hours: 2), swipe(woman, 2, .yes, hours: 3), swipe(man, 1, .yes, hours: 4)]
+    #expect(MatchFinder.matches(swipes, couple: couple) == [1, 2])
+}
+
+@Test func likedByAnyoneOrderedByFirstYes() {
+    let swipes = [swipe(man, 1, .no, hours: 0), swipe(woman, 2, .yes, hours: 1), swipe(man, 1, .yes, hours: 2)]
+    #expect(MatchFinder.likedByAnyone(swipes) == [2, 1])
+}
