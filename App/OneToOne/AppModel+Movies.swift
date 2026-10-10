@@ -39,6 +39,11 @@ extension AppModel {
         return matched
     }
 
+    /// Подбор, который сейчас идёт. `nil`, если его нет или фильм из него уже смотрят.
+    var currentPick: PickSession? {
+        data.currentPick
+    }
+
     func matches(in session: PickSession) -> [Int] {
         data.matches(in: session)
     }
