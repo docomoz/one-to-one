@@ -76,11 +76,11 @@ struct DayKey: Codable, Hashable, Comparable { let year: Int; let month: Int; le
 
 // Tracker
 enum SexType: String, Codable, CaseIterable { case vaginal, anal, cunnilingus, blowjob } // «Классика», «Анал», «Куни», «Минет»
-struct SexEntry: Codable, Identifiable, Equatable { let id: UUID; var date: Date; var types: Set<SexType>
+struct SexEntry: Codable, Identifiable, Equatable { let id: UUID; var day: DayKey; var types: Set<SexType>
   var orgasmsMan: Int; var orgasmsWoman: Int; let createdBy: UUID }
 struct Stats: Equatable { let total: Int; let thisMonth: Int; let orgasmsMan: Int; let orgasmsWoman: Int
   let typeCounts: [SexType: Int]; let currentStreak: Int; let bestStreak: Int }
-enum StatsCalculator { static func stats(_ entries: [SexEntry], today: DayKey, calendar: Calendar) -> Stats }
+enum StatsCalculator { static func stats(_ entries: [SexEntry], today: DayKey) -> Stats }
 enum HerMood: String, Codable, CaseIterable { case wants, neutral, leaveMeAlone } // «Хочу», «Обычно», «Не трогать»
 enum CyclePhase: Equatable { case menstruation, follicular, ovulation, luteal, unknown }
 struct CycleForecast: Equatable { let phase: CyclePhase; let dayOfCycle: Int?; let averageLength: Int
@@ -209,11 +209,11 @@ struct OMDbFallbackRatingsProvider: RatingsProvider { init(omdbKey: String, sess
 ### Задача 6. Запись секса и статистика (#14)
 **Цель:** отметить секс примерно за 3 касания и увидеть счётчики.
 **Файлы:** `Core/Tracker/{SexEntry,Stats,StatsCalculator}.swift`, `App/…/AppModel+Tracker.swift`, `Features/Tracker/{LogSexView,StatsView}.swift`.
-**Интерфейсы:** `AppModel.logSex(types:orgasmsMan:orgasmsWoman:date:)`, `updateSex(_:)`, `deleteSex(id:)`.
+**Интерфейсы:** `AppModel.logSex(types:orgasmsMan:orgasmsWoman:day:)`, `updateSex(_:)`, `deleteSex(id:)`.
 **Как работает отметка:**
 - Типы — кнопки-переключатели, можно выбрать несколько, нужен хотя бы один.
 - Оргазмы — степперы «Он» и «Она» с минимумом 0. По умолчанию значения как в прошлой записи, в самой первой — по 1 (**решение Claude**).
-- Дата — сейчас, её можно поменять.
+- День — сегодня, его можно поменять. Время не храним. За день может быть сколько угодно записей: каждый раз отмечаем отдельно.
 - Править и удалять можно из списка записей.
 **Тесты** (`StatsCalculatorTests`):
 - `emptyStats`: все нули;

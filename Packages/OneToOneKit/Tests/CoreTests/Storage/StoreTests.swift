@@ -16,7 +16,7 @@ private func filledData() throws -> AppData {
     var data = AppData()
     data.couple = try Couple.make(man, woman)
     data.meID = man.id
-    data.sexEntries = [SexEntry(id: UUID(), date: date, types: [.vaginal, .cunnilingus],
+    data.sexEntries = [SexEntry(id: UUID(), day: day, types: [.vaginal, .cunnilingus],
                                 orgasmsMan: 1, orgasmsWoman: 2, createdBy: man.id)]
     data.periodDays = [day, day.adding(days: 1)]
     data.herMoods = [day: .wants]
@@ -94,4 +94,34 @@ private func tempDirectory() -> URL {
     var expected = AppData()
     expected.watched = [326]
     #expect(data == expected)
+}
+
+@Test func appDataIsPairedOnlyWithOwnMeID() throws {
+    let man = Person(name: "Максим", sex: .male)
+    let woman = Person(name: "Даша", sex: .female)
+    var data = AppData()
+    #expect(!data.isPaired)
+    data.couple = try Couple.make(man, woman)
+    #expect(!data.isPaired)
+    data.meID = UUID()
+    #expect(!data.isPaired)
+    data.meID = woman.id
+    #expect(data.isPaired)
+}
+
+@Test func localStoreKeepsUnreadableFileAside() throws {
+    let directory = tempDirectory()
+    let broken = Data("не JSON".utf8)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    try broken.write(to: directory.appending(path: "AppData.json"))
+    let store = LocalStore(directory: directory)
+
+    #expect(throws: (any Error).self) { try store.load() }
+    try store.save(AppData())
+
+    let names = try FileManager.default.contentsOfDirectory(atPath: directory.path(percentEncoded: false))
+    let backups = names.filter { $0.hasPrefix("AppData-unreadable-") }
+    #expect(backups.count == 1)
+    let backup = try #require(backups.first)
+    #expect(try Data(contentsOf: directory.appending(path: backup)) == broken)
 }
