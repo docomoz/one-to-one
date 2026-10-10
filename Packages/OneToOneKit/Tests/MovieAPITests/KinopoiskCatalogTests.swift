@@ -133,4 +133,30 @@ struct KinopoiskCatalogTests {
         #expect(movies.map(\.title) == ["Зверополис", "Субстанция", "Странный жанр"])  // без записи без id
         #expect(movies.last?.genres == ["драма"])  // жанр без названия пропущен
     }
+
+    @Test func topSendsPageAndSort() async throws {
+        let (catalog, stub) = try catalog(fixture: "discover")
+        let movies = try await catalog.top(page: 4)
+
+        #expect(stub.lastURL?.path() == "/v1.5/movie")
+        let query = try query(stub)
+        #expect(query.contains(URLQueryItem(name: "page", value: "4")))
+        #expect(query.contains(URLQueryItem(name: "limit", value: "50")))
+        #expect(query.contains(URLQueryItem(name: "sortField", value: "votes.kp")))
+        #expect(query.contains(URLQueryItem(name: "sortType", value: "-1")))
+        #expect(query.contains(URLQueryItem(name: "isSeries", value: "false")))
+        #expect(query.filter { $0.name == "type" }.map(\.value) == ["movie", "cartoon", "anime"])
+        #expect(!query.contains { $0.name == "genres.name" })
+        #expect(movies.count == 3)
+    }
+
+    @Test func newReleasesSendsYear() async throws {
+        let (catalog, stub) = try catalog(fixture: "discover")
+        _ = try await catalog.newReleases(year: 2026)
+
+        let query = try query(stub)
+        #expect(query.contains(URLQueryItem(name: "year", value: "2026")))
+        #expect(query.contains(URLQueryItem(name: "sortField", value: "votes.kp")))
+        #expect(query.contains { $0.name == "selectFields" && $0.value == "rating" })
+    }
 }

@@ -133,3 +133,49 @@ private final class OfflineThenOnlineCatalog: MovieCatalog, @unchecked Sendable 
 
     #expect(await model.deck(for: session, catalog: catalog).map(\.id) == [2])
 }
+
+/// Каталог с фильмами на телефоне: в сети отдаёт комедию 2, на телефоне всегда есть комедия 7.
+private final class LocalAwareCatalog: MovieCatalog, @unchecked Sendable {
+    private let lock = NSLock()
+    private var _online: Bool
+    init(online: Bool) { _online = online }
+    func goOnline() { lock.withLock { _online = true } }
+
+    func search(_ query: String) async throws -> [Movie] { [] }
+    func recommendations(for id: Int) async throws -> [Movie] { [] }
+    func discover(genres: [String]) async throws -> [Movie] {
+        guard lock.withLock({ _online }) else { throw URLError(.notConnectedToInternet) }
+        return [Movie(id: 2, title: "Брат", year: 1997, genres: ["комедия"], overview: "", posterURL: nil)]
+    }
+    func localMovies(genres: [String]) async -> [Movie] {
+        [Movie(id: 7, title: "Паддингтон", year: 2014, genres: ["комедия"], overview: "", posterURL: nil)]
+    }
+}
+
+@MainActor
+@Test func deckAddsLocalMoviesOffline() async throws {
+    let (model, _) = model(me: man)
+    let session = try #require(model.startPick(mood: .laugh))
+
+    #expect(await model.deck(for: session, catalog: LocalAwareCatalog(online: false)).map(\.id) == [7])
+}
+
+@MainActor
+@Test func deckLocalAfterNetwork() async throws {
+    let (model, _) = model(me: man)
+    let session = try #require(model.startPick(mood: .laugh))
+
+    #expect(await model.deck(for: session, catalog: LocalAwareCatalog(online: true)).map(\.id) == [2, 7])
+}
+
+@MainActor
+@Test func localMoviesNotCachedAsRecommendations() async throws {
+    let (model, _) = model(me: man)
+    let catalog = LocalAwareCatalog(online: false)
+    let session = try #require(model.startPick(mood: .laugh))
+    _ = await model.deck(for: session, catalog: catalog)
+
+    catalog.goOnline()
+
+    #expect(await model.deck(for: session, catalog: catalog).map(\.id) == [2, 7])
+}
