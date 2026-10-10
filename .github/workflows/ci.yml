@@ -1,0 +1,54 @@
+# Проверки на каждый PR: тесты пакета и тесты приложения на симуляторе.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Новый push в ветку PR отменяет старый запуск: macOS-минуты дорогие. В main каждый запуск доводим до конца.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: 1
+
+jobs:
+  ci:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Xcode закреплён, чтобы обновление образа раннера не ломало сборку. Меняем версию осознанно.
+      - name: Выбрать Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app
+
+      - name: Версии инструментов
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Установить XcodeGen
+        run: brew install xcodegen
+
+      - name: Тесты пакета
+        working-directory: Packages/OneToOneKit
+        run: swift test
+
+      - name: Сгенерировать проект
+        run: |
+          cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
+          xcodegen generate
+
+      - name: Тесты приложения
+        run: |
+          xcodebuild test \
+            -project OneToOne.xcodeproj \
+            -scheme OneToOne \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            CODE_SIGNING_ALLOWED=NO
