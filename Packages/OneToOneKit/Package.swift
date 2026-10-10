@@ -14,7 +14,7 @@ let package = Package(
         .target(name: "MovieAPI", dependencies: ["Core"]),
         .target(name: "DesignSystem"),
         .testTarget(name: "CoreTests", dependencies: ["Core"]),
-        .testTarget(name: "MovieAPITests", dependencies: ["MovieAPI"]),
+        .testTarget(name: "MovieAPITests", dependencies: ["MovieAPI"], resources: [.copy("Fixtures")]),
         .testTarget(name: "DesignSystemTests", dependencies: ["DesignSystem"]),
     ]
 )

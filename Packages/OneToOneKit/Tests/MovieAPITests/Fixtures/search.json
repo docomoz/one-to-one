@@ -1,0 +1,124 @@
+{
+  "docs": [
+    {
+      "id": 301,
+      "name": "Матрица",
+      "alternativeName": "The Matrix",
+      "year": 1999,
+      "type": "movie",
+      "shortDescription": "Хакер Нео узнает, что его мир — виртуальный. Выдающийся экшен, доказавший, что зрелищное кино может быть умным",
+      "description": "Жизнь Томаса Андерсона разделена на две части: днём он — самый обычный офисный р",
+      "rating": {
+        "kp": 8.501,
+        "imdb": 8.7
+      },
+      "poster": {
+        "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/4774061/cf1970bc-3f08-4e0e-a095-2fb57c3aa7c6/300x450",
+        "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/4774061/cf1970bc-3f08-4e0e-a095-2fb57c3aa7c6/600x900"
+      },
+      "genres": [
+        {
+          "name": "фантастика"
+        },
+        {
+          "name": "боевик"
+        }
+      ],
+      "externalId": {
+        "imdb": "tt0133093"
+      },
+      "isSeries": false
+    },
+    {
+      "id": 400787,
+      "name": "Матрица",
+      "alternativeName": "Matrix",
+      "year": 1993,
+      "type": "tv-series",
+      "shortDescription": "",
+      "description": "В центре сюжета — жестокий наемный убийца Стивен Матрица. Однажды с ним происход",
+      "rating": {
+        "kp": 6.054,
+        "imdb": 7.4
+      },
+      "poster": {
+        "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/1629390/55c4ed3b-4ddf-4e33-9607-de343320ee96/300x450",
+        "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/1629390/55c4ed3b-4ddf-4e33-9607-de343320ee96/600x900"
+      },
+      "genres": [
+        {
+          "name": "фэнтези"
+        },
+        {
+          "name": "боевик"
+        },
+        {
+          "name": "триллер"
+        },
+        {
+          "name": "драма"
+        }
+      ],
+      "externalId": {
+        "imdb": "tt0106062"
+      },
+      "isSeries": true
+    },
+    {
+      "id": 299,
+      "name": "Матрица: Перезагрузка",
+      "alternativeName": "The Matrix Reloaded",
+      "year": 2003,
+      "type": "movie",
+      "shortDescription": "Нео против бесчисленных копий агента Смита. Вторая часть знаковой трилогии с Киану Ривзом",
+      "description": "Борцы за свободу Нео, Тринити и Морфеус продолжают руководить восстанием людей п",
+      "rating": {
+        "kp": 7.745,
+        "imdb": 7.2
+      },
+      "poster": {
+        "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/4774061/a53d1c75-4d1a-4c86-a936-65b2a724345c/300x450",
+        "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/4774061/a53d1c75-4d1a-4c86-a936-65b2a724345c/600x900"
+      },
+      "genres": [
+        {
+          "name": "фантастика"
+        },
+        {
+          "name": "боевик"
+        }
+      ],
+      "externalId": {
+        "imdb": "tt0234215"
+      },
+      "isSeries": false
+    },
+    {
+      "id": 12345,
+      "name": null,
+      "alternativeName": "Edge Case",
+      "year": null,
+      "type": "anime",
+      "shortDescription": "",
+      "description": "Полное описание вместо короткого",
+      "rating": {
+        "kp": 0,
+        "imdb": 0
+      },
+      "poster": null,
+      "genres": [
+        {
+          "name": "мультфильм"
+        }
+      ],
+      "externalId": {
+        "imdb": null
+      },
+      "isSeries": false
+    }
+  ],
+  "total": 314,
+  "limit": 3,
+  "page": 1,
+  "pages": 105
+}
