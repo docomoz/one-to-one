@@ -10,6 +10,8 @@ final class AppModel {
     @ObservationIgnored private let store: Store
     /// Рекомендации Кинопоиска по подборам: просим их один раз на подбор, лимит 200 запросов в день.
     @ObservationIgnored var recommendationsByPick: [UUID: [Movie]] = [:]
+    /// «Похожие» на фильмы с 👎 по подборам: убираем их из колоды и тоже просим один раз на подбор.
+    @ObservationIgnored var excludedByPick: [UUID: Set<Int>] = [:]
 
     init(store: Store) {
         self.store = store
