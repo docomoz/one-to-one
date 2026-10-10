@@ -35,9 +35,14 @@ public enum PregnancyRiskCalculator {
 
         let lengths = cycleLengths(starts)
         let isEnough = lengths.count >= enoughCycles
-        let shortest = lengths.min() ?? 0
-        let longest = isEnough ? lengths.max() ?? 0 : fallbackLongest
-        let window = isEnough ? (shortest - 18)...(longest - 11) : fallbackWindow
+        let shortest = lengths.min() ?? fallbackWindow.lowerBound + 18
+        var longest = lengths.max() ?? fallbackWindow.upperBound + 11
+        var window = (shortest - 18)...(longest - 11)
+        if !isEnough {
+            // Циклов мало: окно стандартных дней, но не уже, чем у уже известных циклов.
+            window = min(fallbackWindow.lowerBound, window.lowerBound)...max(fallbackWindow.upperBound, window.upperBound)
+            longest = max(longest, fallbackLongest)
+        }
         let allowsLow = isEnough && longest - shortest <= maxSpread
 
         let elapsed = lastStart.days(to: day)

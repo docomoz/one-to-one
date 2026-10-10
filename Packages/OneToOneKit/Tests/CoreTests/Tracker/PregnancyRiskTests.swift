@@ -46,6 +46,27 @@ private func cycleDay(_ number: Int) -> DayKey {
     #expect(risk(29) == .medium)
 }
 
+@Test func fewShortCyclesWidenWindow() {
+    // Длины 22, 22: окно 8–19 расширяется до 4–19 (22 − 18).
+    let marks: Set = [day(8, 1), day(8, 23), day(9, 14)]
+
+    #expect(PregnancyRiskCalculator.risk(on: day(9, 17), periodDays: marks, today: day(9, 20)) == .high)
+}
+
+@Test func fewCyclesLateAfter32() {
+    let marks: Set = [day(9, 5)]
+
+    #expect(PregnancyRiskCalculator.risk(on: day(10, 6), periodDays: marks, today: day(10, 7)) == .medium)
+    #expect(PregnancyRiskCalculator.risk(on: day(10, 7), periodDays: marks, today: day(10, 7)) == .late)
+}
+
+@Test func usesSixRecentCycles() {
+    // Длины 21 и шесть по 28: старый цикл в 21 день отброшен, окно 10–17, 5-й день низкий.
+    let marks: Set = [day(1, 1), day(1, 22), day(2, 19), day(3, 19), day(4, 16), day(5, 14), day(6, 11), day(7, 9)]
+
+    #expect(PregnancyRiskCalculator.risk(on: day(7, 13), periodDays: marks, today: day(7, 20)) == .low)
+}
+
 @Test func irregularCyclesHaveNoLow() {
     // Длины 22, 35, 28: разброс 13 > 10, окно 4–24.
     let marks: Set = [day(6, 1), day(6, 23), day(7, 28), day(8, 25)]
