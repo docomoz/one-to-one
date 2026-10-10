@@ -31,10 +31,12 @@ struct OneToOneApp: App {
             Tab("Трекер", systemImage: "heart") {
                 TrackerView()
             }
-            // Полный календарь цикла только у неё; его упрощённый вид появится в #17.
-            if model.data.meIsWoman {
-                Tab("Цикл", systemImage: "drop") {
+            // Полный календарь цикла у неё, у него упрощённый вид с подсказкой дня.
+            Tab("Цикл", systemImage: "drop") {
+                if model.data.meIsWoman {
                     HerCalendarView()
+                } else {
+                    HisCalendarView()
                 }
             }
         }
