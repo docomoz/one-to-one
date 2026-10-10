@@ -57,3 +57,7 @@ private func hint(types: Set<SexType> = [.vaginal], condom: Bool? = false, finis
     #expect(hint(day: day(9, 14), today: day(9, 19)) == .strong)
     #expect(hint(day: day(9, 14), today: day(9, 20)) == nil)
 }
+
+@Test func noHintForFutureDay() {
+    #expect(hint(day: day(9, 17), today: day(9, 16)) == nil)
+}

@@ -36,3 +36,15 @@ public struct SexEntry: Codable, Identifiable, Equatable, Sendable {
         self.createdBy = createdBy
     }
 }
+
+extension SexEntry {
+    /// Про защиту спрашиваем только при «Классике». Сняли её — ответы стираем, иначе останется
+    /// незаметная запись «без презерватива», и подсказка про таблетку сработает зря.
+    public var withProtectionOnlyIfVaginal: SexEntry {
+        guard !types.contains(.vaginal) else { return self }
+        var entry = self
+        entry.condom = nil
+        entry.finish = nil
+        return entry
+    }
+}

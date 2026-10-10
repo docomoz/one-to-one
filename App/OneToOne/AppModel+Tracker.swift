@@ -15,24 +15,14 @@ extension AppModel {
         // Пока пары нет (онбординг не пройден), автор записи неизвестен: ставим одноразовый id.
         let entry = SexEntry(day: day, types: types, orgasmsMan: orgasmsMan, orgasmsWoman: orgasmsWoman,
                              condom: condom, finish: finish, createdBy: data.meID ?? UUID())
-        update { $0.sexEntries.append(Self.droppingProtectionIfNeeded(entry)) }
+        update { $0.sexEntries.append(entry.withProtectionOnlyIfVaginal) }
     }
 
     func updateSex(_ entry: SexEntry) {
         update { data in
             guard let index = data.sexEntries.firstIndex(where: { $0.id == entry.id }) else { return }
-            data.sexEntries[index] = Self.droppingProtectionIfNeeded(entry)
+            data.sexEntries[index] = entry.withProtectionOnlyIfVaginal
         }
-    }
-
-    /// Про защиту спрашиваем только при «Классике». Сняли её — ответы стираем, иначе останется
-    /// незаметная запись «без презерватива», и подсказка про таблетку сработает зря.
-    private static func droppingProtectionIfNeeded(_ entry: SexEntry) -> SexEntry {
-        guard !entry.types.contains(.vaginal) else { return entry }
-        var entry = entry
-        entry.condom = nil
-        entry.finish = nil
-        return entry
     }
 
     func deleteSex(id: UUID) {
