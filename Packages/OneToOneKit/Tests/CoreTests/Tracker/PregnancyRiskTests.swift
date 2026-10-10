@@ -100,3 +100,22 @@ private func cycleDay(_ number: Int) -> DayKey {
 
     #expect(PregnancyRiskCalculator.risk(on: day(8, 12), periodDays: marks, today: day(8, 20)) == .low)
 }
+
+@Test func noLowAheadWhileLate() {
+    // Сегодня 10 октября — 36-й день, задержка. 25 октября по прогнозу 23-й день, был бы низкий.
+    #expect(PregnancyRiskCalculator.risk(on: day(10, 25), periodDays: regular, today: day(10, 10)) == .late)
+    // Окно по прогнозу остаётся высоким: 13 октября — 11-й день.
+    #expect(PregnancyRiskCalculator.risk(on: day(10, 13), periodDays: regular, today: day(10, 10)) == .high)
+}
+
+@Test func monthRisksCoverEveryDay() {
+    let today = day(9, 20)
+    let risks = PregnancyRiskCalculator.risks(in: Month(year: 2026, month: 9), periodDays: regular, today: today)
+
+    #expect(risks.count == 30)
+    for (key, risk) in risks {
+        #expect(risk == PregnancyRiskCalculator.risk(on: key, periodDays: regular, today: today))
+    }
+    #expect(risks[day(9, 14)] == .high)
+    #expect(risks[day(9, 5)] == .low)
+}

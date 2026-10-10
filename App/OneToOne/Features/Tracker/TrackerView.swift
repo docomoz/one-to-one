@@ -2,7 +2,7 @@ import Core
 import DesignSystem
 import SwiftUI
 
-/// Вкладка «Трекер»: статистика, кнопка «Отметить» и список записей.
+/// Вкладка «Трекер»: риск беременности на сегодня, статистика, кнопка «Отметить» и список записей.
 struct TrackerView: View {
     @Environment(AppModel.self) private var model
     @State private var isLogging = false
@@ -51,10 +51,8 @@ struct TrackerView: View {
             .navigationTitle("Трекер")
             .sheet(isPresented: $isLogging) { LogSexView(defaults: model.orgasmDefaults) }
             .sheet(item: $editing) { LogSexView(entry: $0) }
-            // В полночь пересчитываем «сегодня», иначе серия и месяц застынут до следующей записи.
-            .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
-                today = DayKey(.now)
-            }
+            // В полночь и при возврате в приложение пересчитываем «сегодня», иначе серия, месяц и риск застынут.
+            .onDayChange { today = DayKey(.now) }
         }
     }
 
