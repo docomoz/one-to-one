@@ -20,6 +20,7 @@ private func filledData() throws -> AppData {
                                 orgasmsMan: 1, orgasmsWoman: 2, createdBy: man.id)]
     data.periodDays = [day, day.adding(days: 1)]
     data.herMoods = [day: .wants]
+    data.symptoms = [day: [.preset(.headache), .custom("Мигрень")]]
     data.watchlist = [WatchlistItem(movie: movie, ownerID: man.id, addedAt: date, fromLater: false)]
     data.sessions = [session]
     data.swipes = [Swipe(sessionID: session.id, personID: man.id, movieID: movie.id, action: .yes, date: date)]
