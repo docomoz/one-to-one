@@ -1,0 +1,64 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "linear-gradient": [
+          "srgb:0.98039,0.49412,0.11765,1.00000",
+          "srgb:0.58824,0.18431,0.74902,1.00000"
+        ]
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "linear-gradient": [
+          "srgb:0.16471,0.08235,0.18824,1.00000",
+          "srgb:0.07059,0.03922,0.09412,1.00000"
+        ]
+      }
+    }
+  ],
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name-specializations": [
+            {
+              "value": "heart-blue.svg"
+            },
+            {
+              "appearance": "dark",
+              "value": "heart-blue-dark.svg"
+            }
+          ],
+          "name": "heart-blue"
+        },
+        {
+          "image-name-specializations": [
+            {
+              "value": "heart-pink.svg"
+            },
+            {
+              "appearance": "dark",
+              "value": "heart-pink-dark.svg"
+            }
+          ],
+          "name": "heart-pink"
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0.3
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "iOS"
+    ]
+  }
+}
