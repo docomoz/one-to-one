@@ -1,8 +1,13 @@
 /// Отметки дня, которые ставит она: месячные, «как я сегодня», симптомы.
 extension AppData {
+    /// Ставит или снимает отметку месячных. Если между отмеченным днём и этим пропущен
+    /// ровно один день, отмечает и его: скорее всего, его просто забыли.
     public mutating func togglePeriodDay(_ day: DayKey) {
-        if periodDays.remove(day) == nil {
-            periodDays.insert(day)
+        if periodDays.remove(day) != nil { return }
+        periodDays.insert(day)
+        let skipped = day.adding(days: -1)
+        if !periodDays.contains(skipped), periodDays.contains(day.adding(days: -2)) {
+            periodDays.insert(skipped)
         }
     }
 

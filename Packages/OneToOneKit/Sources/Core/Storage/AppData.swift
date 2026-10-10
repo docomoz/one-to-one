@@ -28,6 +28,11 @@ public struct AppData: Codable, Equatable, Sendable {
         return meID == couple.man.id || meID == couple.woman.id
     }
 
+    /// Этим телефоном пользуется она: ей виден полный календарь цикла.
+    public var meIsWoman: Bool {
+        meID != nil && meID == couple?.woman.id
+    }
+
     /// Поля, которых нет в файле, берём по умолчанию. Иначе после добавления нового поля
     /// старый файл не прочитается, и данные пользователя пропадут. Новое поле добавляй и сюда.
     public init(from decoder: Decoder) throws {
