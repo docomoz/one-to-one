@@ -19,16 +19,9 @@ struct MovieRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(movie.title).font(.headline)
-                Text(details).font(.subheadline).foregroundStyle(.secondary)
+                Text(movie.details).font(.subheadline).foregroundStyle(.secondary)
             }
         }
         .accessibilityElement(children: .combine)
-    }
-
-    private var details: String {
-        ([movie.year.map(String.init)] + [movie.genres.prefix(2).joined(separator: ", ")])
-            .compactMap { $0 }
-            .filter { !$0.isEmpty }
-            .joined(separator: " · ")
     }
 }
