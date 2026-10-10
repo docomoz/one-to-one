@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Предел шрифта сетки: `.dynamicTypeSize(...DynamicTypeSize.xxxLarge)` только на `LazyVGrid` в `MonthGridView` (шапка и легенды без предела).
-- Круг числа: `@ScaledMetric(relativeTo: .callout)` с базой 34, не больше 40 pt (`min(…, 40)`). На обычном размере (`.large`) ровно 34, как сейчас.
+- Круг числа: `@ScaledMetric(relativeTo: .callout)` с базой 34, не больше 38 pt (`min(…, 38)`, с кольцом 44 pt = колонка iPhone SE). На обычном размере (`.large`) ровно 34, как сейчас.
 - Точка симптомов (5×5), полоска риска (`RiskMark` 14×4), отступы ячейки и её `minHeight: 44` не меняются.
 - Пунктир прогноза, обводка выбранного дня (`padding(-3)`) и заливка месячных привязаны к кругу и растут вместе с ним.
 - На обычном размере шрифта вид не меняется.
@@ -21,7 +21,7 @@
 
 ## Review Focus
 
-- iPhone SE (ширина 375): на `.xxxLarge` обводка выбранного дня (40 + 6 = 46 pt) не должна налезать на соседнее число (колонка ~44 pt плюс 4 pt промежутка).
+- iPhone SE (ширина 375): на `.xxxLarge` обводка выбранного дня (38 + 6 = 44 pt) не должна налезать на соседнее число (колонка ~44 pt плюс 4 pt промежутка).
 - Размеры Универсального доступа AX1…AX5: сетка остаётся как на `.xxxLarge`, шапка месяца переносит длинное название («Сентябрь 2026») и не налезает на стрелки.
 - `PhaseLegend` на AX-размерах: «Фолликулярная» не рвётся посреди слова.
 - Тёмная тема: заливка фаз и цвета не меняются (вёрстку трогаем, цвета нет).
@@ -38,7 +38,7 @@
 - Modify: `docs/decisions.md`
 
 - [ ] **Step 1:** В `MonthGridView.body` на `LazyVGrid` добавить `.dynamicTypeSize(...DynamicTypeSize.xxxLarge)` с комментарием почему.
-- [ ] **Step 2:** В `DayCell` добавить `@ScaledMetric(relativeTo: .callout) private var scaledCircle: CGFloat = 34` и `private var circle: CGFloat { min(scaledCircle, 40) }`; заменить `.frame(width: 34, height: 34)` на `.frame(width: circle, height: circle)`.
+- [ ] **Step 2:** В `DayCell` добавить `@ScaledMetric(relativeTo: .callout) private var scaledCircle: CGFloat = 34` и `private var circle: CGFloat { min(scaledCircle, 38) }`; заменить `.frame(width: 34, height: 34)` на `.frame(width: circle, height: circle)`.
 - [ ] **Step 3:** В шапке у `Text(month.title)` добавить `.multilineTextAlignment(.center)`.
 - [ ] **Step 4:** Превью `#Preview("Крупный шрифт")` для `MonthGridView` с месячными, прогнозом, симптомами, рисками и выбранным днём, `.dynamicTypeSize(.accessibility3)`; плюс обычное превью с теми же данными.
 - [ ] **Step 5:** Строка в `docs/decisions.md`.

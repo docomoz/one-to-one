@@ -50,7 +50,7 @@ struct MonthGridView: View {
                     }
                 }
             }
-            // Семь колонок по ~45 pt: крупнее «28» и «Пн» в них не влезут, поэтому сетка растёт только до xxxLarge.
+            // Семь колонок по ~44 pt на iPhone SE: крупнее «28» и «Пн» в них не влезут, поэтому сетка растёт только до xxxLarge.
             // Шапка, легенды и карточка дня растут дальше, VoiceOver читает каждый день целиком.
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         }
@@ -70,9 +70,9 @@ private struct DayCell: View {
     let action: (() -> Void)?
     @Environment(\.locale) private var locale
     @Environment(\.colorScheme) private var colorScheme
-    /// Круг числа растёт со шрифтом, но не шире 40: с кольцом выбора он должен влезть в колонку.
+    /// Круг числа растёт со шрифтом, но не шире 38: с кольцом выбора (+6) это 44, ширина колонки на iPhone SE.
     @ScaledMetric(relativeTo: .callout) private var scaledCircle: CGFloat = 34
-    private var circle: CGFloat { min(scaledCircle, 40) }
+    private var circle: CGFloat { min(scaledCircle, 38) }
 
     var body: some View {
         if let action {
