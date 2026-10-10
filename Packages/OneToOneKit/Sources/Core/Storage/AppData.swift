@@ -10,6 +10,7 @@ public struct AppData: Codable, Equatable, Sendable {
     public var sexEntries: [SexEntry] = []
     public var periodDays: Set<DayKey> = []
     public var herMoods: [DayKey: HerMood] = [:]
+    public var symptoms: [DayKey: Set<Symptom>] = [:]
 
     // Фильмы
     public var watchlist: [WatchlistItem] = []
@@ -36,6 +37,7 @@ public struct AppData: Codable, Equatable, Sendable {
         sexEntries = try container.decodeIfPresent([SexEntry].self, forKey: .sexEntries) ?? []
         periodDays = try container.decodeIfPresent(Set<DayKey>.self, forKey: .periodDays) ?? []
         herMoods = try container.decodeIfPresent([DayKey: HerMood].self, forKey: .herMoods) ?? [:]
+        symptoms = try container.decodeIfPresent([DayKey: Set<Symptom>].self, forKey: .symptoms) ?? [:]
         watchlist = try container.decodeIfPresent([WatchlistItem].self, forKey: .watchlist) ?? []
         sessions = try container.decodeIfPresent([PickSession].self, forKey: .sessions) ?? []
         swipes = try container.decodeIfPresent([Swipe].self, forKey: .swipes) ?? []
