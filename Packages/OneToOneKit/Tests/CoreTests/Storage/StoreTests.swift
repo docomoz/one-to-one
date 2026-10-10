@@ -1,0 +1,86 @@
+import Foundation
+import Testing
+@testable import Core
+
+/// AppData, где заполнено каждое поле: так проверяем, что сохраняется всё, а не только пара.
+private func filledData() throws -> AppData {
+    let man = Person(name: "Максим", sex: .male)
+    let woman = Person(name: "Даша", sex: .female)
+    let day = DayKey(year: 2026, month: 3, day: 14)
+    let date = Date(timeIntervalSince1970: 1_773_500_000)
+    let movie = Movie(id: 326, title: "Побег из Шоушенка", year: 1994, genres: ["драма"],
+                      overview: "Банкир попадает в тюрьму.", posterURL: URL(string: "https://example.com/p.jpg"),
+                      imdbID: "tt0111161", ratings: Ratings(imdb: 9.3, kinopoisk: 9.1))
+    let session = PickSession(id: UUID(), mood: .cry, startedBy: woman.id, startedAt: date)
+
+    var data = AppData()
+    data.couple = try Couple.make(man, woman)
+    data.meID = man.id
+    data.sexEntries = [SexEntry(id: UUID(), date: date, types: [.vaginal, .cunnilingus],
+                                orgasmsMan: 1, orgasmsWoman: 2, createdBy: man.id)]
+    data.periodDays = [day, day.adding(days: 1)]
+    data.herMoods = [day: .wants]
+    data.watchlist = [WatchlistItem(movie: movie, ownerID: man.id, addedAt: date, fromLater: false)]
+    data.sessions = [session]
+    data.swipes = [Swipe(sessionID: session.id, personID: man.id, movieID: movie.id, action: .yes, date: date)]
+    data.watched = [movie.id]
+    data.movieCache = [movie.id: movie]
+    return data
+}
+
+/// Новая пустая временная папка, которой ещё нет на диске.
+private func tempDirectory() -> URL {
+    FileManager.default.temporaryDirectory.appending(path: "OneToOneTests-\(UUID().uuidString)")
+}
+
+@Test func localStoreRoundTrip() throws {
+    let directory = tempDirectory()
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let data = try filledData()
+
+    try LocalStore(directory: directory).save(data)
+    let loaded = try LocalStore(directory: directory).load()
+
+    #expect(loaded == data)
+}
+
+@Test func localStoreEmptyWhenNoFile() throws {
+    let loaded = try LocalStore(directory: tempDirectory()).load()
+
+    #expect(loaded == AppData())
+}
+
+@Test func localStoreOverwritesPreviousSave() throws {
+    let directory = tempDirectory()
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let store = LocalStore(directory: directory)
+
+    try store.save(try filledData())
+    try store.save(AppData())
+
+    #expect(try store.load() == AppData())
+}
+
+@Test func inMemoryStoreRoundTrip() throws {
+    let store = InMemoryStore()
+    let data = try filledData()
+
+    #expect(try store.load() == AppData())
+    try store.save(data)
+    #expect(try store.load() == data)
+}
+
+@Test func emptyAppDataHasNothing() {
+    let data = AppData()
+
+    #expect(data.couple == nil)
+    #expect(data.meID == nil)
+    #expect(data.sexEntries.isEmpty)
+    #expect(data.periodDays.isEmpty)
+    #expect(data.herMoods.isEmpty)
+    #expect(data.watchlist.isEmpty)
+    #expect(data.sessions.isEmpty)
+    #expect(data.swipes.isEmpty)
+    #expect(data.watched.isEmpty)
+    #expect(data.movieCache.isEmpty)
+}
