@@ -40,6 +40,9 @@ private func day(_ year: Int, _ month: Int, _ day: Int) -> DayKey {
 @Test func anniversaryAcrossNewYear() {
     #expect(AnniversaryCalculator.upcoming(since: day(2020, 1, 5), today: day(2026, 12, 20))
         == UpcomingAnniversary(years: 7, daysLeft: 16))
+    // Первая годовщина тоже может прийтись на следующий год.
+    #expect(AnniversaryCalculator.upcoming(since: day(2026, 1, 5), today: day(2026, 12, 20))
+        == UpcomingAnniversary(years: 1, daysLeft: 16))
 }
 
 @Test func leapDayAnniversaryInCommonYear() {

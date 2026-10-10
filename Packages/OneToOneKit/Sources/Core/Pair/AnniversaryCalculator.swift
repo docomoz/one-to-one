@@ -1,5 +1,3 @@
-import Foundation
-
 /// Ближайшая годовщина пары: какая по счёту и сколько до неё дней.
 public struct UpcomingAnniversary: Hashable, Sendable {
     /// Сколько лет вместе исполнится в этот день.

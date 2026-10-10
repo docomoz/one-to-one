@@ -1,5 +1,3 @@
-import Foundation
-
 /// Событие пары, до которого осталось немного дней: день рождения или годовщина.
 public enum UpcomingEvent: Hashable, Sendable {
     case birthday(UpcomingBirthday)
