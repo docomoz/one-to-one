@@ -51,10 +51,8 @@ struct TrackerView: View {
             .navigationTitle("Трекер")
             .sheet(isPresented: $isLogging) { LogSexView(defaults: model.orgasmDefaults) }
             .sheet(item: $editing) { LogSexView(entry: $0) }
-            // В полночь пересчитываем «сегодня», иначе серия, месяц и риск застынут до следующей записи.
-            .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
-                today = DayKey(.now)
-            }
+            // В полночь и при возврате в приложение пересчитываем «сегодня», иначе серия, месяц и риск застынут.
+            .onDayChange { today = DayKey(.now) }
         }
     }
 

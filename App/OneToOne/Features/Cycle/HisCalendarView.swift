@@ -20,7 +20,7 @@ struct HisCalendarView: View {
 
                     MonthGridView(month: $month, today: today, periodDays: periodDays,
                                   phases: phases(in: month, periodDays: periodDays),
-                                  risks: month.risks(periodDays: periodDays, today: today))
+                                  risks: PregnancyRiskCalculator.risks(in: month, periodDays: periodDays, today: today))
 
                     PhaseLegend()
                     RiskLegend()

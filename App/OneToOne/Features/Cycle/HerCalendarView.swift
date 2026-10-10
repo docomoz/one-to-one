@@ -21,7 +21,7 @@ struct HerCalendarView: View {
                                   periodDays: model.data.periodDays,
                                   predictedDays: forecast.predictedPeriodDays,
                                   symptomDays: Set(model.data.symptoms.keys),
-                                  risks: month.risks(periodDays: model.data.periodDays, today: today))
+                                  risks: PregnancyRiskCalculator.risks(in: month, periodDays: model.data.periodDays, today: today))
 
                     RiskLegend()
 
