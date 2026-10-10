@@ -1,4 +1,4 @@
-# Проверки на каждый PR: тесты пакета и тесты приложения на симуляторе.
+# Проверки на каждый PR: тесты пакета и сборка приложения.
 name: ci
 
 # Если в PR поменялись только тексты (.md) и материалы из docs/, проверки не запускаем: на сборку они не влияют.
@@ -52,10 +52,14 @@ jobs:
           cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
           xcodegen generate
 
-      - name: Тесты приложения
+      # Собираем приложение и его тесты, но не запускаем симулятор: его загрузка на раннере занимает от 1 до 10 минут,
+      # а сами тесты приложения пока идут доли секунды. `build-for-testing` компилирует и тесты, так что сломанный тест
+      # всё равно уронит CI. Запускаем тесты App/OneToOneTests локально (см. CLAUDE.md).
+      # Вернуть `xcodebuild test` с `-destination 'platform=iOS Simulator,name=iPhone 17'`, когда появятся настоящие тесты экранов.
+      - name: Сборка приложения и тестов
         run: |
-          xcodebuild test \
+          xcodebuild build-for-testing \
             -project OneToOne.xcodeproj \
             -scheme OneToOne \
-            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO
