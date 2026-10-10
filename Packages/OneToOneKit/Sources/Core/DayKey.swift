@@ -34,6 +34,14 @@ public struct DayKey: Codable, Hashable, Comparable, Sendable {
         Self.utc.dateComponents([.day], from: utcDate, to: other.utcDate).day!
     }
 
+    /// Полдень этого дня в часовом поясе `calendar`: для выбора даты на экране.
+    /// Полдень, а не полночь, потому что в день перевода часов полуночи может не быть.
+    public func date(in calendar: Calendar = .current) -> Date {
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
+        return gregorian.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
+    }
+
     public static func < (lhs: DayKey, rhs: DayKey) -> Bool {
         (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
     }

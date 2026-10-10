@@ -16,7 +16,7 @@ private func filledData() throws -> AppData {
     var data = AppData()
     data.couple = try Couple.make(man, woman)
     data.meID = man.id
-    data.sexEntries = [SexEntry(id: UUID(), date: date, types: [.vaginal, .cunnilingus],
+    data.sexEntries = [SexEntry(id: UUID(), day: day, types: [.vaginal, .cunnilingus],
                                 orgasmsMan: 1, orgasmsWoman: 2, createdBy: man.id)]
     data.periodDays = [day, day.adding(days: 1)]
     data.herMoods = [day: .wants]
