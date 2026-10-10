@@ -79,3 +79,15 @@ private func ids(_ movies: [Movie]) -> [Int] { movies.map(\.id) }
                                  mood: .laugh, watched: [], swipedByMe: [])
     #expect(ids(deck) == [10, 12])
 }
+
+@Test func excludedRemovesRecommendationsNotLists() {
+    let deck = DeckBuilder.build(lists: [item(movie(1))], recommendations: [movie(10), movie(11)],
+                                 mood: .laugh, watched: [], swipedByMe: [], excluded: [1, 10])
+    #expect(ids(deck) == [1, 11])
+}
+
+@Test func excludedAlsoDropsLocalTail() {
+    let deck = DeckBuilder.build(lists: [], recommendations: [movie(10), movie(20)],
+                                 mood: .laugh, watched: [], swipedByMe: [], excluded: [20])
+    #expect(ids(deck) == [10])
+}

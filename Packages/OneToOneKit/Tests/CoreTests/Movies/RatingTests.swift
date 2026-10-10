@@ -124,3 +124,65 @@ func anyVerdictHidesBanner(_ verdict: MovieVerdict) {
     #expect(data.ratings.isEmpty)
     #expect(data.watched == [1])
 }
+
+@Test func likedWatchedMovieBecomesSeed() {
+    var data = watched()
+    data.rate(movieID: 1, .like, by: man.id, at: at(hours: 30))
+
+    #expect(data.recommendationSeeds() == [1])
+}
+
+@Test func likedByBothGoesFirst() {
+    var data = watched()
+    data.rate(movieID: 1, .like, by: man.id, at: at(hours: 30))
+    data.rate(movieID: 1, .like, by: woman.id, at: at(hours: 31))
+    let session = data.startPick(mood: .laugh, startedBy: man.id, at: at(hours: 40))
+    data.swipe(.yes, movie: movie(2), in: session, by: man.id, at: at(hours: 41))
+
+    #expect(data.recommendationSeeds() == [1, 2])
+}
+
+@Test func likedByOneSortedByRatingDate() {
+    var data = watched()
+    data.rate(movieID: 1, .like, by: man.id, at: at(hours: 50))
+    let session = data.startPick(mood: .laugh, startedBy: man.id, at: at(hours: 40))
+    data.swipe(.yes, movie: movie(2), in: session, by: man.id, at: at(hours: 41))
+
+    #expect(data.recommendationSeeds() == [1, 2])
+}
+
+@Test func mixedVerdictIsNotSeed() {
+    var data = watched()
+    data.rate(movieID: 1, .like, by: man.id, at: at(hours: 30))
+    data.rate(movieID: 1, .dislike, by: woman.id, at: at(hours: 31))
+
+    #expect(data.recommendationSeeds().isEmpty)
+    #expect(data.dislikedMovies() == [1])
+}
+
+@Test func skipDoesNothing() {
+    var data = watched()
+    data.rate(movieID: 1, .skip, by: man.id, at: at(hours: 30))
+
+    #expect(data.recommendationSeeds().isEmpty)
+    #expect(data.dislikedMovies().isEmpty)
+}
+
+@Test func dislikedMoviesLastThree() {
+    var data = pairedData()
+    for id in 1...4 { data.rate(movieID: id, .dislike, by: man.id, at: at(hours: Double(id))) }
+    data.rate(movieID: 1, .dislike, by: woman.id, at: at(hours: 0.5))
+
+    #expect(data.dislikedMovies() == [4, 3, 2])
+}
+
+@Test func seedsStillLimitFive() {
+    var data = pairedData()
+    for id in 1...4 { data.addToWatchlist(movie(id), ownerID: woman.id, addedAt: at(hours: Double(id))) }
+    for id in 10...12 {
+        data.markWatched(movieID: id, at: at(hours: 5))
+        data.rate(movieID: id, .like, by: man.id, at: at(hours: Double(id)))
+    }
+
+    #expect(data.recommendationSeeds() == [12, 11, 10, 4, 3])
+}

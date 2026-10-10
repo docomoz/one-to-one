@@ -64,22 +64,28 @@ extension AppData {
     }
 
     /// Колода для этого человека: оба списка, рекомендации, без просмотренных
-    /// и без того, что он уже свайпнул в этом подборе.
-    public func deck(for session: PickSession, recommendations: [Movie], me personID: UUID) -> [Movie] {
+    /// и без того, что он уже свайпнул в этом подборе. `excluded` — «похожие» на 👎, только из рекомендаций.
+    public func deck(for session: PickSession, recommendations: [Movie], me personID: UUID,
+                     excluded: Set<Int> = []) -> [Movie] {
         let swipedByMe = Set(swipes(in: session).filter { $0.personID == personID }.map(\.movieID))
         return DeckBuilder.build(lists: watchlist, recommendations: recommendations, mood: session.mood,
-                                 watched: watched, swipedByMe: swipedByMe)
+                                 watched: watched, swipedByMe: swipedByMe, excluded: excluded)
     }
 
-    /// По каким фильмам просить «похожие»: последние, что получили ♥ (и никто не передумал)
-    /// или попали в списки, свежие первыми, без просмотренных.
+    /// По каким фильмам просить «похожие»: сначала просмотренные с 👍 от обоих, потом
+    /// последние, что получили ♥ (и никто не передумал), попали в списки или получили 👍 от одного,
+    /// свежие первыми. Просмотренные — только с 👍; фильм, которому кто-то поставил 👎, не берём.
     /// Их немного, потому что у Кинопоиска 200 бесплатных запросов в день.
     public func recommendationSeeds(limit: Int = 5) -> [Int] {
         let liked = MatchFinder.latestSwipes(swipes).filter { $0.action == .yes }.map { ($0.date, $0.movieID) }
         let listed = watchlist.map { ($0.addedAt, $0.movie.id) }
-        var seen = watched
-        return (liked + listed).sorted { $0.0 > $1.0 }
-            .map(\.1)
+        let rated = likedRatings()
+        let byBoth = rated.filter { $0.value.likers >= 2 }
+            .sorted { $0.value.lastLike > $1.value.lastLike }
+            .map(\.key)
+        let byOne = rated.filter { $0.value.likers < 2 }.map { ($0.value.lastLike, $0.key) }
+        var seen = watched.subtracting(rated.keys)
+        return (byBoth + (liked + listed + byOne).sorted { $0.0 > $1.0 }.map(\.1))
             .filter { seen.insert($0).inserted }
             .prefix(limit)
             .map { $0 }

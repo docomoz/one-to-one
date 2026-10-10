@@ -18,4 +18,26 @@ extension AppData {
         else { return nil }
         return movieCache[movieID]
     }
+
+    /// Фильмы с 👎 от любого из пары, свежие первыми: их «похожие» убираем из рекомендаций.
+    public func dislikedMovies(limit: Int = 3) -> [Int] {
+        var seen: Set<Int> = []
+        return ratings.filter { $0.verdict == .dislike }
+            .sorted { $0.date > $1.date }
+            .map(\.movieID)
+            .filter { seen.insert($0).inserted }
+            .prefix(limit)
+            .map { $0 }
+    }
+
+    /// Фильмы с 👍 и без единого 👎: сколько человек поставили 👍 и когда последний раз.
+    func likedRatings() -> [Int: (likers: Int, lastLike: Date)] {
+        let disliked = Set(ratings.filter { $0.verdict == .dislike }.map(\.movieID))
+        var result: [Int: (likers: Int, lastLike: Date)] = [:]
+        for rating in ratings where rating.verdict == .like && !disliked.contains(rating.movieID) {
+            let old = result[rating.movieID]
+            result[rating.movieID] = ((old?.likers ?? 0) + 1, max(old?.lastLike ?? rating.date, rating.date))
+        }
+        return result
+    }
 }
