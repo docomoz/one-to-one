@@ -1,7 +1,7 @@
 import Foundation
 
 /// Ближайший день рождения в паре: чей он и сколько до него дней.
-public struct UpcomingBirthday: Equatable, Sendable {
+public struct UpcomingBirthday: Hashable, Sendable {
     public let person: Person
     /// `true`, если это день рождения того, кто держит телефон.
     public let isMe: Bool
@@ -34,19 +34,7 @@ public enum BirthdayCalculator {
 
     /// Ближайший день рождения начиная с `today`: в этом году, а если уже прошёл — в следующем.
     private static func nextBirthday(of birthDate: DayKey, from today: DayKey) -> DayKey {
-        let thisYear = birthday(of: birthDate, in: today.year)
-        return thisYear >= today ? thisYear : birthday(of: birthDate, in: today.year + 1)
-    }
-
-    /// Родившимся 29 февраля в невисокосный год — 1 марта, как в `DayKey.age(on:)`.
-    private static func birthday(of birthDate: DayKey, in year: Int) -> DayKey {
-        if birthDate.month == 2, birthDate.day == 29, !isLeap(year) {
-            return DayKey(year: year, month: 3, day: 1)
-        }
-        return DayKey(year: year, month: birthDate.month, day: birthDate.day)
-    }
-
-    private static func isLeap(_ year: Int) -> Bool {
-        (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+        let thisYear = birthDate.occurrence(in: today.year)
+        return thisYear >= today ? thisYear : birthDate.occurrence(in: today.year + 1)
     }
 }

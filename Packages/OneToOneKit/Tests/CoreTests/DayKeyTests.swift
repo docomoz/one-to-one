@@ -79,3 +79,11 @@ private func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int, _ min: Int) -> Date {
         #expect(DayKey(key.date(calendar: moscow), calendar: moscow) == key)
     }
 }
+
+@Test func occurrenceKeepsDay() {
+    #expect(DayKey(year: 2000, month: 10, day: 22).occurrence(in: 2026) == DayKey(year: 2026, month: 10, day: 22))
+    // 29 февраля в невисокосный год — 1 марта, в високосный остаётся 29 февраля.
+    let leapDay = DayKey(year: 1996, month: 2, day: 29)
+    #expect(leapDay.occurrence(in: 2027) == DayKey(year: 2027, month: 3, day: 1))
+    #expect(leapDay.occurrence(in: 2028) == DayKey(year: 2028, month: 2, day: 29))
+}

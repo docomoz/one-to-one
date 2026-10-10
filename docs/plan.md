@@ -49,7 +49,8 @@ App/OneToOne/
   AppModel.swift                    @Observable, держит AppData, сохраняет через Store
   AppModel+Tracker.swift            действия трекера (поток А)
   AppModel+Movies.swift             действия фильмов (поток Б)
-  Features/Onboarding|Home|Tracker|Cycle|Movies/   экраны
+  AppModel+Pair.swift               действия пары: дата «вместе с»
+  Features/Onboarding|Home|Tracker|Cycle|Movies|Settings|Shared/   экраны
 Packages/OneToOneKit/
   Sources/Core/Pair/                Sex, Person, Couple
   Sources/Core/Tracker/             SexEntry, Stats, Cycle, Tip
@@ -71,11 +72,17 @@ struct Couple: Codable, Equatable { let man: Person; let woman: Person
 enum CoupleError: Error, Equatable { case sameSex }
 struct UpcomingBirthday: Equatable { let person: Person; let isMe: Bool; let daysLeft: Int }
 enum BirthdayCalculator { static func upcoming(couple: Couple, meID: UUID?, today: DayKey, within: Int = 30) -> UpcomingBirthday? }
+struct UpcomingAnniversary: Equatable { let years: Int; let daysLeft: Int }
+enum AnniversaryCalculator { static func upcoming(since: DayKey?, today: DayKey, within: Int = 30) -> UpcomingAnniversary? }
+enum UpcomingEvent: Equatable { case birthday(UpcomingBirthday); case anniversary(UpcomingAnniversary); var daysLeft: Int }
+enum UpcomingEvents { static func list(_ data: AppData, today: DayKey) -> [UpcomingEvent] }
 func daysText(_ count: Int) -> String // «1 день», «2 дня», «5 дней»
+func yearsText(_ count: Int) -> String // «1 год», «2 года», «5 лет»
 
 // День без часового пояса
 struct DayKey: Codable, Hashable, Comparable { let year: Int; let month: Int; let day: Int
-  init(_ date: Date, calendar: Calendar = .current); func adding(days: Int) -> DayKey }
+  init(_ date: Date, calendar: Calendar = .current); func adding(days: Int) -> DayKey
+  func occurrence(in year: Int) -> DayKey }
 
 // Tracker
 enum SexType: String, Codable, CaseIterable { case vaginal, anal, cunnilingus, blowjob } // «Классика», «Анал», «Куни», «Минет»
@@ -108,7 +115,7 @@ enum MatchFinder { static func matches(_ swipes: [Swipe], couple: Couple) -> [In
   static func likedByAnyone(_ swipes: [Swipe]) -> [Int] }
 
 // Storage
-struct AppData: Codable, Equatable { var couple: Couple?; var meID: UUID?; var sexEntries: [SexEntry]
+struct AppData: Codable, Equatable { var couple: Couple?; var meID: UUID?; var togetherSince: DayKey?; var sexEntries: [SexEntry]
   var periodDays: Set<DayKey>; var herMoods: [DayKey: HerMood]; var watchlist: [WatchlistItem]
   var sessions: [PickSession]; var swipes: [Swipe]; var watched: Set<Int>; var movieCache: [Int: Movie] }
 protocol Store: Sendable { func load() throws -> AppData; func save(_ data: AppData) throws }

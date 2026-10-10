@@ -5,6 +5,8 @@ public struct AppData: Codable, Equatable, Sendable {
     public var couple: Couple?
     /// Кто из пары пользуется этим телефоном.
     public var meID: UUID?
+    /// С какого дня пара вместе. Нужен для годовщины; без даты плашки годовщины нет.
+    public var togetherSince: DayKey?
 
     // Трекер
     public var sexEntries: [SexEntry] = []
@@ -39,6 +41,7 @@ public struct AppData: Codable, Equatable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         couple = try container.decodeIfPresent(Couple.self, forKey: .couple)
         meID = try container.decodeIfPresent(UUID.self, forKey: .meID)
+        togetherSince = try container.decodeIfPresent(DayKey.self, forKey: .togetherSince)
         sexEntries = try container.decodeIfPresent([SexEntry].self, forKey: .sexEntries) ?? []
         periodDays = try container.decodeIfPresent(Set<DayKey>.self, forKey: .periodDays) ?? []
         herMoods = try container.decodeIfPresent([DayKey: HerMood].self, forKey: .herMoods) ?? [:]

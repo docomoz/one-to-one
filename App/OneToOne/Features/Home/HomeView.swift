@@ -3,7 +3,7 @@ import DesignSystem
 import SwiftUI
 
 /// Вкладка «Главная»: счётчик за месяц, оргазмы и серия, кнопки «Отметить секс» и «Выбрать фильм»,
-/// карточка дня и плашка ближайшего дня рождения.
+/// карточка дня и плашки ближайших событий (день рождения, годовщина).
 struct HomeView: View {
     /// Что делать по «Выбрать фильм»: открыть подбор (идущий или выбор настроения).
     let pickMovie: () -> Void
@@ -35,10 +35,9 @@ struct HomeView: View {
 
                     DayCard(forecast: forecast, herMood: model.data.herMoods[today], isWoman: model.data.meIsWoman)
 
-                    if let couple = model.data.couple,
-                       let birthday = BirthdayCalculator.upcoming(couple: couple, meID: model.data.meID, today: today) {
+                    ForEach(UpcomingEvents.list(model.data, today: today), id: \.self) { event in
                         Card {
-                            Text(birthday.text)
+                            Text(event.text)
                                 .font(.headline)
                         }
                     }
@@ -47,13 +46,23 @@ struct HomeView: View {
             }
             .background(Palette.background)
             .sheet(isPresented: $isLogging) { LogSexView(defaults: model.orgasmDefaults) }
-            // В полночь пересчитываем «сегодня»: месяц, серия, подсказка и дни рождения.
+            // В полночь пересчитываем «сегодня»: месяц, серия, подсказка, дни рождения и годовщина.
             .onDayChange { today = DayKey(.now) }
-            #if DEBUG
             .toolbar {
-                NavigationLink("Витрина") { DesignPreview() }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        PairSettingsView()
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel("Настройки пары")
+                }
+                #if DEBUG
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink("Витрина") { DesignPreview() }
+                }
+                #endif
             }
-            #endif
         }
     }
 
