@@ -34,7 +34,7 @@ jobs:
           BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         run: |
           # Если сравнить не получилось (первый push и т. п.), считаем, что код менялся.
-          changed=$(git diff --name-only "$BASE" "$GITHUB_SHA" 2>/dev/null) || changed="unknown"
+          changed=$(git diff --no-renames --name-only "$BASE" "$GITHUB_SHA" 2>/dev/null) || changed="unknown"
           if echo "$changed" | grep -vE '\.md$|^docs/' | grep -q .; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
