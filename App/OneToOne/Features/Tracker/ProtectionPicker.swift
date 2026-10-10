@@ -11,12 +11,14 @@ struct ProtectionPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             row("Презерватив") {
-                chip("Был", isOn: condom == true) { condom = condom == true ? nil : true }
-                chip("Не было", isOn: condom == false) { condom = condom == false ? nil : false }
+                chip("Был", of: "Презерватив", isOn: condom == true) { condom = condom == true ? nil : true }
+                chip("Не было", of: "Презерватив", isOn: condom == false) { condom = condom == false ? nil : false }
             }
             row("Кончил") {
                 ForEach(SexFinish.allCases, id: \.self) { option in
-                    chip(option.title, isOn: finish == option) { finish = finish == option ? nil : option }
+                    chip(option.title, of: "Кончил", isOn: finish == option) {
+                        finish = finish == option ? nil : option
+                    }
                 }
             }
         }
@@ -29,8 +31,11 @@ struct ProtectionPicker: View {
         }
     }
 
-    private func chip(_ title: String, isOn: Bool, action: @escaping () -> Void) -> some View {
+    /// VoiceOver читает и вопрос: просто «Был, кнопка» непонятно о чём.
+    private func chip(_ title: String, of question: String, isOn: Bool,
+                      action: @escaping () -> Void) -> some View {
         ChipButton(title: title, isOn: isOn, compact: true, surface: Palette.background, action: action)
+            .accessibilityLabel("\(question): \(title)")
     }
 }
 

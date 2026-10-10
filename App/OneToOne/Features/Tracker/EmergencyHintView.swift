@@ -17,6 +17,7 @@ struct EmergencyHintView: View {
                     .accessibilityHidden(true)
                 Text(hint.title)
                     .font(.title2.bold())
+                    .accessibilityAddTraits(.isHeader)
                 Text(hint.detail)
                     .font(.body)
                     .foregroundStyle(.secondary)
@@ -32,26 +33,6 @@ struct EmergencyHintView: View {
                 .padding(.bottom, 8)
         }
         .background(Palette.background)
-    }
-}
-
-private extension EmergencyHint {
-    var title: String {
-        switch self {
-        case .strong: "Риск беременности выше обычного"
-        case .soft: "Риск небольшой, но есть"
-        }
-    }
-
-    var detail: String {
-        switch self {
-        case .strong:
-            "Экстренная таблетка лучше всего работает в первые 72 часа, некоторые до 5 дней. "
-                + "Спроси в аптеке или у врача."
-        case .soft:
-            "Сперматозоиды бывают в смазке до семяизвержения. "
-                + "Если волнуетесь, экстренная таблетка работает до 72 часов, некоторые до 5 дней."
-        }
     }
 }
 
