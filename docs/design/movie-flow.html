@@ -1,0 +1,56 @@
+<h2>Выбор фильма на вечер: набросок v2</h2>
+<p class="subtitle">Три шага: настроение → свайпы → совпадение. Это черновой набросок, не дизайн. Пометка «догадка» значит, что это придумал Claude, а не вы.</p>
+
+<style>
+  .phones { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+  .phone { width: 220px; border: 2px solid currentColor; border-radius: 28px; padding: 18px 14px; min-height: 420px; display: flex; flex-direction: column; gap: 10px; opacity: .95; }
+  .phone h4 { margin: 0 0 4px; font-size: 15px; text-align: center; }
+  .step { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; opacity: .6; text-align: center; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .chip { border: 1px solid currentColor; border-radius: 14px; padding: 4px 10px; font-size: 12px; }
+  .chip.on { background: rgba(127,127,255,.25); }
+  .poster { flex: 1; border: 1px dashed currentColor; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 12px; opacity: .7; min-height: 170px; }
+  .meta { font-size: 12px; text-align: center; }
+  .btns { display: flex; justify-content: space-around; font-size: 22px; }
+  .note { font-size: 11px; opacity: .7; text-align: center; font-style: italic; }
+  .big { font-size: 20px; text-align: center; margin-top: 30px; }
+</style>
+
+<div class="phones">
+  <div class="phone">
+    <div class="step">Шаг 1</div>
+    <h4>Какое сегодня настроение?</h4>
+    <div class="chips">
+      <span class="chip">Посмеяться</span>
+      <span class="chip on">Что-то лёгкое</span>
+      <span class="chip">Пощекотать нервы</span>
+      <span class="chip">Поплакать</span>
+      <span class="chip">Залипнуть</span>
+      <span class="chip">Романтика</span>
+    </div>
+    <div class="note">Список настроений: догадка</div>
+    <div style="flex:1"></div>
+    <button class="mock-button">Свайпать</button>
+    <div class="note">Выбирает любой из вас, одно на двоих</div>
+  </div>
+
+  <div class="phone">
+    <div class="step">Шаг 2</div>
+    <h4>Свайпы</h4>
+    <div class="poster">Постер фильма</div>
+    <div class="meta"><b>Название</b> · 2019 · комедия<br>IMDb 7.4 · Кинопоиск 7.8<br>Пара строк о чём фильм</div>
+    <div class="btns"><span>✕</span><span title="На будущее">🔖</span><span>♥</span></div><div class="note">🔖 = «на будущее»: не сегодня, но сохранить</div>
+    <div class="note">Колода: ваши списки + рекомендации под вкус и настроение</div>
+    <div class="note">Догадка: каждый свайпает на своём телефоне одновременно</div>
+  </div>
+
+  <div class="phone">
+    <div class="step">Шаг 3</div>
+    <h4>&nbsp;</h4>
+    <div class="big">💘 Совпадение!</div>
+    <div class="poster" style="min-height:140px">Постер</div>
+    <div class="meta"><b>Название</b><br>Вам обоим понравилось</div>
+    <button class="mock-button">Смотрим</button>
+    <div class="note">Ещё свайпать</div>
+  </div>
+</div>
