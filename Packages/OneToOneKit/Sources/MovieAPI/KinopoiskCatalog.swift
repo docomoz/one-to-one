@@ -3,7 +3,7 @@ import Core
 
 /// Каталог фильмов Кинопоиска (poiskkino.dev). Рейтинги Кинопоиска и IMDb приходят сразу с фильмом.
 /// Бесплатно 200 запросов в день, поэтому просим только нужные поля.
-public struct KinopoiskCatalog: MovieCatalog {
+public struct KinopoiskCatalog: MovieCatalog, MovieFeed {
     static let baseURL = URL(string: "https://api.poiskkino.dev/v1.5")!
     /// Подходит для «посмотреть вечером»: фильмы, мультфильмы и полнометражное аниме, но не сериалы.
     static let types = ["movie", "cartoon", "anime"]
@@ -36,18 +36,33 @@ public struct KinopoiskCatalog: MovieCatalog {
     }
 
     public func discover(genres: [String]) async throws -> [Movie] {
-        var query = genres.map { ("genres.name", $0) }
+        try await popular(genres.map { ("genres.name", $0) } + [("rating.kp", "6-10")], limit: 40)
+    }
+
+    /// Самые популярные по числу голосов: фильмы, мультфильмы и аниме без сериалов.
+    /// `filters` сужают выборку (жанры, год, страница).
+    private func popular(_ filters: [(String, String)], limit: Int) async throws -> [Movie] {
+        var query = filters
         query += Self.types.map { ("type", $0) }
         query += [
             ("isSeries", "false"),
-            ("rating.kp", "6-10"),
             ("sortField", "votes.kp"),
             ("sortType", "-1"),
-            ("limit", "40"),
+            ("limit", String(limit)),
         ]
         query += Self.fields.map { ("selectFields", $0) }
         let page: KinopoiskPage = try await get("movie", query)
         return Self.movies(page.docs.items)
+    }
+
+    /// Страница топа по числу голосов, по 50 фильмов.
+    public func top(page: Int) async throws -> [Movie] {
+        try await popular([("page", String(page))], limit: 50)
+    }
+
+    /// Самые популярные фильмы года.
+    public func newReleases(year: Int) async throws -> [Movie] {
+        try await popular([("year", String(year))], limit: 50)
     }
 
     /// Убирает сериалы и записи без названия.
