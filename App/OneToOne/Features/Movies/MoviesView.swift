@@ -1,14 +1,61 @@
 import Core
 import SwiftUI
 
-/// Вкладка «Фильмы». Пока здесь списки; подбор под настроение появится в #23.
+/// Вкладка «Фильмы»: сверху карточка вечера и совпадения, ниже списки.
 struct MoviesView: View {
+    @Environment(AppModel.self) private var model
+    @State private var flow: FlowRequest?
+
     var body: some View {
         NavigationStack {
-            WatchlistView()
+            WatchlistView { header }
                 .navigationTitle("Фильмы")
+                #if DEBUG
+                .toolbar { debugSwitch }
+                #endif
+                .fullScreenCover(item: $flow) { PickFlowView(session: $0.session) }
         }
     }
+
+    @ViewBuilder
+    private var header: some View {
+        let state = PickCardState.make(model.data)
+        Section {
+            PickCard(state: state,
+                     onOpen: { flow = FlowRequest(session: model.currentPick) },
+                     onNewPick: { flow = FlowRequest(session: nil) })
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+        }
+        if case .inProgress(let session, let count) = state, count > 0 {
+            MatchesListView(title: "Совпали", movies: model.data.movies(model.matches(in: session))) {
+                model.markWatched(movieID: $0.id)
+            }
+        }
+    }
+
+    #if DEBUG
+    /// Переключатель «я — он / она»: пройти подбор за двоих на одном телефоне.
+    private var debugSwitch: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Menu("Я: \(myName)") {
+                Button("Переключиться на партнёра") { model.switchMe() }
+            }
+        }
+    }
+
+    private var myName: String {
+        guard let couple = model.data.couple else { return "?" }
+        return model.data.meID == couple.man.id ? couple.man.name : couple.woman.name
+    }
+    #endif
+}
+
+/// Что открыть поверх вкладки: идущий подбор или новый (`nil` — начать с настроения).
+private struct FlowRequest: Identifiable {
+    let id = UUID()
+    let session: PickSession?
 }
 
 #Preview {

@@ -3,7 +3,9 @@ import DesignSystem
 import SwiftUI
 
 /// Списки «хочу посмотреть»: мой и партнёра. Добавляю только в свой, через поиск.
-struct WatchlistView: View {
+/// `header` — секции над списками (карточка вечера на вкладке «Фильмы»).
+struct WatchlistView<Header: View>: View {
+    @ViewBuilder var header: Header
     @Environment(AppModel.self) private var model
     @State private var showsPartner = false
     @Environment(\.movieCatalog) private var catalog
@@ -12,6 +14,8 @@ struct WatchlistView: View {
     var body: some View {
         let items = items
         List {
+            header
+
             Section {
                 Picker("Чей список", selection: $showsPartner) {
                     Text("Мой список").tag(false)
@@ -20,6 +24,10 @@ struct WatchlistView: View {
                 .pickerStyle(.segmented)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+            }
+
+            if items.isEmpty {
+                emptyState.listRowSeparator(.hidden)
             }
 
             ForEach(items, id: \.movie.id) { item in
@@ -36,7 +44,6 @@ struct WatchlistView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Palette.background)
-        .overlay { if items.isEmpty { emptyState } }
         .safeAreaInset(edge: .bottom) {
             if !showsPartner {
                 GradientButton(title: "Добавить фильм") { isSearching = true }
@@ -59,6 +66,12 @@ struct WatchlistView: View {
             description: Text(showsPartner
                 ? "Здесь появятся фильмы, которые добавит партнёр."
                 : "Добавьте фильмы, которые хотите посмотреть вместе."))
+    }
+}
+
+extension WatchlistView where Header == EmptyView {
+    init() {
+        self.init { EmptyView() }
     }
 }
 

@@ -7,18 +7,27 @@ struct SwipeDeckView: View {
     let session: PickSession
     @Environment(AppModel.self) private var model
     @Environment(\.movieCatalog) private var catalog
+    @Environment(\.dismiss) private var dismiss
     @State private var deck: [Movie]?
     @State private var index = 0
     @State private var offset: CGSize = .zero
     @State private var isAnimating = false
     @State private var swipeCount = 0
     @State private var matchCount = 0
+    @State private var match: Movie?
 
     /// Насколько надо утянуть карточку, чтобы она улетела.
     private let threshold: CGFloat = 120
 
     var body: some View {
         content
+            .overlay {
+                if let match {
+                    MatchView(movie: match, onWatch: { watch(match) }, onContinue: { self.match = nil })
+                        .transition(.scale(scale: 0.9).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: match)
             .background(Palette.background)
             .navigationTitle(session.mood.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -44,7 +53,7 @@ struct SwipeDeckView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 12)
             } else {
-                Text("Колода кончилась")
+                DeckEndView(session: session, onWatch: watch)
             }
         } else {
             ProgressView("Собираем колоду…")
@@ -135,8 +144,17 @@ struct SwipeDeckView: View {
                 offset = .zero
             }
             isAnimating = false
-            if matched { matchCount += 1 }
+            if matched {
+                matchCount += 1
+                match = movie
+            }
         }
+    }
+
+    /// «Смотрим»: фильм просмотрен, подбор закрыт, возвращаемся на вкладку.
+    private func watch(_ movie: Movie) {
+        model.markWatched(movieID: movie.id)
+        dismiss()
     }
 }
 
