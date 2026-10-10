@@ -17,3 +17,9 @@ build/
 
 # Superpowers: наброски брейншторма
 .superpowers/
+
+# XcodeGen: проект генерируется из project.yml
+OneToOne.xcodeproj/
+
+# Ключи API
+Config/Secrets.xcconfig

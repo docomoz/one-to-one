@@ -1,0 +1,2 @@
+// Общие настройки приложения. Ключи API подтягиваются из Secrets.xcconfig, если он есть.
+#include? "Secrets.xcconfig"
