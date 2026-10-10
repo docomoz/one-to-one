@@ -25,7 +25,9 @@ iOS-приложение для пар (можно пользоваться и �
 ## Доска задач
 - Доска: https://github.com/users/DariaPrishchepa/projects/1 (номер 1, владелец `DariaPrishchepa`), колонки Todo, In Progress, Done.
 - Доска не привязана к репозиторию (разные владельцы), поэтому каждый новый issue добавляй на неё сам: `gh project item-add 1 --owner DariaPrishchepa --url <ссылка на issue>`.
-- Взял задачу: назначь пользователя assignee и переведи в In Progress (`gh project item-edit`, поле Status; id полей смотри через `gh project field-list 1 --owner DariaPrishchepa`). После merge: Done.
+- Взял задачу: назначь пользователя assignee и переведи в In Progress, после merge в Done. Поиск по ссылке на issue между разными владельцами не работает, поэтому статус меняй по id:
+  `gh project item-edit --project-id PVT_kwHOARiXF84BmdYX --field-id PVTSSF_lAHOARiXF84BmdYXzhlGWZk --id <id элемента> --single-select-option-id <статус>`
+  Статусы: Todo `f75ad846`, In Progress `47fc9ee4`, Done `98236657`. Id элемента: `gh project item-list 1 --owner DariaPrishchepa --format json`.
 
 ## Режим обучения
 Когда делаешь что-то неочевидное, добавь одну строку «💡 Принцип: …» о том, почему так лучше. Не больше 1–2 на ответ.
