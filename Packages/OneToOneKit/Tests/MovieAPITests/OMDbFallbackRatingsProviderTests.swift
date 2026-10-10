@@ -65,6 +65,23 @@ struct OMDbFallbackRatingsProviderTests {
         #expect(stub.requests.isEmpty)
     }
 
+    @Test func asksOmdbOncePerMovie() async throws {
+        let (provider, stub) = try provider(fixture: "omdb-na")
+        let movie = movie(imdbID: "tt9999999", ratings: Ratings())
+        _ = await provider.ratings(for: movie)
+        _ = await provider.ratings(for: movie)
+        #expect(stub.requests.count == 1)
+    }
+
+    @Test(arguments: ["N/A", "", "abc", "0", "87", "inf"])
+    func outOfScaleRatingIsNil(_ value: String) {
+        #expect(OMDbMovie(response: "True", imdbRating: value).rating == nil)
+    }
+
+    @Test func errorResponseIgnoresRating() {
+        #expect(OMDbMovie(response: "False", imdbRating: "8.7").rating == nil)
+    }
+
     @Test func garbageRatingIsNil() async throws {
         let (provider, _) = try provider(fixture: "omdb-na")
         let ratings = await provider.ratings(for: movie(imdbID: "tt9999999", ratings: Ratings()))
