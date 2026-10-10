@@ -5,6 +5,11 @@ struct HomeView: View {
         NavigationStack {
             ContentUnavailableView("Скоро здесь что-то будет", systemImage: "house")
                 .navigationTitle("Главная")
+                #if DEBUG
+                .toolbar {
+                    NavigationLink("Витрина") { DesignPreview() }
+                }
+                #endif
         }
     }
 }
