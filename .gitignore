@@ -23,3 +23,6 @@ OneToOne.xcodeproj/
 
 # Ключи API
 Config/Secrets.xcconfig
+
+# XcodeGen генерирует Info.plist из project.yml
+Config/Info.plist
