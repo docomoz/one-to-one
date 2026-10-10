@@ -7,12 +7,13 @@ struct TrackerView: View {
     @Environment(AppModel.self) private var model
     @State private var isLogging = false
     @State private var editing: SexEntry?
+    @State private var today = DayKey(.now)
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    StatsView(stats: StatsCalculator.stats(model.data.sexEntries, today: DayKey(.now), calendar: .current))
+                    StatsView(stats: StatsCalculator.stats(model.data.sexEntries, today: today, calendar: .current))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -41,8 +42,12 @@ struct TrackerView: View {
                     .padding(.bottom, 8)
             }
             .navigationTitle("Трекер")
-            .sheet(isPresented: $isLogging) { LogSexView() }
+            .sheet(isPresented: $isLogging) { LogSexView(defaults: model.orgasmDefaults) }
             .sheet(item: $editing) { LogSexView(entry: $0) }
+            // В полночь пересчитываем «сегодня», иначе серия и месяц застынут до следующей записи.
+            .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
+                today = DayKey(.now)
+            }
         }
     }
 

@@ -9,14 +9,28 @@ struct LogSexView: View {
 
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
-    @State private var types: Set<SexType> = []
-    @State private var orgasmsMan = 1
-    @State private var orgasmsWoman = 1
-    @State private var date = Date.now
+    @State private var types: Set<SexType>
+    @State private var orgasmsMan: Int
+    @State private var orgasmsWoman: Int
+    @State private var date: Date
     @State private var isConfirmingDelete = false
 
-    init(entry: SexEntry? = nil) {
+    /// Новая запись: виды не выбраны, оргазмы как в прошлый раз, дата — сейчас.
+    init(defaults: OrgasmDefaults) {
+        entry = nil
+        _types = State(initialValue: [])
+        _orgasmsMan = State(initialValue: defaults.man)
+        _orgasmsWoman = State(initialValue: defaults.woman)
+        _date = State(initialValue: .now)
+    }
+
+    /// Правка записи: форма сразу заполнена её значениями.
+    init(entry: SexEntry) {
         self.entry = entry
+        _types = State(initialValue: entry.types)
+        _orgasmsMan = State(initialValue: entry.orgasmsMan)
+        _orgasmsWoman = State(initialValue: entry.orgasmsWoman)
+        _date = State(initialValue: entry.date)
     }
 
     private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
@@ -71,20 +85,6 @@ struct LogSexView: View {
                 Button("Удалить", role: .destructive, action: delete)
             }
         }
-        .onAppear(perform: fill)
-    }
-
-    private func fill() {
-        if let entry {
-            types = entry.types
-            orgasmsMan = entry.orgasmsMan
-            orgasmsWoman = entry.orgasmsWoman
-            date = entry.date
-        } else {
-            let defaults = model.orgasmDefaults
-            orgasmsMan = defaults.man
-            orgasmsWoman = defaults.woman
-        }
     }
 
     private func save() {
@@ -136,6 +136,6 @@ private struct TypeChip: View {
 }
 
 #Preview("Новая") {
-    LogSexView()
+    LogSexView(defaults: OrgasmDefaults(man: 1, woman: 1))
         .environment(AppModel(store: InMemoryStore()))
 }

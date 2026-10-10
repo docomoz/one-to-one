@@ -4,6 +4,7 @@ import Foundation
 public enum StatsCalculator {
     public static func stats(_ entries: [SexEntry], today: DayKey, calendar: Calendar) -> Stats {
         let days = entries.map { DayKey($0.date, calendar: calendar) }
+        let uniqueDays = Set(days)
         var typeCounts = Dictionary(uniqueKeysWithValues: SexType.allCases.map { ($0, 0) })
         for entry in entries {
             for type in entry.types { typeCounts[type, default: 0] += 1 }
@@ -14,8 +15,8 @@ public enum StatsCalculator {
             orgasmsMan: entries.reduce(0) { $0 + $1.orgasmsMan },
             orgasmsWoman: entries.reduce(0) { $0 + $1.orgasmsWoman },
             typeCounts: typeCounts,
-            currentStreak: currentStreak(Set(days), today: today),
-            bestStreak: bestStreak(Set(days))
+            currentStreak: currentStreak(uniqueDays, today: today),
+            bestStreak: bestStreak(uniqueDays)
         )
     }
 
