@@ -100,14 +100,22 @@ private struct DayCell: View {
                         Circle().strokeBorder(.primary, lineWidth: 2).padding(-3)
                     }
                 }
+            // Рисуем только то, что есть: одна отметка стоит по центру, две — парой.
+            // Зелёной полоски нет: «пустой» день не должен выглядеть разрешением.
             HStack(spacing: 3) {
-                // Зелёной полоски нет: «пустой» день не должен выглядеть разрешением.
-                RiskMark(color: risk?.markColor)
-                Circle()
-                    .fill(hasSymptoms ? BrandColor.purple.color : .clear)
-                    .frame(width: 5, height: 5)
+                if let color = risk?.markColor {
+                    RiskMark(color: color)
+                }
+                if hasSymptoms {
+                    Circle()
+                        .fill(BrandColor.purple.color)
+                        .frame(width: 5, height: 5)
+                }
             }
+            .frame(height: 5)
         }
+        // Запас снизу, чтобы полоска не прилипала к краю заливки фазы.
+        .padding(.bottom, 3)
         .frame(maxWidth: .infinity, minHeight: 44)
         .background {
             if let tint = phase?.tint(colorScheme) {
