@@ -34,6 +34,7 @@ struct MatchView: View {
             GradientButton(title: "Смотрим", action: onWatch)
             Button("Ещё свайпать", action: onContinue)
                 .font(.headline)
+                .foregroundStyle(BrandColor.pink.color)
                 .padding(.bottom, 8)
         }
         .padding(.horizontal, 20)
