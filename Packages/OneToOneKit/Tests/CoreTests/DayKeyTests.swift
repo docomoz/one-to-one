@@ -62,3 +62,9 @@ private func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int, _ min: Int) -> Date {
     #expect(DayKey(key.date(calendar: moscow), calendar: moscow) == key)
     #expect(DayKey(key.date(calendar: buddhist), calendar: buddhist) == key)
 }
+
+@Test func dayKeyDaysToOtherDay() {
+    #expect(DayKey(year: 2026, month: 2, day: 28).days(to: DayKey(year: 2026, month: 3, day: 1)) == 1)
+    #expect(DayKey(year: 2026, month: 12, day: 31).days(to: DayKey(year: 2027, month: 1, day: 1)) == 1)
+    #expect(DayKey(year: 2026, month: 10, day: 10).days(to: DayKey(year: 2026, month: 10, day: 1)) == -9)
+}
