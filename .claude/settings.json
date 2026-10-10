@@ -25,6 +25,7 @@
       "Bash(gh project field-list:*)",
       "Bash(gh pr merge:*)",
       "Bash(xcodebuild:*)",
+      "Bash(xcodegen generate:*)",
       "Bash(xcrun simctl list:*)",
       "Bash(swift build:*)",
       "Bash(swift test:*)"
