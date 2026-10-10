@@ -14,3 +14,6 @@ build/
 
 # Claude Code: личные настройки не коммитим, общие (.claude/settings.json) коммитим
 .claude/settings.local.json
+
+# Superpowers: наброски брейншторма
+.superpowers/
