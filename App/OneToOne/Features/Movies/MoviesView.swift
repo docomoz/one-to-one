@@ -28,6 +28,16 @@ struct MoviesView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
         }
+        if let movie = model.movieToRate {
+            Section {
+                RateMovieBanner(movie: movie) { verdict in
+                    withAnimation { model.rate(movieID: movie.id, verdict) }
+                }
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
+        }
         if case .inProgress(let session, let count) = state, count > 0 {
             MatchesListView(title: "Совпали", movies: model.data.movies(model.matches(in: session))) {
                 model.markWatched(movieID: $0.id)

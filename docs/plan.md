@@ -113,14 +113,17 @@ enum SwipeAction: String, Codable { case no, yes, later }
 struct PickSession: Codable, Identifiable, Equatable { let id: UUID; let mood: Mood; let startedBy: UUID; let startedAt: Date }
 struct Swipe: Codable, Equatable { let sessionID: UUID; let personID: UUID; let movieID: Int; let action: SwipeAction; let date: Date }
 enum DeckBuilder { static func build(lists: [WatchlistItem], recommendations: [Movie], mood: Mood,
-  watched: Set<Int>, swipedByMe: Set<Int>, limit: Int = 40) -> [Movie] }
+  watched: Set<Int>, swipedByMe: Set<Int>, excluded: Set<Int> = [], limit: Int = 40) -> [Movie] }
+enum MovieVerdict: String, Codable { case like, dislike, skip }
+struct MovieRating: Codable, Equatable { let movieID: Int; let personID: UUID; let verdict: MovieVerdict; let date: Date }
 enum MatchFinder { static func matches(_ swipes: [Swipe], couple: Couple) -> [Int]
   static func likedByAnyone(_ swipes: [Swipe]) -> [Int] }
 
 // Storage
 struct AppData: Codable, Equatable { var couple: Couple?; var meID: UUID?; var togetherSince: DayKey?; var sexEntries: [SexEntry]
   var periodDays: Set<DayKey>; var herMoods: [DayKey: HerMood]; var watchlist: [WatchlistItem]
-  var sessions: [PickSession]; var swipes: [Swipe]; var watched: Set<Int>; var movieCache: [Int: Movie] }
+  var sessions: [PickSession]; var swipes: [Swipe]; var watched: Set<Int>; var watchedAt: [Int: Date]
+  var ratings: [MovieRating]; var movieCache: [Int: Movie] }
 protocol Store: Sendable { func load() throws -> AppData; func save(_ data: AppData) throws }
 final class LocalStore: Store   // JSON в Application Support
 final class InMemoryStore: Store  // для тестов и превью
