@@ -12,13 +12,17 @@ private func comedy(_ id: Int) -> Movie {
     Movie(id: id, title: "Фильм \(id)", year: 2020, genres: ["комедия"], overview: "", posterURL: nil)
 }
 
-/// Каталог: подборка по жанрам — комедии 2 и 3, «похожие» на фильм 5 — фильм 2.
+/// Каталог: подборка по жанрам — комедии 2 и 3, «похожие» на фильм 5 — фильм 2 (или что передали).
 /// «Похожие» можно выключить (нет сети), запросы считаются.
 private final class SimilarCatalog: MovieCatalog, @unchecked Sendable {
     private let lock = NSLock()
     private var _online: Bool
     private var _asked: [Int] = []
-    init(online: Bool = true) { _online = online }
+    private let similarToDisliked: [Movie]
+    init(online: Bool = true, similarToDisliked: [Movie] = [comedy(2)]) {
+        _online = online
+        self.similarToDisliked = similarToDisliked
+    }
     func goOnline() { lock.withLock { _online = true } }
     var asked: [Int] { lock.withLock { _asked } }
 
@@ -26,7 +30,7 @@ private final class SimilarCatalog: MovieCatalog, @unchecked Sendable {
     func recommendations(for id: Int) async throws -> [Movie] {
         let online = lock.withLock { _asked.append(id); return _online }
         guard online else { throw URLError(.notConnectedToInternet) }
-        return id == disliked ? [comedy(2)] : []
+        return id == disliked ? similarToDisliked : []
     }
     func discover(genres: [String]) async throws -> [Movie] { [comedy(2), comedy(3)] }
 }
@@ -104,4 +108,17 @@ private func model(me: Person?, _ change: (inout AppData) -> Void = { _ in }) ->
     }
 
     #expect(model.movieToRate == nil)
+}
+
+@MainActor
+@Test func dislikeWithoutSimilarAskedOncePerPick() async throws {
+    let (model, _) = model(me: man)
+    model.rate(movieID: disliked, .dislike)
+    let session = try #require(model.startPick(mood: .laugh))
+    let catalog = SimilarCatalog(similarToDisliked: [])
+
+    _ = await model.deck(for: session, catalog: catalog)
+    _ = await model.deck(for: session, catalog: catalog)
+
+    #expect(catalog.asked.filter { $0 == disliked }.count == 1)
 }

@@ -92,9 +92,10 @@ extension AppModel {
     /// «Похожие» на 3 последних фильма с 👎 (до 3 запросов к Кинопоиску), один раз на подбор.
     private func excluded(for session: PickSession, catalog: some MovieCatalog) async -> Set<Int> {
         if let saved = excludedByPick[session.id] { return saved }
-        let excluded = await DeckLoader.similar(to: data.dislikedMovies(), catalog: catalog)
-        // Пусто — 👎 нет или не было сети: в следующий раз проверим снова.
-        if !excluded.isEmpty { excludedByPick[session.id] = excluded }
+        // `nil` — не ответил ни один запрос (нет сети): в следующий раз проверим снова.
+        // Пустой ответ запоминаем, иначе каждое открытие колоды тратило бы запросы из 200 в день.
+        guard let excluded = await DeckLoader.similar(to: data.dislikedMovies(), catalog: catalog) else { return [] }
+        excludedByPick[session.id] = excluded
         return excluded
     }
 }

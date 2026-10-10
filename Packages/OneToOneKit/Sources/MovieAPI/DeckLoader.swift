@@ -23,14 +23,19 @@ public enum DeckLoader {
     }
 
     /// Id «похожих» на каждый фильм из `ids`: их убираем из колоды, если фильму поставили 👎.
-    /// Упавший запрос ничего не добавляет: без сети колода просто соберётся без этого фильтра.
-    public static func similar(to ids: [Int], catalog: some MovieCatalog) async -> Set<Int> {
-        await withTaskGroup(of: [Movie].self) { group in
+    /// `nil` — не ответил ни один запрос (нет сети, лимит): тогда фильтр стоит попросить снова.
+    /// Пустой набор — Кинопоиск ответил, но «похожих» нет; его можно запомнить на подбор.
+    public static func similar(to ids: [Int], catalog: some MovieCatalog) async -> Set<Int>? {
+        guard !ids.isEmpty else { return [] }
+        return await withTaskGroup(of: [Movie]?.self) { group in
             for id in ids {
-                group.addTask { (try? await catalog.recommendations(for: id)) ?? [] }
+                group.addTask { try? await catalog.recommendations(for: id) }
             }
-            var result: Set<Int> = []
-            for await movies in group { result.formUnion(movies.map(\.id)) }
+            var result: Set<Int>?
+            for await movies in group {
+                guard let movies else { continue }
+                result = (result ?? []).union(movies.map(\.id))
+            }
             return result
         }
     }

@@ -94,12 +94,20 @@ private func movie(_ id: Int, _ genres: [String] = ["комедия"]) -> Movie 
     catalog.similar = [1: [movie(10)]]
     catalog.failing = true
 
-    #expect(await DeckLoader.similar(to: [1], catalog: catalog).isEmpty)
+    #expect(await DeckLoader.similar(to: [1], catalog: catalog) == nil)
 }
 
 @Test func similarWithoutIdsAsksNothing() async {
     let catalog = FakeCatalog()
 
-    #expect(await DeckLoader.similar(to: [], catalog: catalog).isEmpty)
+    #expect(await DeckLoader.similar(to: [], catalog: catalog) == Set<Int>())
     #expect(catalog.asked.isEmpty)
+}
+
+@Test func similarEmptyAnswerIsNotFailure() async {
+    let catalog = FakeCatalog()
+
+    let ids = await DeckLoader.similar(to: [1], catalog: catalog)
+
+    #expect(ids == Set<Int>())
 }
