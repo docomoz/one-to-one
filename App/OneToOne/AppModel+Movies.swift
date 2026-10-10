@@ -69,6 +69,9 @@ extension AppModel {
             // Пусто — скорее всего, не было сети: в следующий раз попросим снова.
             if !recommendations.isEmpty { recommendationsByPick[session.id] = recommendations }
         }
-        return data.deck(for: session, recommendations: recommendations, me: data.meID ?? UUID())
+        // Фильмы с телефона — всегда в конце: без сети и при лимите Кинопоиска колода живёт на них.
+        // В `recommendationsByPick` их не кладём, чтобы с появлением сети пришли и сетевые.
+        let local = await catalog.localMovies(genres: session.mood.genres)
+        return data.deck(for: session, recommendations: recommendations + local, me: data.meID ?? UUID())
     }
 }
