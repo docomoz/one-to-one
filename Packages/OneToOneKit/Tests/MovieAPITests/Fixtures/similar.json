@@ -1,0 +1,60 @@
+{
+  "docs": [
+    {
+      "id": 301,
+      "similarMovies": [
+        {
+          "alternativeName": "Inception",
+          "id": 447301,
+          "name": "Начало",
+          "poster": {
+            "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/1629390/8ab9a119-dd74-44f0-baec-0629797483d7/300x450",
+            "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/1629390/8ab9a119-dd74-44f0-baec-0629797483d7/600x900"
+          },
+          "rating": {
+            "kp": 8.673
+          },
+          "type": "movie",
+          "year": 2010
+        },
+        {
+          "alternativeName": "Equilibrium",
+          "id": 309,
+          "name": "Эквилибриум",
+          "poster": {
+            "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/1898899/72f6f1e2-472f-4467-8191-177b176d50d2/300x450",
+            "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/1898899/72f6f1e2-472f-4467-8191-177b176d50d2/600x900"
+          },
+          "rating": {
+            "kp": 7.882
+          },
+          "type": "movie",
+          "year": 2002
+        },
+        {
+          "alternativeName": "The Thirteenth Floor",
+          "id": 1086,
+          "name": "Тринадцатый этаж",
+          "poster": {
+            "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/1629390/92565528-258c-489b-8133-9edb4d08b684/300x450",
+            "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/1629390/92565528-258c-489b-8133-9edb4d08b684/600x900"
+          },
+          "rating": {
+            "kp": 7.582
+          },
+          "type": "movie",
+          "year": 1999
+        },
+        {
+          "id": 1316601,
+          "name": "Мир Дикого запада",
+          "type": "tv-series",
+          "year": 2016,
+          "rating": {
+            "kp": 8.0
+          }
+        }
+      ]
+    }
+  ]
+}
