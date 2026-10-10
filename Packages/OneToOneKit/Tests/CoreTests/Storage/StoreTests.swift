@@ -97,6 +97,24 @@ private func tempDirectory() -> URL {
     #expect(data == expected)
 }
 
+@Test func appDataDecodesFileWithoutTogetherSince() throws {
+    let old = Data(#"{"watched": [326]}"#.utf8)
+
+    let data = try JSONDecoder().decode(AppData.self, from: old)
+
+    #expect(data.togetherSince == nil)
+}
+
+@Test func appDataKeepsTogetherSince() throws {
+    var data = AppData()
+    data.togetherSince = DayKey(year: 2023, month: 10, day: 22)
+
+    let restored = try JSONDecoder().decode(AppData.self, from: JSONEncoder().encode(data))
+
+    #expect(restored == data)
+    #expect(restored.togetherSince == DayKey(year: 2023, month: 10, day: 22))
+}
+
 @Test func appDataIsPairedOnlyWithOwnMeID() throws {
     let man = Person(name: "Максим", sex: .male)
     let woman = Person(name: "Даша", sex: .female)
