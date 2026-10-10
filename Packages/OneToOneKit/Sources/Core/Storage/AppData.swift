@@ -21,6 +21,12 @@ public struct AppData: Codable, Equatable, Sendable {
 
     public init() {}
 
+    /// Пара создана и понятно, кто из неё «я». Пока нет — показываем знакомство.
+    public var isPaired: Bool {
+        guard let couple, let meID else { return false }
+        return meID == couple.man.id || meID == couple.woman.id
+    }
+
     /// Поля, которых нет в файле, берём по умолчанию. Иначе после добавления нового поля
     /// старый файл не прочитается, и данные пользователя пропадут. Новое поле добавляй и сюда.
     public init(from decoder: Decoder) throws {
