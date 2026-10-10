@@ -106,3 +106,34 @@ private func day(_ month: Int, _ day: Int, year: Int = 2026) -> DayKey {
     #expect(CycleCalculator.forecast(periodDays: marks, today: day(9, 26)).phase == .menstruation)
     #expect(CycleCalculator.forecast(periodDays: marks, today: day(9, 27)).phase == .ovulation)
 }
+
+@Test func phaseBeforeFirstMarkIsUnknown() {
+    let marks: Set = [day(10, 1), day(10, 2), day(10, 3), day(10, 4)]
+
+    #expect(CycleCalculator.phase(on: day(9, 30), periodDays: marks) == .unknown)
+}
+
+@Test func phaseOnFutureDay() {
+    let marks: Set = [day(10, 1), day(10, 2), day(10, 3), day(10, 4)]
+
+    #expect(CycleCalculator.phase(on: day(10, 2), periodDays: marks) == .menstruation)
+    #expect(CycleCalculator.phase(on: day(10, 10), periodDays: marks) == .follicular)
+    #expect(CycleCalculator.phase(on: day(10, 14), periodDays: marks) == .ovulation)
+    #expect(CycleCalculator.phase(on: day(10, 20), periodDays: marks) == .luteal)
+    #expect(CycleCalculator.phase(on: day(10, 29), periodDays: marks) == .menstruation)
+}
+
+@Test func pastDayUsesActualNextStart() {
+    // Цикл 35 дней: 1 сентября — 32-й день, лютеиновая, а не «прогноз месячных» по 28 дням.
+    let marks: Set = [day(8, 1), day(8, 2), day(8, 3), day(9, 5), day(9, 6), day(9, 7)]
+
+    #expect(CycleCalculator.phase(on: day(9, 1), periodDays: marks) == .luteal)
+    #expect(CycleCalculator.phase(on: day(8, 20), periodDays: marks) == .ovulation)
+}
+
+@Test func pastDayWithMissedPeriodFallsBackToForecast() {
+    // 70 дней между отметками — месячные, скорее всего, забыли отметить; считаем по прогнозу.
+    let marks: Set = [day(7, 1), day(9, 9)]
+
+    #expect(CycleCalculator.phase(on: day(7, 30), periodDays: marks) == .menstruation)
+}

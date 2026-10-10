@@ -6,7 +6,6 @@ import SwiftUI
 struct HerCalendarView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.locale) private var locale
-    @Environment(\.scenePhase) private var scenePhase
     @State private var today = DayKey(.now)
     @State private var selected = DayKey(.now)
     @State private var month = Month(DayKey(.now))
@@ -29,13 +28,8 @@ struct HerCalendarView: View {
             }
             .background(Palette.background)
             .navigationTitle("Цикл")
-            // В полночь и при возврате в приложение пересчитываем «сегодня», иначе фаза и прогноз застынут.
-            .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
-                refreshToday()
-            }
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .active { refreshToday() }
-            }
+            // Без пересчёта «сегодня» фаза и прогноз застынут.
+            .onDayChange(perform: refreshToday)
         }
     }
 
