@@ -122,3 +122,32 @@ private func model(me: Person?, _ change: (inout AppData) -> Void = { _ in }) ->
 
     #expect(catalog.asked.filter { $0 == disliked }.count == 1)
 }
+
+@MainActor
+@Test func dislikeDuringPickAppliesOnNextOpen() async throws {
+    let (model, _) = model(me: man)
+    let session = try #require(model.startPick(mood: .laugh))
+    let catalog = SimilarCatalog()
+    _ = await model.deck(for: session, catalog: catalog)
+
+    model.rate(movieID: disliked, .dislike)
+
+    #expect(await model.deck(for: session, catalog: catalog).map(\.id) == [3])
+}
+
+/// Каталог: «похожие» на понравившийся 1 и непонравившийся 5 — один и тот же фильм 2.
+private struct SharedSimilarCatalog: MovieCatalog {
+    func search(_ query: String) async throws -> [Movie] { [] }
+    func recommendations(for id: Int) async throws -> [Movie] { [comedy(2)] }
+    func discover(genres: [String]) async throws -> [Movie] { [comedy(3)] }
+}
+
+@MainActor
+@Test func dislikeBeatsLikeInDeck() async throws {
+    let (model, _) = model(me: man) { $0.markWatched(movieID: 1, at: .now.addingTimeInterval(-2 * 86400)) }
+    model.rate(movieID: 1, .like)
+    model.rate(movieID: disliked, .dislike)
+    let session = try #require(model.startPick(mood: .laugh))
+
+    #expect(await model.deck(for: session, catalog: SharedSimilarCatalog()).map(\.id) == [3])
+}

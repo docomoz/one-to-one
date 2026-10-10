@@ -72,8 +72,9 @@ extension AppModel {
     /// Колода для меня: оба списка плюс рекомендации каталога. Нет сети — только списки.
     /// Рекомендации (до 6 запросов к Кинопоиску из 200 в день) просим один раз на подбор,
     /// дальше берём запомненные: колоду открывают много раз, и оба из пары видят одни и те же.
+    /// Ещё до 3 запросов — «похожие» на фильмы с 👎, чтобы убрать их из колоды.
     func deck(for session: PickSession, catalog: some MovieCatalog) async -> [Movie] {
-        async let excluded = excluded(for: session, catalog: catalog)
+        async let excluded = similarToDisliked(catalog: catalog)
         let recommendations: [Movie]
         if let saved = recommendationsByPick[session.id] {
             recommendations = saved
@@ -90,13 +91,17 @@ extension AppModel {
                          excluded: await excluded)
     }
 
-    /// «Похожие» на 3 последних фильма с 👎 (до 3 запросов к Кинопоиску), один раз на подбор.
-    private func excluded(for session: PickSession, catalog: some MovieCatalog) async -> Set<Int> {
-        if let saved = excludedByPick[session.id] { return saved }
+    /// «Похожие» на 3 последних фильма с 👎 (до 3 запросов к Кинопоиску). Пока эти фильмы те же,
+    /// берём запомненные; поставили новый 👎 — спрашиваем заново, даже посреди подбора.
+    private func similarToDisliked(catalog: some MovieCatalog) async -> Set<Int> {
+        let dislikes = data.dislikedMovies()
+        guard !dislikes.isEmpty else { return [] }
+        if let saved = dislikeFilter, saved.dislikes == dislikes { return saved.similar }
         // `nil` — не ответил ни один запрос (нет сети): в следующий раз проверим снова.
-        // Пустой ответ запоминаем, иначе каждое открытие колоды тратило бы запросы из 200 в день.
-        guard let excluded = await DeckLoader.similar(to: data.dislikedMovies(), catalog: catalog) else { return [] }
-        excludedByPick[session.id] = excluded
-        return excluded
+        // Пустой ответ запоминаем, иначе каждое открытие колоды тратило бы запросы.
+        // Если ответили не все, запоминаем что есть: недостающее спросим при следующем 👎.
+        guard let similar = await DeckLoader.similar(to: dislikes, catalog: catalog) else { return [] }
+        dislikeFilter = (dislikes, similar)
+        return similar
     }
 }

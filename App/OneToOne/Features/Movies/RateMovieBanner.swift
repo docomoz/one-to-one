@@ -5,6 +5,9 @@ import SwiftUI
 struct RateMovieBanner: View {
     let movie: Movie
     let onRate: (MovieVerdict) -> Void
+    /// Размер кнопок растёт вместе с крупным шрифтом в настройках, чтобы эмодзи не обрезались.
+    @ScaledMetric(relativeTo: .title3) private var buttonWidth: CGFloat = 40
+    @ScaledMetric(relativeTo: .title3) private var buttonHeight: CGFloat = 36
 
     var body: some View {
         HStack(spacing: 8) {
@@ -17,7 +20,8 @@ struct RateMovieBanner: View {
             Button { onRate(.skip) } label: {
                 Image(systemName: "xmark")
                     .font(.footnote.weight(.semibold))
-                    .frame(width: 28, height: 36)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             // Стиль .borderless красит кнопку акцентным цветом: крестик должен быть неприметным.
             .tint(.secondary)
@@ -34,8 +38,11 @@ struct RateMovieBanner: View {
         Button { onRate(verdict) } label: {
             Text(emoji)
                 .font(.title3)
-                .frame(width: 40, height: 36)
+                .frame(width: buttonWidth, height: buttonHeight)
                 .background(.background, in: Capsule())
+                // Нажимается не только сама капсула: зона не меньше 44pt, как советует Apple.
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .accessibilityLabel(label)
     }
