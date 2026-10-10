@@ -1,4 +1,4 @@
-# Проверки на каждый PR: тесты пакета и тесты приложения на симуляторе.
+# Проверки на каждый PR: тесты пакета и сборка приложения.
 name: ci
 
 on:
@@ -45,10 +45,13 @@ jobs:
           cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
           xcodegen generate
 
-      - name: Тесты приложения
+      # Приложение только собираем, без симулятора: его загрузка на раннере занимает от 1 до 10 минут,
+      # а сами тесты приложения пока идут доли секунды. Тесты App/OneToOneTests запускаем локально (см. CLAUDE.md).
+      # Вернуть `xcodebuild test` с `-destination 'platform=iOS Simulator,name=iPhone 17'`, когда появятся настоящие тесты экранов.
+      - name: Сборка приложения
         run: |
-          xcodebuild test \
+          xcodebuild build \
             -project OneToOne.xcodeproj \
             -scheme OneToOne \
-            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO

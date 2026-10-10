@@ -54,7 +54,5 @@ schemes:
         OneToOne: all
     test:
       targets:
+        # Тесты пакета здесь не подключаем: они идут через `swift test`, иначе прогоняются дважды.
         - OneToOneTests
-        - package: OneToOneKit/CoreTests
-        - package: OneToOneKit/MovieAPITests
-        - package: OneToOneKit/DesignSystemTests
