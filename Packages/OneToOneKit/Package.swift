@@ -11,7 +11,8 @@ let package = Package(
     ],
     targets: [
         .target(name: "Core"),
-        .target(name: "MovieAPI", dependencies: ["Core"]),
+        // movies.json — базовый каталог фильмов для подбора без сети (обновляет `swift run UpdateMovies`).
+        .target(name: "MovieAPI", dependencies: ["Core"], resources: [.copy("Resources/movies.json")]),
         .target(name: "DesignSystem"),
         .testTarget(name: "CoreTests", dependencies: ["Core"]),
         .testTarget(name: "MovieAPITests", dependencies: ["MovieAPI"], resources: [.copy("Fixtures")]),
