@@ -57,6 +57,7 @@ private struct DayCell: View {
     let isPredicted: Bool
     let hasSymptoms: Bool
     let action: () -> Void
+    @Environment(\.locale) private var locale
 
     var body: some View {
         Button(action: action) {
@@ -90,7 +91,7 @@ private struct DayCell: View {
     }
 
     private var accessibilityText: String {
-        var parts = [day.date().formatted(.dateTime.day().month(.wide))]
+        var parts = [day.date().formatted(.dateTime.day().month(.wide).locale(locale))]
         if isToday { parts.append("сегодня") }
         if isPeriod { parts.append("месячные") }
         if isPredicted { parts.append("прогноз месячных") }

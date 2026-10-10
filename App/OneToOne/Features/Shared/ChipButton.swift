@@ -3,10 +3,12 @@ import SwiftUI
 
 /// Кнопка-переключатель: выбранная залита градиентом, остальные — сиреневые.
 /// `compact` — поменьше, для длинных списков вроде симптомов.
+/// `surface` — цвет невыбранной кнопки: на карточке передай фон экрана, иначе кнопка сольётся.
 struct ChipButton: View {
     let title: String
     let isOn: Bool
     var compact = false
+    var surface = Palette.tile
     let action: () -> Void
 
     var body: some View {
@@ -23,7 +25,7 @@ struct ChipButton: View {
                     if isOn {
                         shape.fill(BrandGradient.primary)
                     } else {
-                        shape.fill(Palette.tile)
+                        shape.fill(surface)
                     }
                 }
         }

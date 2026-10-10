@@ -1,13 +1,17 @@
+import Foundation
+
 /// Отметки дня, которые ставит она: месячные, «как я сегодня», симптомы.
 extension AppData {
-    /// Ставит или снимает отметку месячных. Если между отмеченным днём и этим пропущен
-    /// ровно один день, отмечает и его: скорее всего, его просто забыли.
+    /// Ставит или снимает отметку месячных. Если между этим днём и отмеченным соседним
+    /// пропущен ровно один день (до или после), отмечает и его: скорее всего, его просто забыли.
     public mutating func togglePeriodDay(_ day: DayKey) {
         if periodDays.remove(day) != nil { return }
         periodDays.insert(day)
-        let skipped = day.adding(days: -1)
-        if !periodDays.contains(skipped), periodDays.contains(day.adding(days: -2)) {
-            periodDays.insert(skipped)
+        for direction in [-1, 1] {
+            let skipped = day.adding(days: direction)
+            if !periodDays.contains(skipped), periodDays.contains(day.adding(days: 2 * direction)) {
+                periodDays.insert(skipped)
+            }
         }
     }
 
@@ -16,19 +20,22 @@ extension AppData {
         herMoods[day] = mood
     }
 
-    /// Ставит симптом или снимает, если он уже стоит. Пустой свой текст не сохраняется.
+    /// Ставит симптом или снимает, если он уже стоит.
     public mutating func toggleSymptom(_ symptom: Symptom, on day: DayKey) {
-        var symptom = symptom
-        if case .custom(let text) = symptom {
-            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
-            symptom = .custom(trimmed)
-        }
         var daySymptoms = symptoms[day, default: []]
         if daySymptoms.remove(symptom) == nil {
             daySymptoms.insert(symptom)
         }
         symptoms[day] = daySymptoms.isEmpty ? nil : daySymptoms
+    }
+
+    /// Добавляет свой симптом текстом и никогда не снимает. Пустой текст не сохраняется,
+    /// а название готового симптома («болит голова») ставит готовый, чтобы не было двойников.
+    public mutating func addCustomSymptom(_ text: String, on day: DayKey) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let preset = PresetSymptom.allCases.first { $0.title.lowercased() == trimmed.lowercased() }
+        symptoms[day, default: []].insert(preset.map(Symptom.preset) ?? .custom(trimmed))
     }
 
     /// Свои симптомы, которые она уже когда-то ставила, по алфавиту.

@@ -51,4 +51,8 @@ extension AppModel {
     func toggleSymptom(_ symptom: Symptom, on day: DayKey) {
         update { $0.toggleSymptom(symptom, on: day) }
     }
+
+    func addCustomSymptom(_ text: String, on day: DayKey) {
+        update { $0.addCustomSymptom(text, on: day) }
+    }
 }

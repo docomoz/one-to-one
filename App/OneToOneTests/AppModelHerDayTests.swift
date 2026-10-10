@@ -33,3 +33,13 @@ private let today = DayKey(year: 2026, month: 10, day: 10)
 
     #expect(try store.load().symptoms == [today: [.preset(.cramps)]])
 }
+
+@MainActor
+@Test func addCustomSymptomSaves() throws {
+    let store = InMemoryStore()
+    let model = AppModel(store: store)
+
+    model.addCustomSymptom("Мигрень", on: today)
+
+    #expect(try store.load().symptoms == [today: [.custom("Мигрень")]])
+}

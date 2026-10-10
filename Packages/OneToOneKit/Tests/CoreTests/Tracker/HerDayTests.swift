@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import Core
 
@@ -45,8 +46,8 @@ private let oct10 = DayKey(year: 2026, month: 10, day: 10)
 @Test func customSymptomIgnoresSurroundingSpacesAndEmptyText() {
     var data = AppData()
 
-    data.toggleSymptom(.custom("  Хочу сладкого "), on: oct10)
-    data.toggleSymptom(.custom("   "), on: oct10)
+    data.addCustomSymptom("  Хочу сладкого ", on: oct10)
+    data.addCustomSymptom("   ", on: oct10)
 
     #expect(data.symptoms[oct10] == [.custom("Хочу сладкого")])
 }
@@ -108,4 +109,38 @@ private let oct10 = DayKey(year: 2026, month: 10, day: 10)
 
     data.meID = man.id
     #expect(!data.meIsWoman)
+}
+
+@Test func togglePeriodDayFillsSkippedDayWhenMarkedBackwards() {
+    var data = AppData()
+    data.togglePeriodDay(DayKey(year: 2026, month: 10, day: 3))
+
+    data.togglePeriodDay(DayKey(year: 2026, month: 10, day: 1))
+
+    #expect(data.periodDays == Set((1...3).map { DayKey(year: 2026, month: 10, day: $0) }))
+}
+
+@Test func addCustomSymptomNeverRemoves() {
+    var data = AppData()
+    data.addCustomSymptom("Мигрень", on: oct10)
+
+    data.addCustomSymptom(" Мигрень ", on: oct10)
+
+    #expect(data.symptoms[oct10] == [.custom("Мигрень")])
+}
+
+@Test func addCustomSymptomWithPresetTitleUsesPreset() {
+    var data = AppData()
+
+    data.addCustomSymptom("болит голова", on: oct10)
+
+    #expect(data.symptoms[oct10] == [.preset(.headache)])
+}
+
+@Test func unknownPresetIsReadAsCustom() throws {
+    // Если готовый симптом когда-нибудь переименуют, старый файл всё равно прочитается.
+    let json = #"[{"preset":{"_0":"oldName"}},{"preset":{"_0":"cramps"}}]"#
+    let symptoms = try JSONDecoder().decode([Symptom].self, from: Data(json.utf8))
+
+    #expect(symptoms == [.custom("oldName"), .preset(.cramps)])
 }

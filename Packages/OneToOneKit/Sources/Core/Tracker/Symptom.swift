@@ -29,4 +29,19 @@ public enum Symptom: Codable, Hashable, Sendable {
         case .custom(let text): text
         }
     }
+
+    /// Готовый симптом с незнакомым именем (его переименовали или убрали) читаем как свой,
+    /// иначе из-за одного симптома не прочитается весь файл данных.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let text = try? container.nestedContainer(keyedBy: ValueKeys.self, forKey: .custom).decode(String.self, forKey: ._0) {
+            self = .custom(text)
+            return
+        }
+        let raw = try container.nestedContainer(keyedBy: ValueKeys.self, forKey: .preset).decode(String.self, forKey: ._0)
+        self = PresetSymptom(rawValue: raw).map(Symptom.preset) ?? .custom(raw)
+    }
+
+    private enum CodingKeys: String, CodingKey { case preset, custom }
+    private enum ValueKeys: String, CodingKey { case _0 }
 }
