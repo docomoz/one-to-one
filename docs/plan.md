@@ -91,6 +91,7 @@ struct CycleForecast: Equatable { let phase: CyclePhase; let dayOfCycle: Int?; l
 enum CycleCalculator { static func forecast(periodDays: Set<DayKey>, today: DayKey) -> CycleForecast }
 struct Tip: Equatable { let text: String; let isEstimate: Bool }
 enum TipProvider { static func tip(forecast: CycleForecast, herMood: HerMood?) -> Tip }
+enum CheerProvider { static func cheer(forecast: CycleForecast) -> String? } // фраза для неё на главной
 
 // Movies
 struct Movie: Codable, Identifiable, Hashable { let id: Int /* id Кинопоиска */; let title: String; let year: Int?
