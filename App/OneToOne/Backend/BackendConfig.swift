@@ -6,8 +6,10 @@ enum BackendConfig {
     static var endpoint: String { infoValue("AppwriteEndpoint") }
     static var projectID: String { infoValue("AppwriteProjectID") }
 
-    /// Политика конфиденциальности. Пока заглушка на нашем сервере: настоящая страница появится в #88.
+    /// Политика конфиденциальности и полный текст согласия (docs/legal/). Пока заглушки на нашем сервере:
+    /// настоящие страницы появятся в #88.
     static let privacyPolicyURL = URL(string: "https://api.194-87-44-100.sslip.io/privacy")!
+    static let consentURL = URL(string: "https://api.194-87-44-100.sslip.io/consent")!
 
     /// Версия текста согласия. Поменяли текст по существу — увеличь, и все согласятся заново.
     static let consentVersion = 1

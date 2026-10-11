@@ -75,11 +75,26 @@ private func makeFlow(_ service: FakeAuthService, now: @escaping () -> Date = { 
     #expect(flow.screen(isPaired: false) == .consent)
     #expect(flow.screen(isPaired: true) == .consent)
 
-    await flow.giveConsent()
+    await flow.giveConsent(personalData: true, specialCategory: true)
 
     #expect(service.savedConsent?.version == BackendConfig.consentVersion)
     #expect(service.savedConsent?.date == start)
     #expect(flow.screen(isPaired: false) == .onboarding)
+}
+
+@MainActor
+@Test func consentNeedsBothCheckboxes() async {
+    let service = FakeAuthService(signedInUserID: "u1")
+    let flow = makeFlow(service)
+    await flow.start()
+
+    await flow.giveConsent(personalData: true, specialCategory: false)
+    await flow.giveConsent(personalData: false, specialCategory: true)
+
+    #expect(service.savedConsent == nil)
+    #expect(flow.screen(isPaired: false) == .consent)
+    #expect(!AuthFlow.canGiveConsent(personalData: true, specialCategory: false))
+    #expect(AuthFlow.canGiveConsent(personalData: true, specialCategory: true))
 }
 
 @MainActor
@@ -89,7 +104,7 @@ private func makeFlow(_ service: FakeAuthService, now: @escaping () -> Date = { 
     await flow.start()
     service.consentError = .network
 
-    await flow.giveConsent()
+    await flow.giveConsent(personalData: true, specialCategory: true)
 
     #expect(flow.screen(isPaired: false) == .consent)
     #expect(flow.errorMessage == AuthError.network.message)

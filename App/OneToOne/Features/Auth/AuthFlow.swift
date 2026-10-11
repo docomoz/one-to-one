@@ -90,7 +90,10 @@ final class AuthFlow {
         errorMessage = nil
     }
 
-    func giveConsent() async {
+    /// Две отдельные галочки (docs/legal/consent.md): обычные данные и особая категория.
+    /// Дальше пускаем, только когда отмечены обе.
+    func giveConsent(personalData: Bool, specialCategory: Bool) async {
+        guard Self.canGiveConsent(personalData: personalData, specialCategory: specialCategory) else { return }
         await perform {
             try await consent.saveConsent(version: BackendConfig.consentVersion, date: now())
             status = .signedIn
@@ -129,6 +132,10 @@ final class AuthFlow {
     }
 
     // MARK: - Ввод
+
+    nonisolated static func canGiveConsent(personalData: Bool, specialCategory: Bool) -> Bool {
+        personalData && specialCategory
+    }
 
     nonisolated static func normalized(_ email: String) -> String {
         email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
