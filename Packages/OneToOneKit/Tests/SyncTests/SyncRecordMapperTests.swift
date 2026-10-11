@@ -245,3 +245,29 @@ private func json(_ data: Data?) -> String { String(decoding: data ?? Data(), as
     #expect(decoded == record)
     #expect(decoded.payload == nil)
 }
+
+/// Собрали из записей и снова разобрали — те же байты, в том числе с долями секунды в датах,
+/// иначе движок после каждого получения видел бы «правку» и отправлял её обратно.
+@Test func payloadsSurviveApply() throws {
+    var data = try filledData()
+    let now = Date(timeIntervalSinceReferenceDate: 781_234_567.123_456_7)
+    data.watchedAt = [326: now]
+    data.ratings.append(MovieRating(movieID: 435, personID: man.id, verdict: .skip, date: now.addingTimeInterval(0.3)))
+    let payloads = SyncRecordMapper.payloads(from: data)
+
+    let again = SyncRecordMapper.payloads(from: SyncRecordMapper.apply(payloads, to: AppData()))
+
+    #expect(again == payloads)
+}
+
+/// День в id только в одном написании: иначе один день дал бы два id, и записи спорили бы между собой.
+@Test func nonCanonicalDayIDsIgnored() {
+    let wants = Data(#""wants""#.utf8)
+    let payloads = ["herMood:2026-3-14": wants, "herMood:+2026-03-14": wants, "herMood:2026-13-45": wants,
+                    "symptoms:2026-03-14x": Data("[]".utf8), "herMood:2026-03-15": wants]
+
+    let restored = SyncRecordMapper.apply(payloads, to: AppData())
+
+    #expect(restored.herMoods == [DayKey(year: 2026, month: 3, day: 15): .wants])
+    #expect(restored.symptoms.isEmpty)
+}

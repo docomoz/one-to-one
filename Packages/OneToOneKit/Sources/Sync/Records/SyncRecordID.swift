@@ -29,9 +29,11 @@ enum SyncRecordID {
         String(format: "%04d-%02d-%02d", day.year, day.month, day.day)
     }
 
+    /// Только в том же написании, что даёт `string(_:)`: "2026-3-14" или "2026-13-45" — не день.
     static func day(_ string: Substring) -> DayKey? {
         let parts = string.split(separator: "-", omittingEmptySubsequences: false).compactMap { Int($0) }
-        guard parts.count == 3 else { return nil }
-        return DayKey(year: parts[0], month: parts[1], day: parts[2])
+        guard parts.count == 3, (1...12).contains(parts[1]), (1...31).contains(parts[2]) else { return nil }
+        let day = DayKey(year: parts[0], month: parts[1], day: parts[2])
+        return self.string(day) == string ? day : nil
     }
 }

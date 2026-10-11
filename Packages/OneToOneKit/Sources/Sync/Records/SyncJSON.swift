@@ -4,12 +4,24 @@ import Foundation
 /// JSON значений в записях. Типы те же, что в `AppData.json` (даты — секунды от 1 января 2001),
 /// ключи по алфавиту, множества — отсортированными массивами: одно значение всегда даёт одни и те же байты,
 /// иначе движок синхронизации увидит правку там, где её не было.
-enum SyncJSON {
-    /// Бросить может только нечисловой Double, а такой не сохранился бы и в `AppData.json`.
-    static func encode(_ value: some Encodable) -> Data {
+struct SyncJSON {
+    private let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
-        return try! encoder.encode(value)
+        return encoder
+    }()
+
+    /// Бросить может только нечисловой Double, а такой не сохранился бы и в `AppData.json`.
+    func encode(_ value: some Encodable) -> Data {
+        try! encoder.encode(value)
+    }
+
+    /// `SexEntry` с видами секса по алфавиту: множество `types` в обычном JSON идёт в случайном порядке.
+    func encodeSorted(_ entry: SexEntry) -> Data {
+        // SexEntry всегда кодируется в JSON-объект, поэтому `!` не сработает.
+        var object = try! JSONSerialization.jsonObject(with: encode(entry)) as! [String: Any]
+        object["types"] = entry.types.map(\.rawValue).sorted()
+        return try! JSONSerialization.data(withJSONObject: object, options: .sortedKeys)
     }
 
     /// Битая запись или запись другой версии — `nil`, её пропускаем.
@@ -28,18 +40,4 @@ enum SyncJSON {
         case .custom(let text): (1, text)
         }
     }
-}
-
-/// `SexEntry` с видами секса по алфавиту. Множество `types` в обычном JSON идёт в случайном порядке.
-struct SortedSexEntry: Encodable {
-    let entry: SexEntry
-
-    func encode(to encoder: Encoder) throws {
-        try entry.encode(to: encoder)
-        // Тот же контейнер: поле `types` записываем заново, уже отсортированным.
-        var container = encoder.container(keyedBy: Key.self)
-        try container.encode(entry.types.map(\.rawValue).sorted(), forKey: .types)
-    }
-
-    private enum Key: String, CodingKey { case types }
 }

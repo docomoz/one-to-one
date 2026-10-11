@@ -15,12 +15,13 @@ public enum SyncRecordMapper {
     /// Все синхронизируемые значения: id записи → JSON. Кэши не входят.
     public static func payloads(from data: AppData) -> [String: Data] {
         var result: [String: Data] = [:]
-        func put(_ id: String, _ value: some Encodable) { result[id] = SyncJSON.encode(value) }
+        let json = SyncJSON()
+        func put(_ id: String, _ value: some Encodable) { result[id] = json.encode(value) }
 
         if let couple = data.couple { put(SyncRecordID.couple, couple) }
         if let day = data.togetherSince { put(SyncRecordID.togetherSince, day) }
 
-        for entry in data.sexEntries { put(SyncRecordID.sex(entry), SortedSexEntry(entry: entry)) }
+        for entry in data.sexEntries { result[SyncRecordID.sex(entry)] = json.encodeSorted(entry) }
         for day in data.periodDays { put(SyncRecordID.period(day), day) }
         for (day, mood) in data.herMoods { put(SyncRecordID.herMood(day), mood) }
         for (day, symptoms) in data.symptoms { put(SyncRecordID.symptoms(day), SyncJSON.sorted(symptoms)) }
@@ -105,10 +106,17 @@ private extension AppData {
     /// Порядок записей на сервере не хранится, а в массивах он важен (`sessions.last` — текущий подбор,
     /// совпадения идут по времени свайпов). Сортируем по времени, при равенстве — по id записи.
     mutating func sortSyncedArrays() {
-        sexEntries.sort { ($0.day, SyncRecordID.sex($0)) < ($1.day, SyncRecordID.sex($1)) }
-        watchlist.sort { ($0.addedAt, SyncRecordID.watchlist($0)) < ($1.addedAt, SyncRecordID.watchlist($1)) }
-        sessions.sort { ($0.startedAt, SyncRecordID.session($0)) < ($1.startedAt, SyncRecordID.session($1)) }
-        swipes.sort { ($0.date, SyncRecordID.swipe($0)) < ($1.date, SyncRecordID.swipe($1)) }
-        ratings.sort { ($0.date, SyncRecordID.rating($0)) < ($1.date, SyncRecordID.rating($1)) }
+        sexEntries.sort(by: \.day, then: SyncRecordID.sex)
+        watchlist.sort(by: \.addedAt, then: SyncRecordID.watchlist)
+        sessions.sort(by: \.startedAt, then: SyncRecordID.session)
+        swipes.sort(by: \.date, then: SyncRecordID.swipe)
+        ratings.sort(by: \.date, then: SyncRecordID.rating)
+    }
+}
+
+private extension Array {
+    /// По `key`, при равенстве — по id записи (его строим только тогда, это дороже).
+    mutating func sort<Key: Comparable>(by key: (Element) -> Key, then id: (Element) -> String) {
+        sort { key($0) != key($1) ? key($0) < key($1) : id($0) < id($1) }
     }
 }
