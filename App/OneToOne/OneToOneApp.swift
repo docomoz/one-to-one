@@ -4,19 +4,32 @@ import SwiftUI
 @main
 struct OneToOneApp: App {
     @State private var model = AppModel(store: LocalStore())
+    @State private var auth = Self.makeAuth()
     @State private var tab = AppTab.home
     @State private var pickFlow: PickFlowRequest?
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if model.data.isPaired {
-                    tabs
-                } else {
+            // ZStack, а не Group: модификаторы Group достаются каждому экрану, и `.task` с проверкой
+            // входа запускался бы заново при каждой смене экрана.
+            ZStack {
+                // Вход по почте → согласие → знакомство → вкладки.
+                switch auth.screen(isPaired: model.data.isPaired) {
+                case .checking:
+                    ProgressView()
+                case .signIn:
+                    EmailSignInView()
+                case .consent:
+                    ConsentView()
+                case .onboarding:
                     OnboardingView()
+                case .tabs:
+                    tabs
                 }
             }
+            .task { await auth.start() }
             .environment(model)
+            .environment(auth)
             // Интерфейс только на русском: месяцы в выборе даты тоже, даже если iPhone на другом языке.
             .environment(\.locale, Locale(identifier: "ru_RU"))
         }
@@ -44,6 +57,14 @@ struct OneToOneApp: App {
             }
         }
         .fullScreenCover(item: $pickFlow) { PickFlowView(session: $0.session) }
+    }
+
+    private static func makeAuth() -> AuthFlow {
+        #if DEBUG
+        if let preview = AuthFlow.fromLaunchArguments() { return preview }
+        #endif
+        let service = AppwriteAuthService.shared
+        return AuthFlow(auth: service, consent: service)
     }
 }
 
