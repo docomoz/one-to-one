@@ -88,6 +88,8 @@ curl -s -X POST https://api.194-87-44-100.sslip.io/v1/account/tokens/email \
 3. `revealed` — новый телефон пишет `requesterPublicKey`. Отвечающий телефон проверяет, что SHA-256 этого ключа совпадает с `requesterKeyCommitment`, иначе отказ. Оба показывают код сверки.
 4. `delivered` — люди сверили коды, отвечающий пишет `wrappedKey` (ключ пары, завёрнутый для нового телефона). Или `rejected` — коды не совпали или отказались.
 
+Строку создаёт новый телефон с правами `read`, `update`, `delete` для `team:<coupleId>`; срок `expiresAt` — 15 минут. Логика шагов на телефоне — `Packages/OneToOneKit/Sources/Sync/Pairing/KeyHandoff.swift`, связь с Appwrite — `App/OneToOne/Backend/AppwritePairingService.swift`.
+
 Функции (Node.js 22, вызывает любой вошедший пользователь; кто вызвал, функция узнаёт из заголовка `x-appwrite-user-id`, который ставит сам Appwrite, `userId` из тела не читается):
 
 | Функция | Вход | Ответ | Ошибки |
