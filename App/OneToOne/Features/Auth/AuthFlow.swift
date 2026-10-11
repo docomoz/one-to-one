@@ -113,9 +113,17 @@ final class AuthFlow {
     }
 
     private func checkConsent() async {
-        // Не смогли узнать (нет сети и согласие не запомнено) — спросим ещё раз, повторное согласие безвредно.
-        let version = try? await consent.consentVersion()
-        status = (version ?? 0) >= BackendConfig.consentVersion ? .signedIn : .needsConsent
+        do {
+            let version = try await consent.consentVersion() ?? 0
+            status = version >= BackendConfig.consentVersion ? .signedIn : .needsConsent
+        } catch AuthError.signedOut {
+            status = .signedOut
+        } catch {
+            // Не смогли узнать (нет сети и согласие не запомнено) — спросим ещё раз, повторное согласие
+            // безвредно. Сохранится оно, когда появится сеть.
+            errorMessage = (error as? AuthError ?? .network).message
+            status = .needsConsent
+        }
     }
 
     /// Запрос к серверу с крутилкой: ошибку превращаем в текст для экрана.
@@ -126,7 +134,13 @@ final class AuthFlow {
         do {
             try await action()
         } catch {
-            errorMessage = (error as? AuthError ?? .network).message
+            let error = error as? AuthError ?? .network
+            errorMessage = error.message
+            // Сессия пропала на сервере: дальше без входа ничего не получится.
+            if error == .signedOut {
+                pending = nil
+                status = .signedOut
+            }
         }
         isWorking = false
     }

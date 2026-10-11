@@ -11,20 +11,41 @@ private func makeCache() -> AccountCache {
     let cache = makeCache()
 
     cache.userID = "u1"
-    cache.setConsentVersion(1, for: "u1")
+    cache.consentVersion = 1
 
     #expect(cache.userID == "u1")
-    #expect(cache.consentVersion(for: "u1") == 1)
-    #expect(cache.consentVersion(for: "u2") == nil)
+    #expect(cache.consentVersion == 1)
+}
+
+@Test func otherUserDoesNotInheritConsent() {
+    let cache = makeCache()
+    cache.userID = "u1"
+    cache.consentVersion = 1
+
+    cache.userID = "u1"
+    #expect(cache.consentVersion == 1)
+
+    cache.userID = "u2"
+    #expect(cache.consentVersion == nil)
+}
+
+@Test func withdrawnConsentIsForgotten() {
+    let cache = makeCache()
+    cache.userID = "u1"
+    cache.consentVersion = 1
+
+    cache.consentVersion = nil
+
+    #expect(cache.consentVersion == nil)
 }
 
 @Test func clearForgetsUserAndConsent() {
     let cache = makeCache()
     cache.userID = "u1"
-    cache.setConsentVersion(1, for: "u1")
+    cache.consentVersion = 1
 
     cache.clear()
 
     #expect(cache.userID == nil)
-    #expect(cache.consentVersion(for: "u1") == nil)
+    #expect(cache.consentVersion == nil)
 }

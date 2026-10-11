@@ -111,6 +111,41 @@ private func makeFlow(_ service: FakeAuthService, now: @escaping () -> Date = { 
 }
 
 @MainActor
+@Test func expiredSessionOnConsentReturnsToSignIn() async {
+    let service = FakeAuthService(signedInUserID: "u1")
+    service.consentError = .signedOut
+    let flow = makeFlow(service)
+
+    await flow.start()
+    #expect(flow.screen(isPaired: false) == .signIn)
+}
+
+@MainActor
+@Test func expiredSessionWhileSavingConsentReturnsToSignIn() async {
+    let service = FakeAuthService(signedInUserID: "u1")
+    let flow = makeFlow(service)
+    await flow.start()
+    service.consentError = .signedOut
+
+    await flow.giveConsent(personalData: true, specialCategory: true)
+
+    #expect(flow.screen(isPaired: false) == .signIn)
+    #expect(flow.errorMessage == AuthError.signedOut.message)
+}
+
+@MainActor
+@Test func unknownConsentOfflineAsksAndExplains() async {
+    let service = FakeAuthService(signedInUserID: "u1")
+    service.consentError = .network
+    let flow = makeFlow(service)
+
+    await flow.start()
+
+    #expect(flow.screen(isPaired: true) == .consent)
+    #expect(flow.errorMessage == AuthError.network.message)
+}
+
+@MainActor
 @Test func olderConsentVersionAsksAgain() async {
     let flow = makeFlow(FakeAuthService(signedInUserID: "u1", consent: BackendConfig.consentVersion - 1))
 

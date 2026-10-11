@@ -31,6 +31,8 @@ struct PairSettingsView: View {
             }
         }
         .navigationTitle("Пара")
+        // Ошибка общая для всех экранов входа: старая, например прошлого выхода, здесь не нужна.
+        .onAppear { auth.clearError() }
         .confirmationDialog("Выйти из аккаунта?", isPresented: $confirmsSignOut, titleVisibility: .visible) {
             Button("Выйти", role: .destructive) {
                 Task { await auth.signOut() }

@@ -70,21 +70,20 @@ final class AppwriteAuthService: AuthService, ConsentService, @unchecked Sendabl
     func consentVersion() async throws -> Int? {
         do {
             let version = ConsentPrefs.version(in: try await prefs())
-            if let userID = cache.userID, let version {
-                cache.setConsentVersion(version, for: userID)
-            }
+            // Запоминаем и отсутствие согласия: отозванное не должно действовать без сети.
+            cache.consentVersion = version
             return version
         } catch let error as AppwriteError where error.code == 401 {
             throw Self.authError(error, step: .other)
         } catch {
             // Без сети верим запомненному согласию, иначе человек не откроет приложение в самолёте.
-            if let userID = cache.userID, let cached = cache.consentVersion(for: userID) {
-                return cached
-            }
+            if let cached = cache.consentVersion { return cached }
             throw Self.authError(error, step: .other)
         }
     }
 
+    /// Настройки сервер заменяет целиком, поэтому читаем и дописываем. Если другое устройство
+    /// поменяет их в ту же секунду, его правка потеряется; пока в настройках только согласие.
     func saveConsent(version: Int, date: Date) async throws {
         do {
             let prefs = ConsentPrefs.merged(try await prefs(), version: version, date: date)
@@ -92,9 +91,7 @@ final class AppwriteAuthService: AuthService, ConsentService, @unchecked Sendabl
         } catch {
             throw Self.authError(error, step: .other)
         }
-        if let userID = cache.userID {
-            cache.setConsentVersion(version, for: userID)
-        }
+        cache.consentVersion = version
     }
 
     private func prefs() async throws -> [String: Any] {

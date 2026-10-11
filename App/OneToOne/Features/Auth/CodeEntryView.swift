@@ -52,7 +52,8 @@ struct CodeEntryView: View {
                 code = clean
                 return
             }
-            auth.clearError()
+            // Пустое поле — это мы стёрли неверный код: ошибку оставляем, пока человек не начал вводить.
+            if !clean.isEmpty { auth.clearError() }
             submit()
         }
         .onAppear { isFocused = true }
@@ -60,7 +61,11 @@ struct CodeEntryView: View {
 
     private func submit() {
         guard code.count == 6, !auth.isWorking else { return }
-        Task { await auth.confirm(code: code) }
+        Task {
+            await auth.confirm(code: code)
+            // Не подошёл — стираем, иначе новые цифры не влезут в шесть и нажатия «пропадут».
+            if auth.errorMessage != nil { code = "" }
+        }
     }
 }
 

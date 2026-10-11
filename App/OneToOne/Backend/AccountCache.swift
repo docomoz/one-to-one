@@ -9,33 +9,29 @@ struct AccountCache: @unchecked Sendable {
         self.defaults = defaults
     }
 
+    /// Другой человек — согласие прежнего к нему не относится, забываем его.
     var userID: String? {
         get { defaults.string(forKey: Keys.userID) }
-        nonmutating set { defaults.set(newValue, forKey: Keys.userID) }
+        nonmutating set {
+            if newValue != userID { defaults.removeObject(forKey: Keys.consentVersion) }
+            defaults.set(newValue, forKey: Keys.userID)
+        }
     }
 
-    func consentVersion(for userID: String) -> Int? {
-        consents[userID]
-    }
-
-    func setConsentVersion(_ version: Int, for userID: String) {
-        var all = consents
-        all[userID] = version
-        defaults.set(all, forKey: Keys.consents)
+    /// Согласие того, кто сейчас вошёл. `nil` — не давал или не знаем.
+    var consentVersion: Int? {
+        get { defaults.object(forKey: Keys.consentVersion) as? Int }
+        nonmutating set { defaults.set(newValue, forKey: Keys.consentVersion) }
     }
 
     /// После выхода из аккаунта.
     func clear() {
         defaults.removeObject(forKey: Keys.userID)
-        defaults.removeObject(forKey: Keys.consents)
-    }
-
-    private var consents: [String: Int] {
-        defaults.dictionary(forKey: Keys.consents) as? [String: Int] ?? [:]
+        defaults.removeObject(forKey: Keys.consentVersion)
     }
 
     private enum Keys {
         static let userID = "account.userID"
-        static let consents = "account.consentVersions"
+        static let consentVersion = "account.consentVersion"
     }
 }
