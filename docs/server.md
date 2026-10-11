@@ -14,6 +14,7 @@
 | Почта для кодов | на время разработки SMTP Gmail (Google Workspace `maxim@docomoz.com`, пароль приложения). Перед публикацией — сервис рассылок с отправителем на своём домене (Unisender Go) |
 | Резервные копии | автоматические бэкапы Timeweb, ежедневно (хранятся отдельно от сервера). Перед запуском добавить ежедневный дамп базы в S3 |
 | SSH | `ssh -i ~/.ssh/one-to-one-timeweb root@194.87.44.100` (ключ на Маке Максима; второй ключ для Дарьи добавлять в `/root/.ssh/authorized_keys`) |
+| Схема базы и функции | `Server/appwrite.config.json` и `Server/functions/`, выкладываются командой `appwrite push`, см. «Схема и функции» |
 
 Секреты (пароль администратора консоли, секретный ключ Appwrite из мастера, пароль приложения Gmail, позже ключи S3) хранятся только в менеджере паролей и в `/root/appwrite/.env` на сервере. В git их нет.
 
@@ -63,6 +64,106 @@ curl -s -X POST https://api.194-87-44-100.sslip.io/v1/account/tokens/email \
   -d '{"userId":"unique()","email":"<тестовая почта>"}'
 ```
 Письмо с кодом должно прийти, не в спам. Тест создаёт неподтверждённого пользователя в проекте — удалить его в консоли (Auth → Users).
+
+## Схема и функции
+
+Всё, что лежит в базе и какие функции работают на сервере, описано в `Server/appwrite.config.json` и выкладывается одной командой Appwrite CLI. Руками в консоли схему не меняем: следующий `appwrite push` вернёт её к файлу.
+
+> В Appwrite 2.x коллекции называются **таблицами** (tables), документы — **строками** (rows), атрибуты — **колонками** (columns), «document security» — **row security**. В плане и дизайне старые слова, это одно и то же.
+
+### Что в схеме
+
+База `main`, три таблицы. Пара — команда (Team) Appwrite, её id — `coupleId`.
+
+| Таблица | Что хранит | Кто видит |
+|---|---|---|
+| `records` | Зашифрованные записи пары: `coupleId`, `envelope` (base64 конверта, обязателен всегда, и для удалённой записи: внутри id записи, время правки и содержимое или отметка «удалено»), `updatedAt` и `deleted` — только подсказки открытым текстом, телефоны им не верят и берут время и удаление из расшифрованного конверта. Индекс `coupleId` + `$updatedAt` + `$id` для забора изменений по порядку. Id строки задаёт телефон (32 hex) | Только члены команды пары: права строки `team:<coupleId>`. Создавать строки может любой вошедший, но выдать права он может только своей команде |
+| `keyRequests` | Передача ключа пары новому телефону (порядок шагов ниже): `requesterKeyCommitment`, открытые ключи, завёрнутый ключ, статус, срок `expiresAt` | Так же, только члены команды пары |
+| `invites` | Приглашения: SHA-256 кода (сам код нигде не хранится), `coupleId`, срок 7 дней | Никто из приложения. Читают и пишут только функции |
+
+Шаги передачи ключа в `keyRequests` (поле `status`). Сначала новый телефон только обещает свой ключ, а показывает его, когда второй телефон уже ответил своим: так сервер не может подбирать ключи, пока 6-значные коды на экранах случайно не совпадут.
+
+1. `waiting` — новый телефон создаёт строку с `requesterKeyCommitment` (base64 SHA-256 своего открытого ключа X25519). `requesterPublicKey` пока пусто.
+2. `answered` — телефон, у которого есть ключ пары, пишет свой `responderPublicKey`.
+3. `revealed` — новый телефон пишет `requesterPublicKey`. Отвечающий телефон проверяет, что SHA-256 этого ключа совпадает с `requesterKeyCommitment`, иначе отказ. Оба показывают код сверки.
+4. `delivered` — люди сверили коды, отвечающий пишет `wrappedKey` (ключ пары, завёрнутый для нового телефона). Или `rejected` — коды не совпали или отказались.
+
+Функции (Node.js 22, вызывает любой вошедший пользователь; кто вызвал, функция узнаёт из заголовка `x-appwrite-user-id`, который ставит сам Appwrite, `userId` из тела не читается):
+
+| Функция | Вход | Ответ | Ошибки |
+|---|---|---|---|
+| `create-invite` | `{"coupleId": "…"}` | `{"code": "ABCD2345", "expiresAt": "…"}`: 8 символов из `23456789ABCDEFGHJKMNPQRSTUVWXYZ`, старые приглашения пары удаляются | `not_member` (403), `couple_full` (409, в паре уже двое), `already_paired` (409, вызывающий уже в паре с кем-то другим) |
+| `accept-invite` | `{"code": "…"}` (регистр, пробелы и дефисы не важны) | `{"coupleId": "…"}`, вызывающий добавлен в команду, приглашение удалено | `invite_not_found` (404), `invite_expired` (410), `couple_full` (409), `already_paired` (409: уже в паре с кем-то или вводит свой же код) |
+| `leave-couple` | `{"coupleId": "…"}` | `{"left": true, "coupleDeleted": …}`: если в паре никого не осталось, удаляются команда и все её записи, запросы ключа и приглашения | `not_member` (403) |
+| `delete-account` | ничего | `{"deleted": true}`: выход из всех пар, затем удаление пользователя | — |
+| `cleanup-expired` | ничего, запускается по расписанию раз в сутки в 03:00 UTC, из приложения не вызывается | `{"invites": N, "keyRequests": M}`: сколько удалено строк с прошедшим `expiresAt` | — |
+
+Просроченное не копится: `create-invite` попутно удаляет просроченные приглашения, `accept-invite` удаляет просроченное приглашение, на которое наткнулся (и отвечает `invite_expired`), а `cleanup-expired` раз в сутки удаляет все просроченные `invites` и `keyRequests`.
+
+Членами пары считаются только подтверждённые членства команды: неподтверждённое приглашение по почте не занимает место и не мешает удалить пустую пару.
+
+У всех функций, кроме `cleanup-expired`, есть ещё `unauthorized` (401, вызов без входа), `bad_request` (400, кривое тело) и `server_error` (500, подробности в логе выполнения). Ошибка приходит в теле ответа функции: `{"error": "<код>"}`.
+
+Общий код функций лежит в `Server/functions/shared/`, а в каждой функции — его копия в `src/shared/` (на сервер каждая функция уходит отдельной папкой и соседей не видит). Поменял `shared/` — выполни `Server/functions/sync-shared.sh`, иначе тест `sharedCodeIsUpToDate` упадёт.
+
+### Тесты
+
+```bash
+cd Server/functions/create-invite && npm ci && npm test   # так же в остальных папках функций
+```
+На GitHub их запускает задание `server` в CI, когда в PR менялось что-то в `Server/`.
+
+### Как выложить (Максим, первый раз и после каждого изменения схемы или функций)
+
+1. Один раз поставить Appwrite CLI: `brew install appwrite`, проверить `appwrite --version` (нужна 28.x или новее).
+2. Один раз войти в консоль. Пароль вводишь сам, Claude его не видит:
+   ```bash
+   appwrite login --endpoint https://api.194-87-44-100.sslip.io/v1
+   ```
+   Почта и пароль — администратора консоли из менеджера паролей.
+3. Выложить всё из папки `Server/` (там лежит `appwrite.config.json` с id проекта):
+   ```bash
+   cd Server && appwrite push all
+   ```
+   CLI покажет, что создаст или поменяет, и спросит подтверждение. Если спросит про удаление таблицы или колонки, которых нет в файле, — сначала разобраться, откуда они (удаление стирает данные). Первая сборка функций на 2 ГБ RAM может идти несколько минут.
+4. Проверить в консоли (`https://api.194-87-44-100.sslip.io/console` → проект `one-to-one`):
+   - Databases → `main`: таблицы `records`, `keyRequests`, `invites`, у каждой колонки и индексы в статусе available. В Settings таблиц `records` и `keyRequests` включено Row security, а в правах таблицы только Create для Users; у `invites` прав нет вовсе.
+   - Functions: пять функций, у каждой активная сборка (deployment) в статусе ready, runtime Node.js 22. Execute access — Users, кроме `cleanup-expired`: у неё доступа нет ни у кого, зато в Settings → Schedule стоит `0 3 * * *`.
+   - `cleanup-expired` можно запустить сразу кнопкой Execute в консоли: ответ `{"invites": 0, "keyRequests": 0}` (или сколько было просроченных), в логе выполнения строка «Удалено просроченных…».
+
+### Как проверить функции руками
+
+Из консоли «Execute» не подходит: функциям нужен вошедший пользователь, а консоль вызывает их от имени администратора, и они ответят `unauthorized`. Поэтому создаём двух тестовых пользователей и тестовую пару и вызываем функции от их имени через `curl`. Команды `appwrite` работают после `appwrite login` из папки `Server/`.
+
+1. Тестовые пользователи и пара Анны (из консоли пара создаётся без владельца, поэтому Анну добавляем отдельно):
+   ```bash
+   appwrite users create --user-id test-anna --email anna@test.invalid --name Анна
+   appwrite users create --user-id test-boris --email boris@test.invalid --name Борис
+   appwrite teams create --team-id test-couple --name test-couple
+   appwrite teams create-membership --team-id test-couple --roles owner --user-id test-anna
+   ```
+2. Токен для вызова от имени пользователя (живёт 15 минут). Для каждого: создать сессию, затем JWT, из ответа скопировать поле `jwt`:
+   ```bash
+   appwrite users create-session --user-id test-anna
+   appwrite users create-jwt --user-id test-anna
+   ```
+3. Вызов функции (подставить JWT, id функции и тело):
+   ```bash
+   API=https://api.194-87-44-100.sslip.io/v1
+   call() { curl -s -X POST "$API/functions/$1/executions" -H 'X-Appwrite-Project: 6acbe1c5001b61609635' \
+     -H "X-Appwrite-JWT: $2" -H 'Content-Type: application/json' -d "{\"body\": $(printf '%s' "$3" | jq -Rs .)}" \
+     | jq '{responseStatusCode, responseBody}'; }
+   call create-invite "$JWT_ANNA" '{"coupleId":"test-couple"}'
+   ```
+4. Что должно получиться:
+   - `create-invite` от Анны → 200, `{"code": "…", "expiresAt": "…"}` через 7 дней. В таблице `invites` одна строка с `codeHash`, самого кода там нет.
+   - `accept-invite` от Бориса с этим кодом → 200, `{"coupleId": "test-couple"}`; в Auth → Teams → `test-couple` двое; строка в `invites` пропала.
+   - Тот же код ещё раз → 404 `invite_not_found`. `create-invite` от Анны теперь → 409 `couple_full`.
+   - `leave-couple` от Бориса с `{"coupleId":"test-couple"}` → 200, `{"left": true, "coupleDeleted": false}`.
+   - `delete-account` от Анны с `{}` → 200, `{"deleted": true}`; пользователь `test-anna` и команда `test-couple` пропали.
+5. Убрать за собой: `appwrite users delete --user-id test-boris` (и `test-anna`, если не удаляли).
+
+Логи и ошибки каждого вызова: Functions → функция → Executions.
 
 ## Резервные копии
 
