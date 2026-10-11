@@ -28,13 +28,16 @@ enum DebugSyncSettings {
         return (coupleID, key)
     }
 
-    static func save(coupleID: String, key: CoupleKey) {
+    /// `false` — ключ не записался в Keychain: после перезапуска пару придётся ввести снова.
+    @discardableResult
+    static func save(coupleID: String, key: CoupleKey) -> Bool {
         clear()
         var item = keychainQuery
         item[kSecValueData as String] = key.rawRepresentation
         item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        SecItemAdd(item as CFDictionary, nil)
+        guard SecItemAdd(item as CFDictionary, nil) == errSecSuccess else { return false }
         UserDefaults.standard.set(coupleID, forKey: coupleIDDefaultsKey)
+        return true
     }
 
     static func clear() {
@@ -51,7 +54,8 @@ enum DebugSyncSettings {
     /// 64 hex-цифры → ключ. Пробелы, переносы и регистр не важны.
     static func key(fromHex text: String) -> CoupleKey? {
         let digits = Array(text.lowercased().filter { !$0.isWhitespace })
-        guard digits.count == 64 else { return nil }
+        // `UInt8(_:radix:)` пропустил бы «+f» и «-0».
+        guard digits.count == 64, digits.allSatisfy(\.isHexDigit) else { return nil }
         var bytes = Data()
         for index in stride(from: 0, to: digits.count, by: 2) {
             guard let byte = UInt8(String(digits[index...index + 1]), radix: 16) else { return nil }

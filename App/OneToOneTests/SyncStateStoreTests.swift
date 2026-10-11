@@ -47,4 +47,5 @@ private let state = SyncState(
     #expect(DebugSyncSettings.key(fromHex: " \(hex.prefix(32))\n\(hex.dropFirst(32)) ") == key)
     #expect(DebugSyncSettings.key(fromHex: String(hex.dropLast())) == nil)
     #expect(DebugSyncSettings.key(fromHex: String(repeating: "zz", count: 32)) == nil)
+    #expect(DebugSyncSettings.key(fromHex: String(repeating: "+f", count: 32)) == nil)
 }

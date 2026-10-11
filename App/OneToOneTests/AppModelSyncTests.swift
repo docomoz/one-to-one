@@ -115,3 +115,18 @@ private func phone(me: Person, transport: FakeSyncTransport, key: CoupleKey,
     #expect(await model.syncState == nil)
     #expect(model.syncStatus.lastSuccess == nil)
 }
+
+/// Повторный запуск той же пары (кнопка в отладке, позже #85) не теряет правку, которую движок ещё не сохранил.
+@MainActor
+@Test func restartingSameCoupleKeepsQueuedChange() async throws {
+    let transport = FakeSyncTransport()
+    let key = CoupleKey()
+    let model = phone(me: man, transport: transport, key: key)
+
+    model.update { $0.periodDays.insert(day) }
+    model.startSync(coupleID: coupleID, key: key, transport: transport)
+    await model.syncNow()
+
+    #expect(model.data.periodDays == [day])
+    #expect(transport.server.documentCount == 1)
+}

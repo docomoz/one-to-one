@@ -30,9 +30,9 @@ struct OneToOneApp: App {
             }
             .task { await auth.start() }
             // Синхронизация при запуске, при возврате в приложение и раз в минуту, пока оно открыто.
-            // Уходя в фон, задача отменяется. Пока пары на сервере нет (#85), `syncNow` ничего не делает.
-            .task(id: scenePhase) {
-                guard scenePhase == .active else { return }
+            // Уходя в фон или выходя из аккаунта, задача отменяется. Пока пары на сервере нет (#85), `syncNow` ничего не делает.
+            .task(id: scenePhase == .active && isSignedIn) {
+                guard scenePhase == .active, isSignedIn else { return }
                 #if DEBUG
                 DebugSyncSettings.restore(into: model)
                 #endif
@@ -45,6 +45,14 @@ struct OneToOneApp: App {
             .environment(auth)
             // Интерфейс только на русском: месяцы в выборе даты тоже, даже если iPhone на другом языке.
             .environment(\.locale, Locale(identifier: "ru_RU"))
+        }
+    }
+
+    /// Без входа сервер не отдаст записи пары: не синхронизируем.
+    private var isSignedIn: Bool {
+        switch auth.screen(isPaired: model.data.isPaired) {
+        case .onboarding, .tabs: true
+        case .checking, .signIn, .consent: false
         }
     }
 

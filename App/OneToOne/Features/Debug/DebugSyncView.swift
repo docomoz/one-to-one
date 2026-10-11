@@ -76,9 +76,10 @@ struct DebugSyncView: View {
         let id = coupleID.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !id.isEmpty else { inputError = "Нужен id пары"; return }
         guard let key = DebugSyncSettings.key(fromHex: keyHex) else { inputError = "Ключ — ровно 64 hex-цифры"; return }
-        inputError = nil
-        DebugSyncSettings.save(coupleID: id, key: key)
+        inputError = DebugSyncSettings.save(coupleID: id, key: key)
+            ? nil : "Ключ не сохранился в Keychain: после перезапуска введите снова"
         model.startSync(coupleID: id, key: key)
+        isStarted = true
         Task { await syncNow() }
     }
 

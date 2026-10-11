@@ -5,7 +5,9 @@ import Sync
 
 /// Что показать о синхронизации.
 struct SyncStatus: Equatable {
-    var isSyncing = false
+    /// Сколько синхронизаций идёт сейчас: таймер, правка и кнопка могут запустить их одновременно.
+    var running = 0
+    var isSyncing: Bool { running > 0 }
     var lastSuccess: Date?
     /// Текст ошибки последней синхронизации; `nil` — прошла или ещё не было.
     var lastError: String?
@@ -16,8 +18,10 @@ struct SyncStatus: Equatable {
 /// правки уходят позже.
 extension AppModel {
     /// Запускает синхронизацию этой пары. Состояние движка берётся из `SyncState.json`.
-    /// Сам не синхронизирует: следом зовут `syncNow()`.
+    /// Сам не синхронизирует: следом зовут `syncNow()`. Для уже запущенной пары ничего не делает:
+    /// перезапуск потерял бы правку, которую движок получил, но ещё не сохранил. Сменить ключ — через `stopSync()`.
     func startSync(coupleID: String, key: CoupleKey, transport: any SyncTransport = AppwriteTransport()) {
+        guard syncCoupleID != coupleID else { return }
         stopSync()
         let state = syncStateStore.load(coupleID: coupleID)
         syncEngine = SyncEngine(coupleID: coupleID, key: key, transport: transport, state: state)
@@ -48,14 +52,17 @@ extension AppModel {
         // Правки, сделанные до этой синхронизации, должны попасть в неё.
         await syncChangesRecorded()
         let started = data
-        syncStatus.isSyncing = true
+        syncStatus.running += 1
         do {
             let synced = try await engine.sync(local: started)
             // Пока ждали сервер, синхронизацию могли остановить или переключить на другую пару.
+            // Ничего нового — не пересобираем данные: таймер срабатывает раз в минуту, а это работа на главном потоке.
             if syncEngine === engine {
                 // Только синхронизируемые поля и только те записи, что не правили во время запроса:
                 // иначе результат откатил бы свежие правки и локальные поля (`meID`, `movieCache`).
-                replaceData(SyncRecordMapper.merge(synced: synced, startedFrom: started, into: data))
+                if synced != started {
+                    replaceData(SyncRecordMapper.merge(synced: synced, startedFrom: started, into: data))
+                }
                 syncStatus.lastSuccess = Date()
                 syncStatus.lastError = nil
             }
@@ -66,7 +73,7 @@ extension AppModel {
         let state = await engine.state
         // Остановленная или переключённая синхронизация не пишет поверх состояния новой пары.
         guard syncEngine === engine else { return }
-        syncStatus.isSyncing = false
+        syncStatus.running -= 1
         saveSyncState(state, coupleID: coupleID)
     }
 
@@ -77,7 +84,7 @@ extension AppModel {
 
     /// Из `update`: правка `old` → `new` в очередь движка, затем синхронизация чуть позже.
     func queueSyncChange(from old: AppData, to new: AppData) {
-        guard let engine = syncEngine, let coupleID = syncCoupleID else { return }
+        guard let engine = syncEngine, let coupleID = syncCoupleID, old != new else { return }
         let now = Date()
         let previous = pendingSyncChange
         // По очереди: если вторая правка той же записи дойдёт до движка раньше первой, победит первая.
