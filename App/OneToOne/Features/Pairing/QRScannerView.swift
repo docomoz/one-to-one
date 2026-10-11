@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 import VisionKit
 
@@ -6,8 +7,14 @@ import VisionKit
 struct QRScannerView: UIViewControllerRepresentable {
     let onScan: (String) -> Void
 
-    @MainActor static var isAvailable: Bool {
-        DataScannerViewController.isSupported && DataScannerViewController.isAvailable
+    /// Есть ли нужная камера. Доступ к ней спрашиваем только по кнопке (`requestAccess`).
+    @MainActor static var isSupported: Bool {
+        DataScannerViewController.isSupported
+    }
+
+    /// Спросить доступ к камере (в первый раз iOS покажет окно). `false` — запретили или нельзя.
+    static func requestAccess() async -> Bool {
+        await AVCaptureDevice.requestAccess(for: .video)
     }
 
     func makeUIViewController(context: Context) -> DataScannerViewController {

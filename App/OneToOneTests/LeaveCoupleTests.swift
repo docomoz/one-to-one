@@ -123,3 +123,21 @@ private func sexEntry(_ day: Int) -> SexEntry {
     #expect(couple.maxim.model.data.isPaired)
     #expect(auth.userID == "maxim")
 }
+
+@MainActor
+@Test func deleteAccountAfterLostResponseStillWipes() async throws {
+    // Аккаунт удалился, ответ потерялся; повтор упирается в отсутствие сессии.
+    let couple = try Couple2(dashaEntries: [sexEntry(3)])
+    try await couple.paired()
+    let coupleID = try couple.coupleID
+    let fake = FakeAuthService(signedInUserID: "maxim", consent: 1)
+    let auth = AuthFlow(auth: fake, consent: fake)
+    await auth.start()
+    couple.maxim.service.failure.withLock { $0 = .signedOut }
+
+    await couple.maxim.flow.deleteAccount(auth: auth)
+
+    #expect(couple.maxim.keys.load(coupleID: coupleID) == nil)
+    #expect(!couple.maxim.model.hasSyncedRecords)
+    #expect(auth.userID == nil)
+}

@@ -15,10 +15,7 @@ struct OnboardingView: View {
     private enum Step: Hashable { case me, partner, join }
 
     var body: some View {
-        if pairing.restoringCoupleID != nil {
-            // Новый телефон или переустановка: пара есть, ключа нет — просим его у партнёра.
-            RestoreAccessView()
-        } else if pairing.awaitsProfile {
+        if pairing.awaitsProfile {
             // Вошли по коду или восстановили доступ и получили ключ: осталось выбрать себя в паре.
             ChooseMeView()
         } else {

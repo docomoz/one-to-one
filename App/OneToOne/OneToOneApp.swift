@@ -45,7 +45,15 @@ struct OneToOneApp: App {
             case .onboarding, .tabs:
                 // Пока не ясно, чьи данные на телефоне и есть ли пара на сервере, ничего не показываем.
                 if pairing.isAccountReady(for: auth.userID) {
-                    if model.data.isPaired { tabs } else { OnboardingView() }
+                    if pairing.restoringCoupleID != nil {
+                        // Пара есть, ключа на телефоне нет (переустановка, новый телефон, резервная копия без Keychain):
+                        // просим ключ у партнёра, даже если записи из копии уже на телефоне.
+                        RestoreAccessView()
+                    } else if model.data.isPaired {
+                        tabs
+                    } else {
+                        OnboardingView()
+                    }
                 } else {
                     AccountCheckView()
                 }

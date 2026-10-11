@@ -121,8 +121,9 @@ extension PairingFlow {
             if request.status == .rejected { throw PairingError.rejected }
             try await service.update(request, with: try responder.deliver())
             incomingStep = .done
-            partnerJoined = true
             invite = nil
+            // Ключ мог уйти и на свой же новый телефон, а не партнёру: сколько в паре людей, знает сервер.
+            await refreshPartnerJoined()
         } catch {
             let error = Self.pairingError(error)
             // Без сети код остаётся на экране: можно нажать ещё раз.

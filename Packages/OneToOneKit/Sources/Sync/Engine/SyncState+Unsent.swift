@@ -5,6 +5,9 @@ extension SyncState {
     /// ещё не знает (сделаны до первой синхронизации). Это пропадёт, если стереть данные телефона.
     public func hasUnsentChanges(in local: AppData) -> Bool {
         guard outbox.isEmpty else { return true }
-        return SyncRecordMapper.payloads(from: local).contains { id, payload in known[id]?.payload != payload }
+        // Сравниваем записи после одного и того же разбора и кодирования: байты с сервера (например, от более новой
+        // версии приложения у партнёра) могут отличаться от наших при тех же данных.
+        let synced = SyncRecordMapper.apply(known.compactMapValues(\.payload), to: local)
+        return SyncRecordMapper.payloads(from: synced) != SyncRecordMapper.payloads(from: local)
     }
 }

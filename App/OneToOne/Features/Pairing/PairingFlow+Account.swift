@@ -43,23 +43,26 @@ extension PairingFlow {
             && !defaults.coupleLookupDone
         if needsLookup {
             do {
-                try await lookUpCouple()
+                try await lookUpCouple(userID: userID)
             } catch {
                 Self.log.error("Не удалось узнать, есть ли пара: \(error)")
-                accountState = .failed(Self.pairingError(error))
+                if defaults.ownerUserID == userID { accountState = .failed(Self.pairingError(error)) }
                 return
             }
         }
+        // Пока ждали сервер, человек мог выйти, а на телефоне — войти другой: его состояние не трогаем.
+        guard defaults.ownerUserID == userID else { return }
         accountState = .ready(userID: userID)
     }
 
     /// Пара этого человека на сервере. Если их несколько, берём пару с партнёром, а свои пустые покидаем,
     /// как после входа по коду (`leaveOldCouples`).
-    private func lookUpCouple() async throws {
+    private func lookUpCouple(userID: String) async throws {
         var found: [(id: String, members: Int, hasKey: Bool)] = []
         for id in try await service.couples() {
             found.append((id, try await service.memberCount(coupleID: id), keys.load(coupleID: id) != nil))
         }
+        guard defaults.ownerUserID == userID else { return }
         defaults.coupleLookupDone = true
         guard let chosen = found.max(by: { ($0.members, $0.hasKey ? 1 : 0) < ($1.members, $1.hasKey ? 1 : 0) }) else {
             return
@@ -140,6 +143,8 @@ extension PairingFlow {
     /// Выход из аккаунта. Получилось — следующий, кто войдёт на этом телефоне, ничего прежнего не увидит.
     /// Ключ остаётся в Keychain: вернувшись с той же почтой, человек откроет записи без партнёра.
     func signOut(auth: AuthFlow) async {
+        // Свой запрос ключа закрываем, пока есть вход: иначе телефон партнёра ждал бы раскрытия, которого не будет.
+        await abandonKeyRequest()
         await auth.signOut()
         guard auth.userID == nil else { return }
         forgetLocalData()
@@ -150,7 +155,12 @@ extension PairingFlow {
     func deleteAccount(auth: AuthFlow) async {
         var deleted = false
         await perform {
-            try await service.deleteAccount()
+            do {
+                try await service.deleteAccount()
+            } catch PairingError.signedOut {
+                // Сессии нет: прошлое удаление дошло до сервера, а ответ потерялся (или вход истёк).
+                // Человек хотел удалить аккаунт — стираем телефон и выходим; войдёт снова, если аккаунт остался.
+            }
             deleted = true
         }
         guard deleted else { return }

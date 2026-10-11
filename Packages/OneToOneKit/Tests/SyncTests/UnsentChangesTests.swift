@@ -28,6 +28,19 @@ private func day(_ number: Int) -> DayKey { DayKey(year: 2026, month: 10, day: n
     #expect(await engine.state.hasUnsentChanges(in: edited))
 }
 
+@Test func differentBytesOfSameRecordAreNotUnsent() throws {
+    // Партнёр с более новой версией прислал запись с лишним полем: данные те же, байты другие.
+    var data = AppData()
+    data.periodDays = [day(4)]
+    let (id, payload) = try #require(SyncRecordMapper.payloads(from: data).first)
+    var json = try #require(try JSONSerialization.jsonObject(with: payload) as? [String: Any])
+    json["future"] = 1
+    let newer = try JSONSerialization.data(withJSONObject: json)
+    let state = SyncState(known: [id: SyncRecord(id: id, updatedAt: Date(), payload: newer)])
+
+    #expect(!state.hasUnsentChanges(in: data))
+}
+
 @Test func recordUnknownToEngineIsUnsent() {
     // Запись сделана до синхронизации: в очереди её нет, но и на сервере тоже.
     var data = AppData()

@@ -332,3 +332,101 @@ private func sexEntry(_ day: Int) -> SexEntry {
     #expect(VerifyQR.parse("one-to-one:verify:req1") == nil)
     #expect(VerifyQR.parse("hello") == nil)
 }
+
+// MARK: - Найдено на ревью
+
+@MainActor
+@Test func backupWithoutKeyAsksPartnerAndKeepsData() async throws {
+    // Новый iPhone из резервной копии: записи и настройки пары вернулись, ключ (только этого устройства) — нет.
+    let couple = try Couple2(dashaEntries: [sexEntry(3)])
+    try await couple.paired()
+    let coupleID = try couple.coupleID
+    let restored = Phone(user: "maxim", pairing: couple.pairing, sync: couple.sync, data: couple.maxim.model.data)
+    restored.defaults.coupleID = coupleID
+    restored.defaults.isCoupleOnServer = true
+    restored.defaults.ownerUserID = "maxim"
+    let flow = PairingFlow(model: restored.model, service: restored.service, keys: restored.keys,
+                           defaults: restored.defaults, makeTransport: { restored.transport })
+
+    await flow.prepareAccount(userID: "maxim")
+    #expect(flow.restoringCoupleID == coupleID)
+    #expect(restored.model.data.isPaired)
+
+    await flow.startKeyRequest()
+    await couple.dasha.flow.checkIncoming()
+    await flow.pollJoin()
+    await couple.dasha.flow.pollIncoming()
+    await flow.confirmJoin()
+    await couple.dasha.flow.confirmIncoming()
+    await flow.pollJoin()
+
+    #expect(flow.restoringCoupleID == nil)
+    #expect(restored.model.isSyncStarted)
+    #expect(restored.model.data.isPaired, "кто я — из копии, выбирать заново не нужно")
+    #expect(restored.model.data.sexEntries.count == 1)
+}
+
+@MainActor
+@Test func soloOwnSecondPhoneIsNotAPartner() async throws {
+    // Одиночка передал ключ своему новому телефону: партнёр от этого не появился и «не вышел».
+    let pairing = FakePairingServer()
+    let sync = FakeSyncServer()
+    let old = Phone(user: "vera", pairing: pairing, sync: sync)
+    try old.model.createCouple(me: PersonDraft(sex: .female, name: "Вера", birthDate: pairingAdult),
+                               partner: PersonDraft(sex: .male, name: "Пётр", birthDate: pairingAdult),
+                               today: pairingToday)
+    await old.flow.coupleCreated()
+    let newPhone = Phone(user: "vera", pairing: pairing, sync: sync)
+    await newPhone.flow.prepareAccount(userID: "vera")
+    await newPhone.flow.startKeyRequest()
+    await old.flow.checkIncoming()
+    await newPhone.flow.pollJoin()
+    await old.flow.pollIncoming()
+    await newPhone.flow.confirmJoin()
+    await old.flow.confirmIncoming()
+    await newPhone.flow.pollJoin()
+
+    #expect(newPhone.flow.restoringCoupleID == nil)
+    #expect(newPhone.keys.load(coupleID: try #require(old.defaults.coupleID)) != nil)
+    await old.flow.refreshPartnerJoined()
+    #expect(!old.flow.partnerJoined)
+    #expect(!old.flow.partnerLeft)
+    #expect(!newPhone.flow.partnerJoined)
+}
+
+@MainActor
+@Test func signOutClosesOpenKeyRequest() async throws {
+    let couple = try Couple2()
+    try await couple.paired()
+    let newPhone = Phone(user: "maxim", pairing: couple.pairing, sync: couple.sync)
+    await newPhone.flow.prepareAccount(userID: "maxim")
+    await newPhone.flow.startKeyRequest()
+    let fake = FakeAuthService(signedInUserID: "maxim", consent: 1)
+    let auth = AuthFlow(auth: fake, consent: fake)
+    await auth.start()
+
+    await newPhone.flow.signOut(auth: auth)
+
+    // Запрос из приглашения отдал ключ раньше; новый, с этого телефона, закрыт.
+    let open = couple.pairing.requests.filter { $0.status != .delivered }
+    #expect(open.count == 1)
+    #expect(open.allSatisfy { $0.status == .rejected })
+}
+
+@MainActor
+@Test func staleLookupDoesNotTouchNextAccount() async throws {
+    // Поиск пары для Даши ещё шёл, когда она вышла и на телефоне вошла Вера.
+    let couple = try Couple2()
+    await couple.dasha.flow.coupleCreated()
+    let reinstalled = Phone(user: "dasha", pairing: couple.pairing, sync: couple.sync, keys: couple.dasha.keys)
+    reinstalled.service.latency.withLock { $0 = .milliseconds(50) }
+
+    async let first: Void = reinstalled.flow.prepareAccount(userID: "dasha")
+    try await Task.sleep(for: .milliseconds(10))
+    reinstalled.flow.forgetLocalData()
+    reinstalled.defaults.ownerUserID = "vera"
+    await first
+
+    #expect(reinstalled.defaults.coupleID == nil)
+    #expect(!reinstalled.flow.isAccountReady(for: "dasha"))
+}
