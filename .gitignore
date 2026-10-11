@@ -26,3 +26,6 @@ Config/Secrets.xcconfig
 
 # XcodeGen генерирует Info.plist из project.yml
 Config/Info.plist
+
+# Node.js: зависимости функций сервера ставит npm ci
+node_modules/
