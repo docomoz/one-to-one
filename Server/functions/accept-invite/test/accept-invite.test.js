@@ -30,6 +30,8 @@ test('acceptInviteJoinsTeamAndDeletesInvite', async () => {
     assert.deepEqual(result, { status: 200, body: { coupleId: 'couple1' } });
     assert.deepEqual(fake.memberIds('couple1'), ['anna', 'boris']);
     assert.equal(fake.teamsById.get('couple1')[1].confirm, true);
+    // Не владелец: владелец команды мог бы сам добавить третьего мимо приглашения.
+    assert.deepEqual(fake.teamsById.get('couple1')[1].roles, ['partner']);
     assert.equal(fake.rows('invites').length, 0);
 });
 

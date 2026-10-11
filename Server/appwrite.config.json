@@ -4,6 +4,22 @@
     "endpoint": "https://api.194-87-44-100.sslip.io/v1",
     "functions": [
         {
+            "$id": "create-couple",
+            "name": "create-couple",
+            "runtime": "node-22",
+            "execute": ["users"],
+            "events": [],
+            "scopes": ["users.read", "teams.read", "teams.write"],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm ci --omit=dev",
+            "path": "functions/create-couple",
+            "ignore": ["node_modules", "test"]
+        },
+        {
             "$id": "create-invite",
             "name": "create-invite",
             "runtime": "node-22",
