@@ -10,10 +10,14 @@ struct HomeView: View {
 
     @Environment(AppModel.self) private var model
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var today = DayKey(.now)
     @State private var isLogging = false
 
-    private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
+    /// При крупном шрифте подписи в полширины рвутся посреди слова («Оргазм/ы»), поэтому одна колонка.
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 8), count: dynamicTypeSize.isAccessibilitySize ? 1 : 2)
+    }
 
     var body: some View {
         let stats = StatsCalculator.stats(model.data.sexEntries, today: today)
@@ -40,6 +44,7 @@ struct HomeView: View {
                             Text(event.text)
                                 .font(.headline)
                         }
+                        .cardTextLimit()
                     }
                 }
                 .padding(20)
@@ -92,4 +97,11 @@ struct HomeView: View {
         .environment(AppModel(store: InMemoryStore(.homePreview(meIsWoman: true))))
         .environment(\.locale, Locale(identifier: "ru_RU"))
         .preferredColorScheme(.dark)
+}
+
+#Preview("Он, крупный шрифт") {
+    HomeView(pickMovie: {})
+        .environment(AppModel(store: InMemoryStore(.homePreview(meIsWoman: false))))
+        .environment(\.locale, Locale(identifier: "ru_RU"))
+        .dynamicTypeSize(.accessibility5)
 }
