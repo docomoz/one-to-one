@@ -3,22 +3,56 @@ import SwiftUI
 
 @main
 struct OneToOneApp: App {
-    @State private var model = AppModel(store: LocalStore())
+    @State private var model = AppModel(store: LocalStore(), syncStateStore: SyncStateStore())
+    @State private var auth = Self.makeAuth()
     @State private var tab = AppTab.home
     @State private var pickFlow: PickFlowRequest?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if model.data.isPaired {
-                    tabs
-                } else {
+            // ZStack, а не Group: модификаторы Group достаются каждому экрану, и `.task` с проверкой
+            // входа запускался бы заново при каждой смене экрана.
+            ZStack {
+                // Вход по почте → согласие → знакомство → вкладки.
+                switch auth.screen(isPaired: model.data.isPaired) {
+                case .checking:
+                    ProgressView()
+                case .signIn:
+                    EmailSignInView()
+                case .consent:
+                    ConsentView()
+                case .onboarding:
                     OnboardingView()
+                case .tabs:
+                    tabs
+                }
+            }
+            .task { await auth.start() }
+            // Синхронизация при запуске, при возврате в приложение и раз в минуту, пока оно открыто.
+            // Уходя в фон или выходя из аккаунта, задача отменяется. Пока пары на сервере нет (#85), `syncNow` ничего не делает.
+            .task(id: scenePhase == .active && isSignedIn) {
+                guard scenePhase == .active, isSignedIn else { return }
+                #if DEBUG
+                DebugSyncSettings.restore(into: model)
+                #endif
+                while !Task.isCancelled {
+                    await model.syncNow()
+                    try? await Task.sleep(for: .seconds(60))
                 }
             }
             .environment(model)
+            .environment(auth)
             // Интерфейс только на русском: месяцы в выборе даты тоже, даже если iPhone на другом языке.
             .environment(\.locale, Locale(identifier: "ru_RU"))
+        }
+    }
+
+    /// Без входа сервер не отдаст записи пары: не синхронизируем.
+    private var isSignedIn: Bool {
+        switch auth.screen(isPaired: model.data.isPaired) {
+        case .onboarding, .tabs: true
+        case .checking, .signIn, .consent: false
         }
     }
 
@@ -44,6 +78,14 @@ struct OneToOneApp: App {
             }
         }
         .fullScreenCover(item: $pickFlow) { PickFlowView(session: $0.session) }
+    }
+
+    private static func makeAuth() -> AuthFlow {
+        #if DEBUG
+        if let preview = AuthFlow.fromLaunchArguments() { return preview }
+        #endif
+        let service = AppwriteAuthService.shared
+        return AuthFlow(auth: service, consent: service)
     }
 }
 

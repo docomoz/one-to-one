@@ -1,2 +1,7 @@
 // Общие настройки приложения. Ключи API подтягиваются из Secrets.xcconfig, если он есть.
 #include? "Secrets.xcconfig"
+
+// Сервер Appwrite (docs/server.md). Не секреты: адрес и id проекта всё равно видны в приложении.
+// В xcconfig `//` начинает комментарий, поэтому в адресе `/$()/`: Xcode склеит его в `//`.
+APPWRITE_ENDPOINT = https:/$()/api.194-87-44-100.sslip.io/v1
+APPWRITE_PROJECT_ID = 6acbe1c5001b61609635

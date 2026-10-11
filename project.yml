@@ -12,6 +12,11 @@ settings:
 packages:
   OneToOneKit:
     path: Packages/OneToOneKit
+  # Официальная библиотека Appwrite для входа и данных пары (docs/decisions.md). Версия точная:
+  # Package.resolved в git нет, а новая версия SDK может требовать более новый сервер.
+  Appwrite:
+    url: https://github.com/appwrite/sdk-for-apple
+    exactVersion: 20.0.0
 targets:
   OneToOne:
     type: application
@@ -23,6 +28,9 @@ targets:
       properties:
         # Ключ из Config/Secrets.xcconfig. Нет файла — ключ пустой, и поиск фильмов покажет ошибку.
         KinopoiskAPIKey: $(KINOPOISK_API_KEY)
+        # Адрес сервера и id проекта Appwrite из Config/App.xcconfig.
+        AppwriteEndpoint: $(APPWRITE_ENDPOINT)
+        AppwriteProjectID: $(APPWRITE_PROJECT_ID)
         # Иначе XcodeGen впишет 1.0 и 1 вместо MARKETING_VERSION и CURRENT_PROJECT_VERSION.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
@@ -49,6 +57,10 @@ targets:
         product: MovieAPI
       - package: OneToOneKit
         product: DesignSystem
+      - package: OneToOneKit
+        product: Sync
+      - package: Appwrite
+        product: Appwrite
   OneToOneTests:
     type: bundle.unit-test
     platform: iOS

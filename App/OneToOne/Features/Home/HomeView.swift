@@ -66,6 +66,9 @@ struct HomeView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     NavigationLink("Витрина") { DesignPreview() }
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink("Синхр.") { DebugSyncView() }
+                }
                 #endif
             }
         }
