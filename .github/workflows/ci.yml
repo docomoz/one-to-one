@@ -1,8 +1,10 @@
-# Проверки на каждый PR: тесты пакета и сборка приложения.
+# Проверки на каждый PR: тесты пакета, сборка приложения и тесты функций сервера.
 name: ci
 
 # Проверка `ci` обязательна для merge, поэтому запускается всегда. Если поменялись только тексты (.md) и docs/,
 # задание `ci` пропускается: GitHub считает пропуск успехом, и PR с документами можно влить без сборки.
+# Функции сервера (Server/) проверяет задание `server` на Linux. Обязательной остаётся только `ci`, поэтому
+# `ci` ждёт `server` и падает, если тесты сервера упали: иначе автослияние влило бы PR со сломанным сервером.
 on:
   pull_request:
   push:
@@ -25,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.diff.outputs.code }}
+      server: ${{ steps.diff.outputs.server }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,21 +36,62 @@ jobs:
         env:
           BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         run: |
-          # Если сравнить не получилось (первый push и т. п.), считаем, что код менялся.
+          # Если сравнить не получилось (первый push и т. п.), считаем, что менялось всё.
           changed=$(git diff --no-renames --name-only "$BASE" "$GITHUB_SHA" 2>/dev/null) || changed="unknown"
-          if echo "$changed" | grep -vE '\.md$|^docs/' | grep -q .; then
+          # code — приложение и пакет: всё, кроме текстов, docs/ и Server/.
+          if echo "$changed" | grep -vE '\.md$|^docs/|^Server/' | grep -q .; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
           fi
+          # server — функции сервера: Server/ (кроме текстов) или файлы CI.
+          if echo "$changed" | grep -vE '\.md$' | grep -qE '^Server/|^\.github/workflows/|^unknown$'; then
+            echo "server=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "server=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Тесты функций Appwrite (Node.js) на дешёвом Linux-раннере: в каждой папке функции `npm ci && npm test`.
+  server:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.server != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # Та же версия Node, что у функций на сервере (рантайм node-22).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Server/functions/*/package-lock.json
+
+      - name: Тесты функций
+        working-directory: Server/functions
+        run: |
+          for dir in */; do
+            [ -f "$dir/package.json" ] || continue
+            echo "::group::$dir"
+            (cd "$dir" && npm ci && npm test)
+            echo "::endgroup::"
+          done
 
   ci:
-    needs: changes
+    needs: [changes, server]
     # !cancelled(): если задание changes упало, всё равно собираем, а не пропускаем молча.
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
-    runs-on: macos-26
+    # Если менялся только сервер, `ci` пропускается, но запускается, чтобы упасть, когда упало `server`.
+    if: ${{ !cancelled() && (needs.changes.outputs.code != 'false' || needs.server.result == 'failure') }}
+    # Чтобы только упасть из-за сервера, macOS не нужен.
+    runs-on: ${{ needs.changes.outputs.code != 'false' && 'macos-26' || 'ubuntu-latest' }}
     timeout-minutes: 30
     steps:
+      - name: Тесты сервера
+        if: ${{ needs.server.result == 'failure' }}
+        run: |
+          echo "::error::Упали тесты функций сервера, см. задание server"
+          exit 1
+
       - uses: actions/checkout@v4
 
       # Xcode закреплён, чтобы обновление образа раннера не ломало сборку. Меняем версию осознанно.
