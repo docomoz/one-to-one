@@ -53,13 +53,28 @@ extension AppModel {
     }
 
     func markWatched(movieID: Int) {
-        update { $0.markWatched(movieID: movieID) }
+        update { $0.markWatched(movieID: movieID, at: .now) }
+    }
+
+    /// Про какой фильм спросить «Как вам?» в день `today`. Без «я» — ни про какой.
+    /// День передаёт экран: так он перерисуется в полночь, даже если данные не менялись.
+    func movieToRate(today: DayKey = DayKey(.now)) -> Movie? {
+        guard let me = data.meID else { return nil }
+        return data.movieToRate(me: me, now: today.date())
+    }
+
+    /// Моя оценка фильма. Без «я» ничего не делает.
+    func rate(movieID: Int, _ verdict: MovieVerdict) {
+        guard let me = data.meID else { return }
+        update { $0.rate(movieID: movieID, verdict, by: me, at: .now) }
     }
 
     /// Колода для меня: оба списка плюс рекомендации каталога. Нет сети — только списки.
     /// Рекомендации (до 6 запросов к Кинопоиску из 200 в день) просим один раз на подбор,
     /// дальше берём запомненные: колоду открывают много раз, и оба из пары видят одни и те же.
+    /// Ещё до 3 запросов — «похожие» на фильмы с 👎, чтобы убрать их из колоды.
     func deck(for session: PickSession, catalog: some MovieCatalog) async -> [Movie] {
+        async let excluded = similarToDisliked(catalog: catalog)
         let recommendations: [Movie]
         if let saved = recommendationsByPick[session.id] {
             recommendations = saved
@@ -72,6 +87,21 @@ extension AppModel {
         // Фильмы с телефона — всегда в конце: без сети и при лимите Кинопоиска колода живёт на них.
         // В `recommendationsByPick` их не кладём, чтобы с появлением сети пришли и сетевые.
         let local = await catalog.localMovies(genres: session.mood.genres)
-        return data.deck(for: session, recommendations: recommendations + local, me: data.meID ?? UUID())
+        return data.deck(for: session, recommendations: recommendations + local, me: data.meID ?? UUID(),
+                         excluded: await excluded)
+    }
+
+    /// «Похожие» на 3 последних фильма с 👎 (до 3 запросов к Кинопоиску). Пока эти фильмы те же,
+    /// берём запомненные; поставили новый 👎 — спрашиваем заново, даже посреди подбора.
+    private func similarToDisliked(catalog: some MovieCatalog) async -> Set<Int> {
+        let dislikes = data.dislikedMovies()
+        guard !dislikes.isEmpty else { return [] }
+        if let saved = dislikeFilter, saved.dislikes == dislikes { return saved.similar }
+        // `nil` — не ответил ни один запрос (нет сети): в следующий раз проверим снова.
+        // Пустой ответ запоминаем, иначе каждое открытие колоды тратило бы запросы.
+        // Если ответили не все, запоминаем что есть: недостающее спросим при следующем 👎.
+        guard let similar = await DeckLoader.similar(to: dislikes, catalog: catalog) else { return [] }
+        dislikeFilter = (dislikes, similar)
+        return similar
     }
 }
