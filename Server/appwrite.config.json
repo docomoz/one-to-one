@@ -1,0 +1,189 @@
+{
+    "projectId": "6acbe1c5001b61609635",
+    "projectName": "one-to-one",
+    "endpoint": "https://api.194-87-44-100.sslip.io/v1",
+    "functions": [
+        {
+            "$id": "create-invite",
+            "name": "create-invite",
+            "runtime": "node-22",
+            "execute": ["users"],
+            "events": [],
+            "scopes": ["teams.read", "rows.read", "rows.write"],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm ci --omit=dev",
+            "path": "functions/create-invite",
+            "ignore": ["node_modules", "test"]
+        },
+        {
+            "$id": "accept-invite",
+            "name": "accept-invite",
+            "runtime": "node-22",
+            "execute": ["users"],
+            "events": [],
+            "scopes": ["users.read", "teams.read", "teams.write", "rows.read", "rows.write"],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm ci --omit=dev",
+            "path": "functions/accept-invite",
+            "ignore": ["node_modules", "test"]
+        },
+        {
+            "$id": "leave-couple",
+            "name": "leave-couple",
+            "runtime": "node-22",
+            "execute": ["users"],
+            "events": [],
+            "scopes": ["teams.read", "teams.write", "rows.read", "rows.write"],
+            "schedule": "",
+            "timeout": 60,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm ci --omit=dev",
+            "path": "functions/leave-couple",
+            "ignore": ["node_modules", "test"]
+        },
+        {
+            "$id": "delete-account",
+            "name": "delete-account",
+            "runtime": "node-22",
+            "execute": ["users"],
+            "events": [],
+            "scopes": ["users.read", "users.write", "teams.read", "teams.write", "rows.read", "rows.write"],
+            "schedule": "",
+            "timeout": 60,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm ci --omit=dev",
+            "path": "functions/delete-account",
+            "ignore": ["node_modules", "test"]
+        },
+        {
+            "$id": "cleanup-expired",
+            "name": "cleanup-expired",
+            "runtime": "node-22",
+            "execute": [],
+            "events": [],
+            "scopes": ["rows.read", "rows.write"],
+            "schedule": "0 3 * * *",
+            "timeout": 60,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm ci --omit=dev",
+            "path": "functions/cleanup-expired",
+            "ignore": ["node_modules", "test"]
+        }
+    ],
+    "tablesDB": [
+        {
+            "$id": "main",
+            "name": "main",
+            "enabled": true
+        }
+    ],
+    "tables": [
+        {
+            "$id": "records",
+            "$permissions": ["create(\"users\")"],
+            "databaseId": "main",
+            "name": "records",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
+                { "key": "coupleId", "type": "varchar", "required": true, "size": 36 },
+                { "key": "updatedAt", "type": "datetime", "required": true },
+                { "key": "envelope", "type": "text", "required": true },
+                { "key": "deleted", "type": "boolean", "required": false, "default": false }
+            ],
+            "indexes": [
+                {
+                    "key": "couple_updated_id",
+                    "type": "key",
+                    "columns": ["coupleId", "$updatedAt", "$id"],
+                    "orders": ["ASC", "ASC", "ASC"]
+                }
+            ]
+        },
+        {
+            "$id": "keyRequests",
+            "$permissions": ["create(\"users\")"],
+            "databaseId": "main",
+            "name": "keyRequests",
+            "enabled": true,
+            "rowSecurity": true,
+            "columns": [
+                { "key": "coupleId", "type": "varchar", "required": true, "size": 36 },
+                { "key": "requesterUserId", "type": "varchar", "required": true, "size": 36 },
+                { "key": "requesterKeyCommitment", "type": "varchar", "required": true, "size": 64 },
+                { "key": "requesterPublicKey", "type": "varchar", "required": false, "size": 64, "default": null },
+                { "key": "responderPublicKey", "type": "varchar", "required": false, "size": 64, "default": null },
+                { "key": "wrappedKey", "type": "varchar", "required": false, "size": 256, "default": null },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "format": "enum",
+                    "elements": ["waiting", "answered", "revealed", "delivered", "rejected"],
+                    "required": true
+                },
+                { "key": "expiresAt", "type": "datetime", "required": true }
+            ],
+            "indexes": [
+                {
+                    "key": "couple",
+                    "type": "key",
+                    "columns": ["coupleId"],
+                    "orders": ["ASC"]
+                },
+                {
+                    "key": "expires",
+                    "type": "key",
+                    "columns": ["expiresAt"],
+                    "orders": ["ASC"]
+                }
+            ]
+        },
+        {
+            "$id": "invites",
+            "$permissions": [],
+            "databaseId": "main",
+            "name": "invites",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                { "key": "codeHash", "type": "varchar", "required": true, "size": 64 },
+                { "key": "coupleId", "type": "varchar", "required": true, "size": 36 },
+                { "key": "expiresAt", "type": "datetime", "required": true }
+            ],
+            "indexes": [
+                {
+                    "key": "code_hash",
+                    "type": "unique",
+                    "columns": ["codeHash"],
+                    "orders": ["ASC"]
+                },
+                {
+                    "key": "couple",
+                    "type": "key",
+                    "columns": ["coupleId"],
+                    "orders": ["ASC"]
+                },
+                {
+                    "key": "expires",
+                    "type": "key",
+                    "columns": ["expiresAt"],
+                    "orders": ["ASC"]
+                }
+            ]
+        }
+    ]
+}
