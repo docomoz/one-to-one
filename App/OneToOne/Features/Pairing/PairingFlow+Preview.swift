@@ -12,6 +12,8 @@ struct PreviewPairingService: PairingService {
     }
     func acceptInvite(code: String) async throws -> String { "preview-couple" }
     func leaveCouple(coupleID: String) async throws {}
+    func couples() async throws -> [String] { [] }
+    func deleteAccount() async throws {}
     func memberCount(coupleID: String) async throws -> Int { 1 }
     func createKeyRequest(coupleID: String, commitment: Data, expiresAt: Date) async throws -> KeyRequest {
         KeyRequest(id: "preview", coupleID: coupleID, requesterUserID: "preview",

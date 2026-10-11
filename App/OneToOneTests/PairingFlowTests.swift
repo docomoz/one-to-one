@@ -7,69 +7,6 @@ import Testing
 private let today = DayKey(year: 2026, month: 10, day: 11)
 private let adult = DayKey(year: 1996, month: 5, day: 12)
 
-/// Один телефон: данные, ключи, настройки пары и сеть до общих фейковых серверов.
-@MainActor
-private struct Phone {
-    let model: AppModel
-    let flow: PairingFlow
-    let keys: InMemoryKeyStore
-    let defaults: PairingDefaults
-    let service: FakePairingService
-
-    init(user: String, pairing: FakePairingServer, sync: FakeSyncServer, data: AppData = AppData()) {
-        model = AppModel(store: InMemoryStore(data))
-        model.autoSyncDelay = nil
-        keys = InMemoryKeyStore()
-        defaults = PairingDefaults(defaults: UserDefaults(suiteName: "test-\(UUID().uuidString)")!)
-        service = FakePairingService(server: pairing, userID: user)
-        flow = PairingFlow(model: model, service: service, keys: keys, defaults: defaults,
-                           makeTransport: { FakeSyncTransport(server: sync) })
-    }
-}
-
-/// Двое и общие серверы. Даша создаёт пару в знакомстве, Максим войдёт по коду.
-@MainActor
-private struct Couple2 {
-    let pairing = FakePairingServer()
-    let sync = FakeSyncServer()
-    let dasha: Phone
-    let maxim: Phone
-
-    init(maximData: AppData = AppData(), dashaEntries: [SexEntry] = []) throws {
-        dasha = Phone(user: "dasha", pairing: pairing, sync: sync)
-        maxim = Phone(user: "maxim", pairing: pairing, sync: sync, data: maximData)
-        try dasha.model.createCouple(me: PersonDraft(sex: .female, name: "Даша", birthDate: adult),
-                                     partner: PersonDraft(sex: .male, name: "Максим", birthDate: adult), today: today)
-        for entry in dashaEntries { dasha.model.update { $0.sexEntries.append(entry) } }
-    }
-
-    /// Даша зарегистрировала пару и пригласила, Максим ввёл код, телефоны дошли до показа кода.
-    func untilCodes() async throws -> (dashaCode: String, maximCode: String) {
-        // Как в знакомстве: пара на сервере и первая синхронизация, записи Даши уходят в пару.
-        await dasha.flow.coupleCreated()
-        await dasha.flow.createInvite()
-        let code = try #require(dasha.flow.invite?.code)
-        await maxim.flow.join(code: code)
-        await dasha.flow.checkIncoming()
-        await maxim.flow.pollJoin()
-        await dasha.flow.pollIncoming()
-        guard case .verify(let dashaCode) = dasha.flow.incomingStep,
-              case .verify(let maximCode) = maxim.flow.joinStep
-        else {
-            Issue.record("Нет кода: \(String(describing: dasha.flow.incomingStep)) / \(String(describing: maxim.flow.joinStep))")
-            throw CancellationError()
-        }
-        return (dashaCode, maximCode)
-    }
-
-    /// Оба подтвердили код: ключ переходит к Максиму.
-    func confirmBoth() async {
-        await maxim.flow.confirmJoin()
-        await dasha.flow.confirmIncoming()
-        await maxim.flow.pollJoin()
-    }
-}
-
 private func sexEntry(_ day: Int) -> SexEntry {
     SexEntry(day: DayKey(year: 2026, month: 10, day: day), types: [.vaginal], orgasmsMan: 1, orgasmsWoman: 1, createdBy: UUID())
 }

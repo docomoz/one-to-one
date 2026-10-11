@@ -22,7 +22,12 @@ final class AuthFlow {
     private(set) var pending: PendingCode?
     private(set) var errorMessage: String?
     private(set) var isWorking = false
-    private var status = Status.checking
+    /// Кто вошёл. Пока `nil`, данные пары не показываем: сначала `PairingFlow.prepareAccount` проверит,
+    /// чьи они (другой человек на этом телефоне — стереть).
+    private(set) var userID: String?
+    private var status = Status.checking {
+        didSet { if status == .signedOut { userID = nil } }
+    }
 
     /// Сколько ждать перед повторной отправкой кода: письма не мгновенные, а сервер ограничивает частоту.
     static let resendInterval: TimeInterval = 60
@@ -48,10 +53,11 @@ final class AuthFlow {
 
     /// При запуске: есть ли сессия и согласие.
     func start() async {
-        if await auth.currentUserID() == nil {
-            status = .signedOut
-        } else {
+        if let id = await auth.currentUserID() {
+            userID = id
             await checkConsent()
+        } else {
+            status = .signedOut
         }
     }
 
@@ -79,6 +85,7 @@ final class AuthFlow {
         guard let pending else { return }
         await perform {
             try await auth.confirm(userId: pending.userID, code: code)
+            userID = pending.userID
             await checkConsent()
             self.pending = nil
         }
@@ -105,6 +112,15 @@ final class AuthFlow {
             try await auth.signOut()
             status = .signedOut
         }
+    }
+
+    /// Аккаунт удалён на сервере: выходим и на телефоне, даже если сервер уже не отвечает на выход
+    /// (сессии удалённого пользователя больше нет).
+    func accountDeleted() async {
+        try? await auth.signOut()
+        pending = nil
+        errorMessage = nil
+        status = .signedOut
     }
 
     /// Ошибку убираем, как только человек начал исправлять ввод.

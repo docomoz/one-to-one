@@ -49,6 +49,16 @@ final class AppwritePairingService: PairingService, @unchecked Sendable {
         _ = try await call("leave-couple", ["coupleId": coupleID])
     }
 
+    func couples() async throws -> [String] {
+        try await appwrite {
+            try await teams.list(queries: [Query.limit(100)], total: false).teams.map(\.id)
+        }
+    }
+
+    func deleteAccount() async throws {
+        _ = try await call("delete-account", [:])
+    }
+
     func memberCount(coupleID: String) async throws -> Int {
         try await appwrite {
             try await teams.listMemberships(teamId: coupleID).memberships.filter(\.confirm).count

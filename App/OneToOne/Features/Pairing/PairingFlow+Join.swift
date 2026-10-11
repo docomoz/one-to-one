@@ -15,7 +15,7 @@ extension PairingFlow {
     /// Новый запрос ключа: на сервер уходит только обязательство, сам ключ — после ответа партнёра.
     /// Так же начинаем заново после отказа, истёкшего срока или перезапуска приложения.
     func startKeyRequest() async {
-        guard let coupleID = joiningCoupleID else { return }
+        guard let coupleID = keyRequestCoupleID else { return }
         // Старый запрос закрываем: телефон партнёра не должен ждать раскрытия, которого не будет.
         await abandonKeyRequest()
         let requester = KeyHandoffRequester()
@@ -77,7 +77,7 @@ extension PairingFlow {
     }
 
     /// Закрыть свой запрос ключа на сервере (если ещё не закрыт) и забыть его.
-    private func abandonKeyRequest() async {
+    func abandonKeyRequest() async {
         let id = joinRequestID
         requester = nil
         joinRequestID = nil
@@ -100,8 +100,10 @@ extension PairingFlow {
 
     /// Ключ получен. Записи этого телефона заменяются записями пары (человек видел предупреждение до ввода кода),
     /// своя пара без партнёра покидается, синхронизация переключается на пару партнёра.
+    /// При восстановлении доступа так же: записей на телефоне нет, они придут с сервера.
     func finishJoin(key: CoupleKey) async {
-        guard let newCoupleID = joiningCoupleID else { return }
+        guard let newCoupleID = keyRequestCoupleID else { return }
+        let isRestore = joiningCoupleID == nil
         do {
             try keys.save(key, coupleID: newCoupleID)
         } catch {
@@ -117,8 +119,10 @@ extension PairingFlow {
         model.replaceWithJoinedCouple()
         coupleID = newCoupleID
         isCoupleOnServer = true
-        partnerJoined = true
+        // Восстанавливать мог и свой второй телефон, без партнёра: сколько в паре, спросим у сервера.
+        if !isRestore { partnerJoined = true }
         joiningCoupleID = nil
+        restoringCoupleID = nil
         joinRequestID = nil
         self.requester = nil
         invite = nil
@@ -126,6 +130,7 @@ extension PairingFlow {
         startSyncIfReady()
         await leaveOldCouples()
         await model.syncNow()
+        if isRestore { await refreshPartnerJoined() }
     }
 
     // MARK: - Ввод кода

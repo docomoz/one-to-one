@@ -7,6 +7,8 @@ protocol SyncStateStoring: Sendable {
     /// Состояние этой пары. Нет, не читается или оно другой пары — пустое: движок заберёт всё заново.
     func load(coupleID: String) -> SyncState
     func save(_ state: SyncState, coupleID: String) throws
+    /// Стереть состояние: записи пары в нём открытым текстом, после выхода из пары или аккаунта им не место на телефоне.
+    func delete()
 }
 
 /// `SyncState.json` в Application Support, рядом с `AppData.json`. Вместе с состоянием лежит id пары:
@@ -36,6 +38,16 @@ final class SyncStateStore: SyncStateStoring {
         try JSONEncoder().encode(StoredState(coupleID: coupleID, state: state)).write(to: fileURL, options: .atomic)
     }
 
+    func delete() {
+        do {
+            try FileManager.default.removeItem(at: fileURL)
+        } catch CocoaError.fileNoSuchFile {
+            // Уже нет.
+        } catch {
+            Self.log.error("Не удалось стереть состояние синхронизации: \(error)")
+        }
+    }
+
     private struct StoredState: Codable {
         let coupleID: String
         let state: SyncState
@@ -55,5 +67,9 @@ final class InMemorySyncStateStore: SyncStateStoring, @unchecked Sendable {
 
     func save(_ state: SyncState, coupleID: String) {
         lock.withLock { stored = (coupleID, state) }
+    }
+
+    func delete() {
+        lock.withLock { stored = nil }
     }
 }

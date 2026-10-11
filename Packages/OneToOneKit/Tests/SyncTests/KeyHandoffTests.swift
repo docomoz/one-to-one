@@ -180,3 +180,42 @@ private func exchangeUntilCodes(requester: inout KeyHandoffRequester, responder:
     #expect(try responder.verify(row, now: now) == nil)
     #expect(answer == .answer(responderPublicKey: responder.publicKey))
 }
+
+// MARK: - Два телефона с ключом (#86)
+
+@Test func secondResponderSeesRequestAnsweredElsewhere() throws {
+    // Оба телефона с ключом ответили почти одновременно, на сервере остался ответ второго.
+    // Первый не отказывает запросу и не показывает код: запрос уже не его. Ключ он не отдаст.
+    let requester = KeyHandoffRequester()
+    var first = KeyHandoffResponder(key: CoupleKey())
+    var second = KeyHandoffResponder(key: CoupleKey())
+    let row = newRequest(requester)
+    _ = try first.answer(row, now: now)
+    let overwritten = row.applying(try second.answer(row, now: now))
+
+    #expect(!first.owns(overwritten))
+    #expect(second.owns(overwritten))
+    #expect(throws: KeyHandoffError.answeredElsewhere) { try first.verify(overwritten, now: now) }
+    #expect(throws: KeyHandoffError.rejected) { try first.deliver() }
+}
+
+@Test func keySwapAfterCodeIsStillAnAttack() throws {
+    // После показа кода чужой ключ в строке — уже не гонка двух телефонов, а подмена.
+    var requester = KeyHandoffRequester()
+    var responder = KeyHandoffResponder(key: CoupleKey())
+    var (row, _, _) = try exchangeUntilCodes(requester: &requester, responder: &responder)
+    row.responderPublicKey = KeyExchangePair().publicKey
+
+    #expect(throws: KeyHandoffError.keyChanged) { try responder.verify(row, now: now) }
+}
+
+@Test func pendingRequestSkipsOwnRequests() {
+    // Телефон, который сам просит ключ, на свой запрос не отвечает.
+    let own = KeyRequest(id: "mine", coupleID: "c", requesterUserID: "u", requesterKeyCommitment: Data(count: 32),
+                         status: .waiting, expiresAt: now.addingTimeInterval(900))
+    let other = KeyRequest(id: "other", coupleID: "c", requesterUserID: "u", requesterKeyCommitment: Data(count: 32),
+                           status: .waiting, expiresAt: now.addingTimeInterval(600))
+
+    #expect(KeyHandoff.pendingRequest(in: [own, other], now: now, excluding: ["mine"])?.id == "other")
+    #expect(KeyHandoff.pendingRequest(in: [own], now: now, excluding: ["mine"]) == nil)
+}

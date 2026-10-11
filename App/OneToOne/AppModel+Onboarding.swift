@@ -23,9 +23,7 @@ extension AppModel {
     /// с первой синхронизацией. Кэш фильмов остаётся. Партнёру это не отправляется: синхронизация к этому
     /// моменту остановлена, а новая пара о стёртых записях не знала.
     func replaceWithJoinedCouple() {
-        var cleared = SyncRecordMapper.apply([:], to: data)
-        cleared.meID = nil
-        replaceData(cleared)
+        clearSyncedData()
     }
 
     /// Вошедший по коду выбирает себя в паре: человек, которого вписал партнёр. Имя и дату рождения можно поправить,
