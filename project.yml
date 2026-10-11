@@ -57,6 +57,8 @@ targets:
         product: MovieAPI
       - package: OneToOneKit
         product: DesignSystem
+      - package: OneToOneKit
+        product: Sync
       - package: Appwrite
         product: Appwrite
   OneToOneTests:

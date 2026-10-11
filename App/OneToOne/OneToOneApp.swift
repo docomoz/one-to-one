@@ -3,10 +3,11 @@ import SwiftUI
 
 @main
 struct OneToOneApp: App {
-    @State private var model = AppModel(store: LocalStore())
+    @State private var model = AppModel(store: LocalStore(), syncStateStore: SyncStateStore())
     @State private var auth = Self.makeAuth()
     @State private var tab = AppTab.home
     @State private var pickFlow: PickFlowRequest?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -28,6 +29,18 @@ struct OneToOneApp: App {
                 }
             }
             .task { await auth.start() }
+            // Синхронизация при запуске, при возврате в приложение и раз в минуту, пока оно открыто.
+            // Уходя в фон, задача отменяется. Пока пары на сервере нет (#85), `syncNow` ничего не делает.
+            .task(id: scenePhase) {
+                guard scenePhase == .active else { return }
+                #if DEBUG
+                DebugSyncSettings.restore(into: model)
+                #endif
+                while !Task.isCancelled {
+                    await model.syncNow()
+                    try? await Task.sleep(for: .seconds(60))
+                }
+            }
             .environment(model)
             .environment(auth)
             // Интерфейс только на русском: месяцы в выборе даты тоже, даже если iPhone на другом языке.

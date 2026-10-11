@@ -15,6 +15,12 @@ struct OnboardingView: View {
     var body: some View {
         NavigationStack(path: $path) {
             SexStepView(selected: meSexChosen ? me.sex : nil, onChoose: chooseMySex)
+                #if DEBUG
+                // Второй симулятор берёт пару с сервера, а не создаёт свою (до #85).
+                .toolbar {
+                    NavigationLink("Синхр.") { DebugSyncView() }
+                }
+                #endif
                 .navigationDestination(for: Step.self) { step in
                     switch step {
                     case .me:

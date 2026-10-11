@@ -20,6 +20,11 @@ public struct RecordRow: Equatable, Sendable {
 public struct RowPosition: Equatable, Sendable {
     public let updatedAt: String
     public let id: String
+
+    public init(updatedAt: String, id: String) {
+        self.updatedAt = updatedAt
+        self.id = id
+    }
 }
 
 /// Одна страница: строки пары с `$updatedAt >= since`, строго после `after`, по порядку (`$updatedAt`, `$id`).
@@ -27,6 +32,12 @@ public struct RecordsPageQuery: Equatable, Sendable {
     public let since: String?
     public let after: RowPosition?
     public let limit: Int
+
+    public init(since: String?, after: RowPosition?, limit: Int) {
+        self.since = since
+        self.after = after
+        self.limit = limit
+    }
 }
 
 /// Как забирать изменения из `records` страницами и не терять строки. Сеть — в `fetch`, здесь только порядок.
