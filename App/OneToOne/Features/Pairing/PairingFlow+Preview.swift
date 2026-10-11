@@ -4,7 +4,7 @@ import Foundation
 import SwiftUI
 import Sync
 
-/// Пара без сервера для превью и скриншотов: всё удаётся, запросов ключа нет.
+/// Пара без сервера для превью и скриншотов: всё удаётся, в паре двое, запросов ключа нет.
 struct PreviewPairingService: PairingService {
     func createCouple(coupleID: String) async throws -> String { coupleID }
     func createInvite(coupleID: String) async throws -> InviteCode {
@@ -14,7 +14,7 @@ struct PreviewPairingService: PairingService {
     func leaveCouple(coupleID: String) async throws {}
     func couples() async throws -> [String] { [] }
     func deleteAccount() async throws {}
-    func memberCount(coupleID: String) async throws -> Int { 1 }
+    func memberCount(coupleID: String) async throws -> Int { 2 }
     func createKeyRequest(coupleID: String, commitment: Data, expiresAt: Date) async throws -> KeyRequest {
         KeyRequest(id: "preview", coupleID: coupleID, requesterUserID: "preview",
                    requesterKeyCommitment: commitment, status: .waiting, expiresAt: expiresAt)
@@ -35,11 +35,12 @@ extension PairingFlow {
 }
 
 /// Запуск с `-previewPairing <экран>` показывает экран пары без сервера (для скриншотов и проверки на симуляторе):
-/// `onboarding`, `partner`, `invite`, `join`, `verify`, `choose`.
+/// `onboarding`, `partner`, `invite`, `join`, `verify`, `choose`, `restore`, `restoreVerify`, `settings`.
 struct PairingPreviewScreen: View {
     let screen: String
     @State private var model: AppModel
     @State private var pairing: PairingFlow
+    @State private var auth = AuthFlow.preview(signedIn: true)
     @State private var partner = PersonDraft(sex: .male, name: "Максим", birthDate: DayKey(year: 1994, month: 3, day: 2))
 
     init(screen: String) {
@@ -48,7 +49,7 @@ struct PairingPreviewScreen: View {
         if screen == "choose" {
             data = .homePreview(meIsWoman: false)
             data.meID = nil
-        } else if screen == "join" {
+        } else if screen == "join" || screen == "settings" {
             data = .homePreview(meIsWoman: false)
         }
         let model = AppModel(store: InMemoryStore(data))
@@ -57,6 +58,15 @@ struct PairingPreviewScreen: View {
         case "invite": pairing.invite = InviteCode(code: "K7PMQ4XH", expiresAt: Date().addingTimeInterval(7 * 24 * 3600))
         case "verify": pairing.joinStep = .verify(code: "042917")
         case "choose": (pairing.coupleID, pairing.isCoupleOnServer) = ("preview-couple", true)
+        case "restore":
+            pairing.restoringCoupleID = "preview-couple"
+            pairing.joinStep = .waiting
+        case "restoreVerify":
+            pairing.restoringCoupleID = "preview-couple"
+            pairing.joinStep = .verify(code: "042917")
+            pairing.joinRequestID = "6acbe1c5001b61609635"
+        case "settings":
+            (pairing.coupleID, pairing.isCoupleOnServer, pairing.partnerJoined) = ("preview-couple", true, true)
         default: break
         }
         _model = State(initialValue: model)
@@ -77,6 +87,10 @@ struct PairingPreviewScreen: View {
                 NavigationStack { InvitePartnerView(showsLater: true) }
             case "join", "verify":
                 NavigationStack { JoinCoupleView() }
+            case "restore", "restoreVerify":
+                RestoreAccessView()
+            case "settings":
+                NavigationStack { PairSettingsView() }
             case "partner":
                 NavigationStack {
                     PersonFormView(title: "Партнёр", draft: $partner, buttonTitle: "Создать пару", onSexPicked: {},
@@ -88,6 +102,7 @@ struct PairingPreviewScreen: View {
         }
         .environment(model)
         .environment(pairing)
+        .environment(auth)
         .environment(\.locale, Locale(identifier: "ru_RU"))
     }
 }

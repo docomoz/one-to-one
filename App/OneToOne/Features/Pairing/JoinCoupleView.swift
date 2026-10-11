@@ -22,7 +22,8 @@ struct JoinCoupleView: View {
                         waitingText: "Попроси партнёра открыть one-to-one: на его телефоне появится такой же код. Не закрывай этот экран.",
                         onConfirm: { Task { await pairing.confirmJoin() } },
                         onReject: { Task { await pairing.rejectJoin() } },
-                        onRetry: { Task { await pairing.startKeyRequest() } }
+                        onRetry: { Task { await pairing.startKeyRequest() } },
+                        qrPayload: pairing.verifyQRPayload
                     )
                     if step != .done {
                         Button("Не входить в пару", role: .destructive) { Task { await pairing.cancelJoin() } }
