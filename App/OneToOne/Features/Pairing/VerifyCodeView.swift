@@ -14,6 +14,12 @@ struct VerifyCodeView: View {
     let onReject: () -> Void
     /// «Начать заново» после ошибки. `nil` — кнопки нет.
     var onRetry: (() -> Void)?
+    /// Телефон без ключа: QR с тем же кодом для сверки вживую (`VerifyQR`). `nil` — QR нет.
+    var qrPayload: String?
+    /// Телефон с ключом: отсканировать QR телефона без ключа вместо сверки цифр. `nil` — кнопки нет.
+    var onScan: ((String) -> Void)?
+    @State private var showsScanner = false
+    @State private var cameraDenied = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -66,6 +72,33 @@ struct VerifyCodeView: View {
                 .disabled(isWorking)
             Button("Не совпадает", role: .destructive, action: onReject)
                 .disabled(isWorking)
+            if let onScan, QRScannerView.isSupported {
+                Button("Вы рядом? Отсканировать QR", systemImage: "qrcode.viewfinder") {
+                    Task {
+                        cameraDenied = !(await QRScannerView.requestAccess())
+                        showsScanner = !cameraDenied
+                    }
+                }
+                .disabled(isWorking)
+                .sheet(isPresented: $showsScanner) { QRScannerSheet(onScan: onScan) }
+                if cameraDenied {
+                    Text("Нет доступа к камере. Разреши его в Настройках или сверьте цифры.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            if let qrPayload {
+                VStack(spacing: 8) {
+                    QRCodeView(text: qrPayload)
+                        .frame(width: 180, height: 180)
+                    Text("Если вы рядом, партнёр может отсканировать этот QR в окне сверки вместо цифр.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top, 8)
+            }
         }
     }
 

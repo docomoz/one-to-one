@@ -23,6 +23,8 @@ enum HandoffStep: Equatable {
 /// `checkIncoming`/`pollIncoming` отвечают на запрос ключа → сверка кода → `confirmIncoming` отдаёт ключ.
 /// Вошедший по коду: `join` → `pollJoin` раскрывает ключ после ответа → сверка → `confirmJoin` → ключ получен,
 /// свои записи заменены записями пары, своя пара без партнёра покинута → выбирает себя в паре (`awaitsProfile`).
+/// Новый телефон (`PairingFlow+Account`): вход → `prepareAccount` находит пару на сервере → ключа нет —
+/// `restoringCoupleID`, тот же запрос ключа, что у вошедшего по коду → выбирает себя в паре.
 @Observable @MainActor
 final class PairingFlow {
     // Состояние меняют только методы этого класса (в том числе из файлов-расширений PairingFlow+…),
@@ -34,6 +36,13 @@ final class PairingFlow {
     /// Вошли по коду, ключ ещё не получили.
     var joiningCoupleID: String? { didSet { defaults.joiningCoupleID = joiningCoupleID } }
     var partnerJoined: Bool { didSet { defaults.partnerJoined = partnerJoined } }
+    /// Партнёр был в паре и вышел (узнали в `refreshPartnerJoined`).
+    var partnerLeft = false
+    /// Пара на сервере есть, а ключа на этом телефоне нет (переустановка, новый телефон): просим ключ у партнёра.
+    /// После перезапуска находится заново: `coupleID` есть, ключа нет.
+    var restoringCoupleID: String?
+    /// Чьи данные на телефоне и проверили ли пару на сервере (`PairingFlow+Account`).
+    var accountState = AccountState.checking
 
     var invite: InviteCode?
     var errorMessage: String?
@@ -59,6 +68,8 @@ final class PairingFlow {
     @ObservationIgnored var joinRequestID: String?
     @ObservationIgnored var responder: KeyHandoffResponder?
     @ObservationIgnored var incomingRequestID: String?
+    /// Запросы, на которые ответил другой телефон с ключом: на них больше не отвечаем.
+    @ObservationIgnored var answeredElsewhere: Set<String> = []
     /// Опрос сервера из таймера и с экрана может прийти одновременно: шаг передачи ключа идёт один.
     @ObservationIgnored var isPolling = false
     /// Идущая попытка создать пару на сервере: её ждут все, кто зовёт `registerCouple`.
@@ -81,7 +92,12 @@ final class PairingFlow {
 
     /// Пара на сервере и ключ есть, а кто я в ней — нет: вошли по коду и ждём профиль пары или выбор себя.
     var awaitsProfile: Bool {
-        isCoupleOnServer && coupleID != nil && joiningCoupleID == nil && !model.data.isPaired
+        isCoupleOnServer && coupleID != nil && joiningCoupleID == nil && restoringCoupleID == nil && !model.data.isPaired
+    }
+
+    /// Для какой пары этот телефон просит ключ: вошёл по коду или восстанавливает доступ.
+    var keyRequestCoupleID: String? {
+        joiningCoupleID ?? restoringCoupleID
     }
 
     /// Ключ пары этого телефона.

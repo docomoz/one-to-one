@@ -7,7 +7,7 @@ struct InviteCode: Equatable, Sendable {
     let expiresAt: Date
 }
 
-/// Пара на сервере: функции `create-couple`, `create-invite`, `accept-invite`, `leave-couple`
+/// Пара на сервере: функции `create-couple`, `create-invite`, `accept-invite`, `leave-couple`, `delete-account`
 /// и таблица `keyRequests` для передачи ключа. Ошибки — `PairingError`.
 protocol PairingService: Sendable {
     /// Создаёт пару с этим id (повтор с тем же id безопасен). Возвращает id пары.
@@ -16,6 +16,10 @@ protocol PairingService: Sendable {
     /// Входит в пару по коду. Возвращает id пары.
     func acceptInvite(code: String) async throws -> String
     func leaveCouple(coupleID: String) async throws
+    /// Пары (команды), в которых состоит вошедший. Нужны после переустановки: id пары на телефоне уже нет.
+    func couples() async throws -> [String]
+    /// Удаляет аккаунт вошедшего: выход из всех пар, затем удаление пользователя (`delete-account`).
+    func deleteAccount() async throws
     /// Сколько человек в паре (подтверждённых).
     func memberCount(coupleID: String) async throws -> Int
 

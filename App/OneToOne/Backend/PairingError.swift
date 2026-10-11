@@ -29,7 +29,8 @@ enum PairingError: Error, Equatable {
         switch error {
         case .expired: self = .expired
         case .rejected: self = .rejected
-        case .commitmentMismatch, .keyChanged, .invalidKey: self = .keyMismatch
+        // На запрос ответил другой телефон: экран это не показывает (`PairingFlow` отходит молча).
+        case .commitmentMismatch, .keyChanged, .invalidKey, .answeredElsewhere: self = .keyMismatch
         case .unexpectedStatus: self = .server
         }
     }

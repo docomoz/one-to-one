@@ -2,30 +2,46 @@ import Foundation
 import Synchronization
 import Sync
 
-/// Сервер пары в памяти: один документ на `documentID`, каждая запись получает следующий номер,
-/// pull отдаёт всё после курсора-номера. Общий для двух «телефонов» в тесте.
+/// Сервер пар в памяти: один документ на пару и `documentID`, каждая запись получает следующий номер,
+/// pull отдаёт документы этой пары после курсора-номера. Общий для двух «телефонов» в тесте.
 final class FakeSyncServer: Sendable {
-    private let storage = Mutex<(clock: Int, documents: [String: (stamp: Int, envelope: Data)])>((0, [:]))
+    private struct Document {
+        let coupleID: String
+        let stamp: Int
+        let envelope: Data
+    }
+
+    private struct Key: Hashable {
+        let coupleID: String
+        let documentID: String
+    }
+
+    private let storage = Mutex<(clock: Int, documents: [Key: Document])>((0, [:]))
 
     var documentCount: Int { storage.withLock { $0.documents.count } }
 
-    func push(_ records: [EncryptedRecord]) {
+    func documentCount(coupleID: String) -> Int {
+        storage.withLock { $0.documents.keys.filter { $0.coupleID == coupleID }.count }
+    }
+
+    func push(_ records: [EncryptedRecord], coupleID: String) {
         storage.withLock { storage in
             for record in records {
                 storage.clock += 1
-                storage.documents[record.documentID] = (storage.clock, record.envelope)
+                storage.documents[Key(coupleID: coupleID, documentID: record.documentID)] =
+                    Document(coupleID: coupleID, stamp: storage.clock, envelope: record.envelope)
             }
         }
     }
 
-    func pull(after cursor: String?) -> (records: [EncryptedRecord], cursor: String?) {
+    func pull(coupleID: String, after cursor: String?) -> (records: [EncryptedRecord], cursor: String?) {
         let position = cursor.flatMap { Int($0) } ?? 0
         let page = storage.withLock { $0.documents }
-            .filter { $0.value.stamp > position }
+            .filter { $0.key.coupleID == coupleID && $0.value.stamp > position }
             .sorted { $0.value.stamp < $1.value.stamp }
         guard let last = page.last else { return ([], cursor) }
         let records = page.map {
-            EncryptedRecord(documentID: $0.key, updatedAt: Date(timeIntervalSince1970: Double($0.value.stamp)),
+            EncryptedRecord(documentID: $0.key.documentID, updatedAt: Date(timeIntervalSince1970: Double($0.value.stamp)),
                             envelope: $0.value.envelope)
         }
         return (records, String(last.value.stamp))
@@ -53,13 +69,13 @@ final class FakeSyncTransport: SyncTransport {
 
     func push(_ records: [EncryptedRecord], coupleID: String) async throws {
         guard !isOffline else { throw Offline() }
-        server.push(records)
+        server.push(records, coupleID: coupleID)
     }
 
     func pull(coupleID: String, after cursor: String?) async throws -> (records: [EncryptedRecord], cursor: String?) {
         await beforePull?()
         guard !isOffline else { throw Offline() }
-        return server.pull(after: cursor)
+        return server.pull(coupleID: coupleID, after: cursor)
     }
 }
 

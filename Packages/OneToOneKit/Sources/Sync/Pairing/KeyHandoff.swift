@@ -15,6 +15,9 @@ public enum KeyHandoffError: Error, Equatable, Sendable {
     case unexpectedStatus
     /// Ключ не той длины или завёрнутый ключ не открылся.
     case invalidKey
+    /// На запрос ответил другой телефон с ключом (второй телефон партнёра, гонка ответов) или сервер подменил наш ответ
+    /// до показа кода. Запрос не наш: молча отходим, ключ не отдаём и запросу не отказываем.
+    case answeredElsewhere
 }
 
 /// Передача ключа пары через `keyRequests` с обязательством (`docs/crypto.md`, «Перебор ключей сервером»):
@@ -31,9 +34,10 @@ public enum KeyHandoff {
     }
 
     /// Запрос, на который телефону с ключом пора ответить: ждёт ответа и не просрочен. Самый новый, если их несколько.
-    public static func pendingRequest(in requests: [KeyRequest], now: Date) -> KeyRequest? {
+    /// `excluding` — свои запросы этого телефона: на них он не отвечает.
+    public static func pendingRequest(in requests: [KeyRequest], now: Date, excluding: Set<String> = []) -> KeyRequest? {
         requests
-            .filter { $0.status == .waiting && !$0.isExpired(at: now) }
+            .filter { $0.status == .waiting && !$0.isExpired(at: now) && !excluding.contains($0.id) }
             .max { $0.expiresAt < $1.expiresAt }
     }
 
@@ -120,6 +124,11 @@ public struct KeyHandoffResponder: Sendable {
     /// Свой открытый ключ: им отвечаем, в том числе повторно, если ответ не дошёл до сервера.
     public var publicKey: Data { pair.publicKey }
 
+    /// В строке наш ответ. Нет — на запрос ответил другой телефон (или ответ ещё не дошёл до сервера).
+    public func owns(_ request: KeyRequest) -> Bool {
+        request.responderPublicKey == pair.publicKey
+    }
+
     /// Ответить своим открытым ключом и запомнить обязательство.
     public mutating func answer(_ request: KeyRequest, now: Date) throws(KeyHandoffError) -> KeyRequestUpdate {
         guard request.status == .waiting else { throw .unexpectedStatus }
@@ -139,8 +148,12 @@ public struct KeyHandoffResponder: Sendable {
                 if request.isExpired(at: now) { throw .expired }
                 return nil
             }
-            // Ключ второго телефона в строке должен остаться нашим: иначе это уже не наш обмен.
-            guard request.responderPublicKey == pair.publicKey else { throw .keyChanged }
+            // Ответ в строке не наш: другой телефон с ключом ответил позже и перезаписал (или сервер подменил).
+            // Кода мы ещё не показывали, поэтому это не атака на сверку: отходим, ключ не отдаём.
+            guard owns(request) else {
+                phase = .rejected
+                throw .answeredElsewhere
+            }
             guard request.status == .revealed, let revealed = request.requesterPublicKey else {
                 if request.isExpired(at: now) { throw .expired }
                 return nil
@@ -154,6 +167,11 @@ public struct KeyHandoffResponder: Sendable {
             phase = .verified(requesterPublicKey: revealed)
             return KeyExchange.verificationCode(pair.publicKey, revealed)
         case .verified(let revealed):
+            // Код уже показан: чужой ключ в строке теперь — подмена, а не гонка двух телефонов.
+            guard owns(request) else {
+                phase = .rejected
+                throw .keyChanged
+            }
             return KeyExchange.verificationCode(pair.publicKey, revealed)
         case .idle:
             throw .unexpectedStatus

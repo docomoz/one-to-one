@@ -3,12 +3,11 @@ import DesignSystem
 import SwiftUI
 
 /// Экран «Пара»: с какого дня вы вместе (дата сохраняется сразу, по ней строится плашка годовщины),
-/// приглашение партнёра и выход из аккаунта.
+/// приглашение партнёра, выход из пары, выход из аккаунта и его удаление.
 struct PairSettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(AuthFlow.self) private var auth
     @Environment(PairingFlow.self) private var pairing
-    @State private var confirmsSignOut = false
 
     var body: some View {
         Form {
@@ -23,31 +22,25 @@ struct PairSettingsView: View {
                 }
             }
             partnerSection
-            Section {
-                Button("Выйти", role: .destructive) { confirmsSignOut = true }
-                    .disabled(auth.isWorking)
-            } footer: {
-                if let error = auth.errorMessage {
-                    AuthFooter(error: error, hint: "")
-                }
+            if pairing.coupleID != nil {
+                LeaveCoupleSection()
             }
+            AccountSection()
         }
         .navigationTitle("Пара")
-        // Ошибка общая для всех экранов входа: старая, например прошлого выхода, здесь не нужна.
-        .onAppear { auth.clearError() }
-        .confirmationDialog("Выйти из аккаунта?", isPresented: $confirmsSignOut, titleVisibility: .visible) {
-            Button("Выйти", role: .destructive) {
-                Task { await auth.signOut() }
-            }
-        } message: {
-            Text("Записи останутся на этом телефоне. Чтобы вернуться, войдите по почте снова.")
+        // Ошибки общие для нескольких экранов: старые, например прошлого выхода или приглашения, здесь не нужны.
+        .onAppear {
+            auth.clearError()
+            pairing.clearError()
         }
     }
 
     /// Пока партнёр не вошёл, его можно пригласить в любой момент или самому войти в пару партнёра по его коду.
     private var partnerSection: some View {
         Section {
-            if pairing.partnerJoined {
+            if pairing.partnerLeft {
+                Label("Партнёр вышел из пары", systemImage: "heart.slash")
+            } else if pairing.partnerJoined {
                 Label("Вы в паре вдвоём", systemImage: "heart.fill")
             } else {
                 NavigationLink("Пригласить партнёра") { InvitePartnerView() }
@@ -56,7 +49,11 @@ struct PairSettingsView: View {
         } header: {
             Text("Партнёр")
         } footer: {
-            Text(pairing.partnerJoined ? LossWarning.couple : LossWarning.solo)
+            if pairing.partnerLeft {
+                Text("Записи пары пока у тебя. Нового партнёра в эту пару не пригласить: у бывшего есть её ключ. Выйди из пары и создай новую, она начнётся с новым ключом. Записи этой пары при выходе сотрутся.")
+            } else {
+                Text(pairing.partnerJoined ? LossWarning.couple : LossWarning.solo)
+            }
         }
         .task { await pairing.refreshPartnerJoined() }
     }

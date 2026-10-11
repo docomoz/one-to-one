@@ -42,13 +42,28 @@ struct OneToOneApp: App {
                 EmailSignInView()
             case .consent:
                 ConsentView()
-            case .onboarding:
-                OnboardingView()
-            case .tabs:
-                tabs
+            case .onboarding, .tabs:
+                // Пока не ясно, чьи данные на телефоне и есть ли пара на сервере, ничего не показываем.
+                if pairing.isAccountReady(for: auth.userID) {
+                    if pairing.restoringCoupleID != nil {
+                        // Пара есть, ключа на телефоне нет (переустановка, новый телефон, резервная копия без Keychain):
+                        // просим ключ у партнёра, даже если записи из копии уже на телефоне.
+                        RestoreAccessView()
+                    } else if model.data.isPaired {
+                        tabs
+                    } else {
+                        OnboardingView()
+                    }
+                } else {
+                    AccountCheckView()
+                }
             }
         }
         .task { await auth.start() }
+        // Вошёл человек (или приложение запустилось уже в аккаунте): чьи данные, есть ли пара, нужен ли ключ.
+        .task(id: auth.userID) {
+            if let userID = auth.userID { await pairing.prepareAccount(userID: userID) }
+        }
         // Синхронизация при запуске, при возврате в приложение и раз в минуту, пока оно открыто.
         // Уходя в фон или выходя из аккаунта, задача отменяется. Заодно дожимаем создание пары на сервере
         // (если не было сети) и смотрим, не просит ли телефон партнёра ключ пары.
@@ -85,10 +100,11 @@ struct OneToOneApp: App {
         )
     }
 
-    /// Без входа сервер не отдаст записи пары: не синхронизируем.
+    /// Без входа сервер не отдаст записи пары: не синхронизируем. И пока не проверили, чьи данные на телефоне:
+    /// иначе записи прежнего аккаунта ушли бы от имени нового.
     private var isSignedIn: Bool {
         switch auth.screen(isPaired: model.data.isPaired) {
-        case .onboarding, .tabs: true
+        case .onboarding, .tabs: pairing.isAccountReady(for: auth.userID)
         case .checking, .signIn, .consent: false
         }
     }

@@ -2,7 +2,7 @@ import DesignSystem
 import SwiftUI
 
 /// Окно поверх приложения, когда телефон партнёра просит ключ пары, а экран приглашения закрыт:
-/// партнёр ввёл код, пока приложение было свёрнуто. Сверка кода, как на экране приглашения.
+/// партнёр ввёл код, пока приложение было свёрнуто, или вошёл на новом телефоне. Сверка кода, как на экране приглашения.
 struct IncomingKeySheet: View {
     @Environment(PairingFlow.self) private var pairing
 
@@ -16,12 +16,13 @@ struct IncomingKeySheet: View {
                         errorMessage: pairing.errorMessage,
                         isWorking: pairing.isWorking,
                         onConfirm: { Task { await pairing.confirmIncoming() } },
-                        onReject: { Task { await pairing.rejectIncoming() } }
+                        onReject: { Task { await pairing.rejectIncoming() } },
+                        onScan: { text in Task { await pairing.confirmIncoming(scanned: text) } }
                     )
                 }
             }
             .background(Palette.background)
-            .navigationTitle("Вход партнёра")
+            .navigationTitle("Ключ пары")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

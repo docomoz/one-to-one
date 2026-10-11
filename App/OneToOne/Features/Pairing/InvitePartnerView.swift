@@ -20,7 +20,8 @@ struct InvitePartnerView: View {
                     isWorking: pairing.isWorking,
                     onConfirm: { Task { await pairing.confirmIncoming() } },
                     onReject: { Task { await pairing.rejectIncoming() } },
-                    onRetry: { pairing.dismissIncoming() }
+                    onRetry: { pairing.dismissIncoming() },
+                    onScan: { text in Task { await pairing.confirmIncoming(scanned: text) } }
                 )
             } else {
                 invite

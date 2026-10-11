@@ -49,6 +49,8 @@ targets:
         # Иконка из Icon Composer: App/OneToOne/AppIcon.icon.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        # Камера только для QR при передаче ключа пары вживую (Features/Pairing/QRScannerView.swift).
+        INFOPLIST_KEY_NSCameraUsageDescription: "Камера нужна, чтобы отсканировать QR-код с телефона партнёра, когда вы передаёте ключ пары."
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
     dependencies:
       - package: OneToOneKit

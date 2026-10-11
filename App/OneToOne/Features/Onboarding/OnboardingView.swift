@@ -16,7 +16,7 @@ struct OnboardingView: View {
 
     var body: some View {
         if pairing.awaitsProfile {
-            // Вошли по коду и получили ключ: осталось выбрать себя в паре партнёра.
+            // Вошли по коду или восстановили доступ и получили ключ: осталось выбрать себя в паре.
             ChooseMeView()
         } else {
             steps

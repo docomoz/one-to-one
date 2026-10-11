@@ -39,11 +39,32 @@ struct PairingDefaults: @unchecked Sendable {
         nonmutating set { defaults.set(newValue, forKey: Keys.partnerJoined) }
     }
 
+    /// Чей аккаунт хозяин данных на этом телефоне. Вошёл другой — данные прежнего стираются до показа экранов.
+    var ownerUserID: String? {
+        get { defaults.string(forKey: Keys.ownerUserID) }
+        nonmutating set { defaults.set(newValue, forKey: Keys.ownerUserID) }
+    }
+
+    /// Для хозяина уже проверили на сервере, есть ли у него пара (после переустановки id пары на телефоне нет).
+    var coupleLookupDone: Bool {
+        get { defaults.bool(forKey: Keys.coupleLookupDone) }
+        nonmutating set { defaults.set(newValue, forKey: Keys.coupleLookupDone) }
+    }
+
+    /// Забыть всё о паре и аккаунте: после выхода из аккаунта, удаления аккаунта или входа другого человека.
+    func removeAll() {
+        for key in Keys.all { defaults.removeObject(forKey: key) }
+    }
+
     private enum Keys {
         static let coupleID = "pairing.coupleID"
         static let isCoupleOnServer = "pairing.isCoupleOnServer"
         static let joiningCoupleID = "pairing.joiningCoupleID"
         static let couplesToLeave = "pairing.couplesToLeave"
         static let partnerJoined = "pairing.partnerJoined"
+        static let ownerUserID = "pairing.ownerUserID"
+        static let coupleLookupDone = "pairing.coupleLookupDone"
+        static let all = [coupleID, isCoupleOnServer, joiningCoupleID, couplesToLeave, partnerJoined,
+                          ownerUserID, coupleLookupDone]
     }
 }

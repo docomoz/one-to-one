@@ -11,6 +11,7 @@ final class FakePairingServer: Sendable {
         var invites: [String: String] = [:]
         var requests: [String: KeyRequest] = [:]
         var left: [(coupleID: String, userID: String)] = []
+        var deletedUsers: [String] = []
         var nextID = 1
     }
 
@@ -29,12 +30,18 @@ final class FakePairingServer: Sendable {
     var left: [(coupleID: String, userID: String)] {
         state.withLock { $0.left }
     }
+
+    var deletedUsers: [String] {
+        state.withLock { $0.deletedUsers }
+    }
 }
 
 /// Сеть одного телефона до `FakePairingServer`, от имени `userID`. `failure` — следующий вызов упадёт с ней.
 final class FakePairingService: PairingService {
     let server: FakePairingServer
-    let userID: String
+    private let account: Mutex<String>
+    /// Кто вошёл: `signIn(as:)` — другой человек на том же телефоне.
+    var userID: String { account.withLock { $0 } }
     let failure = Mutex<PairingError?>(nil)
     /// Задержка каждого ответа: чтобы вызовы с экрана и из таймера шли одновременно, как в жизни.
     let latency = Mutex<Duration?>(nil)
@@ -43,7 +50,11 @@ final class FakePairingService: PairingService {
 
     init(server: FakePairingServer = FakePairingServer(), userID: String) {
         self.server = server
-        self.userID = userID
+        account = Mutex(userID)
+    }
+
+    func signIn(as userID: String) {
+        account.withLock { $0 = userID }
     }
 
     private func checkFailure() async throws {
@@ -98,6 +109,25 @@ final class FakePairingService: PairingService {
             state.left.append((coupleID, userID))
             state.teams[coupleID]?.removeAll { $0 == userID }
             if state.teams[coupleID]?.isEmpty == true { state.teams[coupleID] = nil }
+        }
+    }
+
+    func couples() async throws -> [String] {
+        try await checkFailure()
+        return server.state.withLock { state in
+            state.teams.filter { $0.value.contains(userID) }.keys.sorted()
+        }
+    }
+
+    func deleteAccount() async throws {
+        try await checkFailure()
+        server.state.withLock { state in
+            for (coupleID, members) in state.teams where members.contains(userID) {
+                state.left.append((coupleID, userID))
+                state.teams[coupleID] = members.filter { $0 != userID }
+                if state.teams[coupleID]?.isEmpty == true { state.teams[coupleID] = nil }
+            }
+            state.deletedUsers.append(userID)
         }
     }
 

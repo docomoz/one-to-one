@@ -20,11 +20,14 @@ extension PairingFlow {
         }
     }
 
-    /// Узнать у сервера, вошёл ли партнёр. Без сети оставляем, что знали.
+    /// Узнать у сервера, вошёл ли партнёр или вышел ли он. Без сети оставляем, что знали.
     func refreshPartnerJoined() async {
-        guard let coupleID, isCoupleOnServer, !partnerJoined else { return }
-        if let count = try? await service.memberCount(coupleID: coupleID), count > 1 {
+        guard let coupleID, isCoupleOnServer, let count = try? await service.memberCount(coupleID: coupleID) else { return }
+        if count > 1 {
             partnerJoined = true
+            partnerLeft = false
+        } else if partnerJoined {
+            partnerLeft = true
         }
     }
 
@@ -43,7 +46,9 @@ extension PairingFlow {
         guard let coupleID, isCoupleOnServer, let key = keys.load(coupleID: coupleID) else { return }
         do {
             let requests = try await service.keyRequests(coupleID: coupleID)
-            guard let request = KeyHandoff.pendingRequest(in: requests, now: now()),
+            // Свой запрос (этот телефон сам просит ключ) и запросы, на которые ответил другой телефон, пропускаем.
+            let skipped = answeredElsewhere.union([joinRequestID].compactMap { $0 })
+            guard let request = KeyHandoff.pendingRequest(in: requests, now: now(), excluding: skipped),
                   request.id != incomingRequestID
             else { return }
             // Телефон партнёра начал заново (перезапуск, «Начать заново»): старый запрос закрываем.
@@ -54,6 +59,13 @@ extension PairingFlow {
             incomingRequestID = request.id
             incomingStep = .waiting
             try await service.update(request, with: update)
+            // Второй телефон с ключом (свой второй или партнёра) мог ответить одновременно и перезаписать наш ответ.
+            // Сравнивать и писать одним запросом Appwrite не умеет, поэтому перечитываем: запрос достаётся тому,
+            // чей ответ остался в строке. Если перезапишут позже, это поймает `pollIncoming`.
+            if let stored = try await service.keyRequest(id: request.id), stored.responderPublicKey != nil,
+               !responder.owns(stored) {
+                withdrawIncoming()
+            }
         } catch {
             // Не ответили — попробуем при следующей проверке.
             Self.log.error("Не удалось ответить на запрос ключа: \(error)")
@@ -84,6 +96,8 @@ extension PairingFlow {
                     // Пока ждём раскрытия, телефон партнёра мог начать заново новым запросом.
                     await answerNewestRequest(replacing: request)
                 }
+            } catch .answeredElsewhere {
+                withdrawIncoming()
             } catch {
                 self.responder = responder
                 // Подмену видим только мы: говорим второму телефону, что ключа не будет.
@@ -107,8 +121,9 @@ extension PairingFlow {
             if request.status == .rejected { throw PairingError.rejected }
             try await service.update(request, with: try responder.deliver())
             incomingStep = .done
-            partnerJoined = true
             invite = nil
+            // Ключ мог уйти и на свой же новый телефон, а не партнёру: сколько в паре людей, знает сервер.
+            await refreshPartnerJoined()
         } catch {
             let error = Self.pairingError(error)
             // Без сети код остаётся на экране: можно нажать ещё раз.
@@ -125,6 +140,13 @@ extension PairingFlow {
             try? await service.update(request, with: update)
         }
         incomingStep = .failed(.rejected)
+    }
+
+    /// На запрос ответил другой телефон с ключом: тихо отходим. Запросу не отказываем (передача идёт с тем телефоном),
+    /// ключ не отдаём и на этот запрос больше не отвечаем.
+    func withdrawIncoming() {
+        if let incomingRequestID { answeredElsewhere.insert(incomingRequestID) }
+        dismissIncoming()
     }
 
     /// Закрыли окно сверки: следующий запрос ключа можно будет показать заново.
