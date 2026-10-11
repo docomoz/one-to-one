@@ -34,7 +34,7 @@ private struct HerDayCard: View {
                     .font(.title3.weight(.semibold))
             }
         }
-        .dayCardTextLimit()
+        .cardTextLimit()
     }
 
     /// «овуляция» → «Овуляция».

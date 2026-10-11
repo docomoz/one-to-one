@@ -15,7 +15,7 @@ struct TipCard: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .dayCardTextLimit()
+        .cardTextLimit()
     }
 }
 

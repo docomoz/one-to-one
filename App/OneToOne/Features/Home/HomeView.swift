@@ -44,6 +44,7 @@ struct HomeView: View {
                             Text(event.text)
                                 .font(.headline)
                         }
+                        .cardTextLimit()
                     }
                 }
                 .padding(20)
