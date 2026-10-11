@@ -23,7 +23,7 @@ struct MonthGridView: View {
             HStack {
                 Button("Предыдущий месяц", systemImage: "chevron.left") { month = month.adding(months: -1) }
                 Spacer()
-                Text(month.title).font(.headline)
+                Text(month.title).font(.headline).multilineTextAlignment(.center)
                 Spacer()
                 Button("Следующий месяц", systemImage: "chevron.right") { month = month.adding(months: 1) }
             }
@@ -50,6 +50,9 @@ struct MonthGridView: View {
                     }
                 }
             }
+            // Семь колонок по ~44 pt на iPhone SE: крупнее «28» и «Пн» в них не влезут, поэтому сетка растёт только до xxxLarge.
+            // Шапка, легенды и карточка дня растут дальше, VoiceOver читает каждый день целиком.
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         }
     }
 }
@@ -67,6 +70,9 @@ private struct DayCell: View {
     let action: (() -> Void)?
     @Environment(\.locale) private var locale
     @Environment(\.colorScheme) private var colorScheme
+    /// Круг числа растёт со шрифтом, но не шире 38: с кольцом выбора (+6) это 44, ширина колонки на iPhone SE.
+    @ScaledMetric(relativeTo: .callout) private var scaledCircle: CGFloat = 34
+    private var circle: CGFloat { min(scaledCircle, 38) }
 
     var body: some View {
         if let action {
@@ -87,7 +93,7 @@ private struct DayCell: View {
             Text("\(day.day)")
                 .font(.callout.weight(isToday ? .bold : .regular))
                 .foregroundStyle(isPeriod ? .white : .primary)
-                .frame(width: 34, height: 34)
+                .frame(width: circle, height: circle)
                 .background {
                     if isPeriod {
                         Circle().fill(BrandGradient.primary)
@@ -134,5 +140,33 @@ private struct DayCell: View {
         if hasSymptoms { parts.append("есть симптомы") }
         if let riskText = risk?.dayAccessibility { parts.append(riskText) }
         return parts.joined(separator: ", ")
+    }
+}
+
+#Preview("Обычный шрифт") {
+    MonthGridPreview()
+}
+
+#Preview("Крупный шрифт") {
+    MonthGridPreview()
+        .dynamicTypeSize(.accessibility3)
+}
+
+/// Все отметки сразу: месячные, прогноз, симптомы, риск и выбранный день.
+private struct MonthGridPreview: View {
+    private let today = DayKey(.now)
+    @State private var month = Month(DayKey(.now))
+    @State private var selected = DayKey(.now).adding(days: 2)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            MonthGridView(month: $month, selected: $selected, today: today,
+                          periodDays: Set((0..<5).map { today.adding(days: -12 + $0) }),
+                          predictedDays: Set((0..<5).map { today.adding(days: 16 + $0) }),
+                          symptomDays: [today.adding(days: -11), today],
+                          risks: [today: .high, today.adding(days: 1): .high, today.adding(days: -2): .medium])
+            RiskLegend()
+        }
+        .padding(20)
     }
 }

@@ -47,8 +47,13 @@ struct HisCalendarView: View {
 /// Какой цвет какой фазе соответствует.
 private struct PhaseLegend: View {
     private let phases: [CyclePhase] = [.menstruation, .follicular, .ovulation, .luteal]
-    private let columns = [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)]
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// При крупном шрифте «Фолликулярная» в полколонки рвётся посреди слова, поэтому одна колонка.
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), alignment: .leading), count: dynamicTypeSize.isAccessibilitySize ? 1 : 2)
+    }
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 8) {
@@ -63,6 +68,15 @@ private struct PhaseLegend: View {
             }
         }
     }
+}
+
+#Preview("Крупный шрифт") {
+    var data = AppData()
+    let today = DayKey(.now)
+    data.periodDays = Set((0..<5).map { today.adding(days: -12 + $0) })
+    return HisCalendarView()
+        .environment(AppModel(store: InMemoryStore(data)))
+        .dynamicTypeSize(.accessibility3)
 }
 
 #Preview {
