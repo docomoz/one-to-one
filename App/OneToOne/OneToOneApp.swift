@@ -3,49 +3,86 @@ import SwiftUI
 
 @main
 struct OneToOneApp: App {
-    @State private var model = AppModel(store: LocalStore(), syncStateStore: SyncStateStore())
+    @State private var model: AppModel
+    @State private var pairing: PairingFlow
     @State private var auth = Self.makeAuth()
     @State private var tab = AppTab.home
     @State private var pickFlow: PickFlowRequest?
     @Environment(\.scenePhase) private var scenePhase
 
+    init() {
+        let model = AppModel(store: LocalStore(), syncStateStore: SyncStateStore())
+        _model = State(initialValue: model)
+        _pairing = State(initialValue: PairingFlow(model: model, service: AppwritePairingService.shared))
+    }
+
     var body: some Scene {
         WindowGroup {
-            // ZStack, а не Group: модификаторы Group достаются каждому экрану, и `.task` с проверкой
-            // входа запускался бы заново при каждой смене экрана.
-            ZStack {
-                // Вход по почте → согласие → знакомство → вкладки.
-                switch auth.screen(isPaired: model.data.isPaired) {
-                case .checking:
-                    ProgressView()
-                case .signIn:
-                    EmailSignInView()
-                case .consent:
-                    ConsentView()
-                case .onboarding:
-                    OnboardingView()
-                case .tabs:
-                    tabs
-                }
+            #if DEBUG
+            if let screen = PairingPreviewScreen.fromLaunchArguments {
+                PairingPreviewScreen(screen: screen)
+            } else {
+                root
             }
-            .task { await auth.start() }
-            // Синхронизация при запуске, при возврате в приложение и раз в минуту, пока оно открыто.
-            // Уходя в фон или выходя из аккаунта, задача отменяется. Пока пары на сервере нет (#85), `syncNow` ничего не делает.
-            .task(id: scenePhase == .active && isSignedIn) {
-                guard scenePhase == .active, isSignedIn else { return }
-                #if DEBUG
-                DebugSyncSettings.restore(into: model)
-                #endif
-                while !Task.isCancelled {
-                    await model.syncNow()
-                    try? await Task.sleep(for: .seconds(60))
-                }
-            }
-            .environment(model)
-            .environment(auth)
-            // Интерфейс только на русском: месяцы в выборе даты тоже, даже если iPhone на другом языке.
-            .environment(\.locale, Locale(identifier: "ru_RU"))
+            #else
+            root
+            #endif
         }
+    }
+
+    private var root: some View {
+        // ZStack, а не Group: модификаторы Group достаются каждому экрану, и `.task` с проверкой
+        // входа запускался бы заново при каждой смене экрана.
+        ZStack {
+            // Вход по почте → согласие → знакомство → вкладки.
+            switch auth.screen(isPaired: model.data.isPaired) {
+            case .checking:
+                ProgressView()
+            case .signIn:
+                EmailSignInView()
+            case .consent:
+                ConsentView()
+            case .onboarding:
+                OnboardingView()
+            case .tabs:
+                tabs
+            }
+        }
+        .task { await auth.start() }
+        // Синхронизация при запуске, при возврате в приложение и раз в минуту, пока оно открыто.
+        // Уходя в фон или выходя из аккаунта, задача отменяется. Заодно дожимаем создание пары на сервере
+        // (если не было сети) и смотрим, не просит ли телефон партнёра ключ пары.
+        .task(id: scenePhase == .active && isSignedIn) {
+            guard scenePhase == .active, isSignedIn else { return }
+            while !Task.isCancelled {
+                await pairing.prepareSync()
+                #if DEBUG
+                // Ручная пара из отладочного меню — только пока настоящей нет.
+                if pairing.coupleID == nil { DebugSyncSettings.restore(into: model) }
+                #endif
+                await model.syncNow()
+                await pairing.checkIncoming()
+                try? await Task.sleep(for: .seconds(60))
+            }
+        }
+        // Сразу после знакомства — приглашение партнёра.
+        .sheet(isPresented: $pairing.presentsInvite) {
+            NavigationStack { InvitePartnerView(showsLater: true) }
+        }
+        // Телефон партнёра просит ключ, а экран приглашения закрыт.
+        .sheet(isPresented: incomingKeyRequest) { IncomingKeySheet() }
+        .environment(model)
+        .environment(auth)
+        .environment(pairing)
+        // Интерфейс только на русском: месяцы в выборе даты тоже, даже если iPhone на другом языке.
+        .environment(\.locale, Locale(identifier: "ru_RU"))
+    }
+
+    private var incomingKeyRequest: Binding<Bool> {
+        Binding(
+            get: { pairing.incomingStep != nil && !pairing.isInviteScreenVisible && !pairing.presentsInvite },
+            set: { if !$0 { pairing.dismissIncoming() } }
+        )
     }
 
     /// Без входа сервер не отдаст записи пары: не синхронизируем.

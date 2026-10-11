@@ -4,7 +4,7 @@ import Sync
 import SwiftUI
 import UIKit
 
-/// Отладка синхронизации до #85: ввести id пары (команда Appwrite) и общий ключ на двух симуляторах,
+/// Отладка синхронизации без приглашения: ввести id пары (команда Appwrite) и общий ключ на двух симуляторах,
 /// запустить, посмотреть состояние. Есть только в отладочной сборке.
 struct DebugSyncView: View {
     @Environment(AppModel.self) private var model
@@ -53,7 +53,7 @@ struct DebugSyncView: View {
                 }
             }
 
-            // Второй телефон получает пару с сервера, но не знает, кто он в ней (это сделает #85).
+            // Второй телефон получает пару с сервера, но не знает, кто он в ней (в настоящем входе по коду — ChooseMeView).
             if let couple = model.data.couple, !model.data.isPaired {
                 Section("Кто я в этой паре") {
                     Button(couple.man.name) { model.update { $0.meID = couple.man.id } }
