@@ -3,9 +3,9 @@ import Foundation
 import Security
 import Sync
 
-/// Только в отладочной сборке, пока нет пары на сервере (#85): id пары и общий ключ, введённые руками
+/// Только в отладочной сборке, для пары без приглашения (настоящая пара — PairingFlow): id пары и общий ключ, введённые руками
 /// на двух симуляторах. id пары — в UserDefaults, ключ — в Keychain этого устройства (без iCloud).
-/// В релизной сборке этого нет, и синхронизация не запускается.
+/// В релизной сборке этого нет.
 enum DebugSyncSettings {
     private static let coupleIDDefaultsKey = "debugSync.coupleID"
     private static var keychainQuery: [String: Any] {

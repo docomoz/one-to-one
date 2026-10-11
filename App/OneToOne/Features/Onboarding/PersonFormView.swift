@@ -8,6 +8,8 @@ struct PersonFormView: View {
     @Binding var draft: PersonDraft
     let buttonTitle: String
     var onSexPicked: (() -> Void)?
+    /// Пояснение под формой: например, что будет с записями при потере телефонов.
+    var note: String?
     let onSubmit: () throws(OnboardingError) -> Void
 
     @State private var error: OnboardingError?
@@ -42,6 +44,13 @@ struct PersonFormView: View {
                     Text(error.message)
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(BrandColor.pink.color)
+                }
+            }
+            if let note {
+                Section {
+                    Label(note, systemImage: "lock.shield")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
         }

@@ -55,6 +55,13 @@ export class FakeAppwrite {
         this.nextId = 1;
 
         this.teams = {
+            // Как с ключом сервера: команда создаётся пустой, без владельца.
+            create: async ({ teamId, name }) => {
+                this.calls.push(['teams.create', teamId]);
+                if (this.teamsById.has(teamId)) throw new FakeAppwriteError('Team already exists', 409, 'team_already_exists');
+                this.teamsById.set(teamId, []);
+                return { $id: teamId, name };
+            },
             listMemberships: async ({ teamId, queries }) => {
                 this.calls.push(['teams.listMemberships', teamId]);
                 const memberships = this.#team(teamId);

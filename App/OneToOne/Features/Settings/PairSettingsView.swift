@@ -2,11 +2,12 @@ import Core
 import DesignSystem
 import SwiftUI
 
-/// Экран «Пара»: с какого дня вы вместе (дата сохраняется сразу, по ней строится плашка годовщины)
-/// и выход из аккаунта.
+/// Экран «Пара»: с какого дня вы вместе (дата сохраняется сразу, по ней строится плашка годовщины),
+/// приглашение партнёра и выход из аккаунта.
 struct PairSettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(AuthFlow.self) private var auth
+    @Environment(PairingFlow.self) private var pairing
     @State private var confirmsSignOut = false
 
     var body: some View {
@@ -21,6 +22,7 @@ struct PairSettingsView: View {
                     }
                 }
             }
+            partnerSection
             Section {
                 Button("Выйти", role: .destructive) { confirmsSignOut = true }
                     .disabled(auth.isWorking)
@@ -42,6 +44,23 @@ struct PairSettingsView: View {
         }
     }
 
+    /// Пока партнёр не вошёл, его можно пригласить в любой момент или самому войти в пару партнёра по его коду.
+    private var partnerSection: some View {
+        Section {
+            if pairing.partnerJoined {
+                Label("Вы в паре вдвоём", systemImage: "heart.fill")
+            } else {
+                NavigationLink("Пригласить партнёра") { InvitePartnerView() }
+                NavigationLink("Войти по коду партнёра") { JoinCoupleView() }
+            }
+        } header: {
+            Text("Партнёр")
+        } footer: {
+            Text(pairing.partnerJoined ? LossWarning.couple : LossWarning.solo)
+        }
+        .task { await pairing.refreshPartnerJoined() }
+    }
+
     private var togetherSince: Binding<DayKey?> {
         Binding(
             get: { model.data.togetherSince },
@@ -56,5 +75,6 @@ struct PairSettingsView: View {
     }
     .environment(AppModel(store: InMemoryStore(.homePreview(meIsWoman: false))))
     .environment(AuthFlow.preview(signedIn: true))
+    .environment(PairingFlow.preview(model: AppModel(store: InMemoryStore())))
     .environment(\.locale, Locale(identifier: "ru_RU"))
 }

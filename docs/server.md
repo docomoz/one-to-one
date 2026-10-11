@@ -88,10 +88,13 @@ curl -s -X POST https://api.194-87-44-100.sslip.io/v1/account/tokens/email \
 3. `revealed` — новый телефон пишет `requesterPublicKey`. Отвечающий телефон проверяет, что SHA-256 этого ключа совпадает с `requesterKeyCommitment`, иначе отказ. Оба показывают код сверки.
 4. `delivered` — люди сверили коды, отвечающий пишет `wrappedKey` (ключ пары, завёрнутый для нового телефона). Или `rejected` — коды не совпали или отказались.
 
+Строку создаёт новый телефон с правами `read`, `update`, `delete` для `team:<coupleId>`; срок `expiresAt` — 15 минут. Логика шагов на телефоне — `Packages/OneToOneKit/Sources/Sync/Pairing/KeyHandoff.swift`, связь с Appwrite — `App/OneToOne/Backend/AppwritePairingService.swift`.
+
 Функции (Node.js 22, вызывает любой вошедший пользователь; кто вызвал, функция узнаёт из заголовка `x-appwrite-user-id`, который ставит сам Appwrite, `userId` из тела не читается):
 
 | Функция | Вход | Ответ | Ошибки |
 |---|---|---|---|
+| `create-couple` | `{"coupleId": "…"}` (необязательно: id придумывает приложение, чтобы повтор после потерянного ответа не создал вторую пару) | `{"coupleId": "…"}`: команда создана ключом сервера, вызывающий в ней с ролью `partner`. Повтор с тем же id отвечает тем же | `already_paired` (409, вызывающий уже в паре с кем-то), `not_member` (403, команда с этим id чужая) |
 | `create-invite` | `{"coupleId": "…"}` | `{"code": "ABCD2345", "expiresAt": "…"}`: 8 символов из `23456789ABCDEFGHJKMNPQRSTUVWXYZ`, старые приглашения пары удаляются | `not_member` (403), `couple_full` (409, в паре уже двое), `already_paired` (409, вызывающий уже в паре с кем-то другим) |
 | `accept-invite` | `{"code": "…"}` (регистр, пробелы и дефисы не важны) | `{"coupleId": "…"}`, вызывающий добавлен в команду, приглашение удалено | `invite_not_found` (404), `invite_expired` (410), `couple_full` (409), `already_paired` (409: уже в паре с кем-то или вводит свой же код) |
 | `leave-couple` | `{"coupleId": "…"}` | `{"left": true, "coupleDeleted": …}`: если в паре никого не осталось, удаляются команда и все её записи, запросы ключа и приглашения | `not_member` (403) |
@@ -99,6 +102,8 @@ curl -s -X POST https://api.194-87-44-100.sslip.io/v1/account/tokens/email \
 | `cleanup-expired` | ничего, запускается по расписанию раз в сутки в 03:00 UTC, из приложения не вызывается | `{"invites": N, "keyRequests": M}`: сколько удалено строк с прошедшим `expiresAt` | — |
 
 Просроченное не копится: `create-invite` попутно удаляет просроченные приглашения, `accept-invite` удаляет просроченное приглашение, на которое наткнулся (и отвечает `invite_expired`), а `cleanup-expired` раз в сутки удаляет все просроченные `invites` и `keyRequests`.
+
+Пару создаёт только `create-couple`, а входят в неё только через `accept-invite`. Обе функции добавляют человека с ролью `partner`, а не `owner`: в Appwrite добавлять людей в команду может только её владелец, а владельцев в парах нет ни у кого. Если бы пару создавало приложение (`teams.create`), создатель стал бы владельцем и мог бы добавить третьего мимо приглашения.
 
 Членами пары считаются только подтверждённые членства команды: неподтверждённое приглашение по почте не занимает место и не мешает удалить пустую пару.
 
@@ -128,19 +133,17 @@ cd Server/functions/create-invite && npm ci && npm test   # так же в ос�
    CLI покажет, что создаст или поменяет, и спросит подтверждение. Если спросит про удаление таблицы или колонки, которых нет в файле, — сначала разобраться, откуда они (удаление стирает данные). Первая сборка функций на 2 ГБ RAM может идти несколько минут.
 4. Проверить в консоли (`https://api.194-87-44-100.sslip.io/console` → проект `one-to-one`):
    - Databases → `main`: таблицы `records`, `keyRequests`, `invites`, у каждой колонки и индексы в статусе available. В Settings таблиц `records` и `keyRequests` включено Row security, а в правах таблицы только Create для Users; у `invites` прав нет вовсе.
-   - Functions: пять функций, у каждой активная сборка (deployment) в статусе ready, runtime Node.js 22. Execute access — Users, кроме `cleanup-expired`: у неё доступа нет ни у кого, зато в Settings → Schedule стоит `0 3 * * *`.
+   - Functions: шесть функций, у каждой активная сборка (deployment) в статусе ready, runtime Node.js 22. Execute access — Users, кроме `cleanup-expired`: у неё доступа нет ни у кого, зато в Settings → Schedule стоит `0 3 * * *`.
    - `cleanup-expired` можно запустить сразу кнопкой Execute в консоли: ответ `{"invites": 0, "keyRequests": 0}` (или сколько было просроченных), в логе выполнения строка «Удалено просроченных…».
 
 ### Как проверить функции руками
 
 Из консоли «Execute» не подходит: функциям нужен вошедший пользователь, а консоль вызывает их от имени администратора, и они ответят `unauthorized`. Поэтому создаём двух тестовых пользователей и тестовую пару и вызываем функции от их имени через `curl`. Команды `appwrite` работают после `appwrite login` из папки `Server/`.
 
-1. Тестовые пользователи и пара Анны (из консоли пара создаётся без владельца, поэтому Анну добавляем отдельно):
+1. Тестовые пользователи (пару Анна создаст сама функцией `create-couple`, как приложение):
    ```bash
    appwrite users create --user-id test-anna --email anna@test.invalid --name Анна
    appwrite users create --user-id test-boris --email boris@test.invalid --name Борис
-   appwrite teams create --team-id test-couple --name test-couple
-   appwrite teams create-membership --team-id test-couple --roles owner --user-id test-anna
    ```
 2. Токен для вызова от имени пользователя (живёт 15 минут). Для каждого: создать сессию, затем JWT, из ответа скопировать поле `jwt`:
    ```bash
@@ -153,9 +156,11 @@ cd Server/functions/create-invite && npm ci && npm test   # так же в ос�
    call() { curl -s -X POST "$API/functions/$1/executions" -H 'X-Appwrite-Project: 6acbe1c5001b61609635' \
      -H "X-Appwrite-JWT: $2" -H 'Content-Type: application/json' -d "{\"body\": $(printf '%s' "$3" | jq -Rs .)}" \
      | jq '{responseStatusCode, responseBody}'; }
+   call create-couple "$JWT_ANNA" '{"coupleId":"test-couple"}'
    call create-invite "$JWT_ANNA" '{"coupleId":"test-couple"}'
    ```
 4. Что должно получиться:
+   - `create-couple` от Анны → 200, `{"coupleId": "test-couple"}`; в Auth → Teams → `test-couple` одна Анна с ролью `partner` (не `owner`). Повтор того же вызова → тот же ответ, второй команды нет.
    - `create-invite` от Анны → 200, `{"code": "…", "expiresAt": "…"}` через 7 дней. В таблице `invites` одна строка с `codeHash`, самого кода там нет.
    - `accept-invite` от Бориса с этим кодом → 200, `{"coupleId": "test-couple"}`; в Auth → Teams → `test-couple` двое; строка в `invites` пропала.
    - Тот же код ещё раз → 404 `invite_not_found`. `create-invite` от Анны теперь → 409 `couple_full`.
