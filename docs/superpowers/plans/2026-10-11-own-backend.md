@@ -28,7 +28,8 @@
 1. **Новое поле `AppData` молча не синхронизируется.** Тест в задаче 4 падает, если в `AppData` появилось поле, не отнесённое ни к синхронизируемым, ни к локальным.
 2. **Одновременные правки двух партнёров.** Она отмечает месячные, он записывает секс без сети, потом оба выходят в сеть: обе записи на обоих телефонах (тест в задаче 5).
 3. **Pull пропускает документы с одинаковым временем на сервере.** Курсор не должен терять документы с равным `$updatedAt`, сортировка по `$updatedAt`, затем по `$id` (тест в задаче 7 на фейке и ручная проверка на сервере).
-4. **Подмена ключей сервером при приглашении.** Если открытые ключи подменены, коды на двух телефонах не совпадают, и ключ не передаётся (тест в задаче 3, ручная проверка в задаче 8).
+4. **Подмена ключей сервером при приглашении, включая перебор кода.** Сервер видит оба открытых ключа и мог бы перебрать ~10⁶ своих, чтобы коды совпали. Поэтому запрашивающее устройство сначала публикует только обязательство `SHA-256(свой открытый ключ)`, а сам ключ раскрывает после ответа второго; второе проверяет совпадение с обязательством (тесты в задаче 8, ручная проверка там же). Найдено на ревью #93.
+6. **Откат и поддельное удаление сервером.** Время правки и признак удаления на сервере открыты, им не верим: внутри конверта зашифрована вся запись (id, время, содержимое или удаление), слияние идёт только по расшифрованному (тесты в задаче 5). Найдено на ревью #93.
 5. **Бывший партнёр после выхода из пары.** Сервер не отдаёт ему документы пары, на его телефоне записи пары стёрты, новая пара получает новый ключ (задача 9).
 
 ---
@@ -220,8 +221,10 @@ public enum SyncRecordMapper {
 ```swift
 public struct EncryptedRecord: Equatable, Sendable {
     public let documentID: String
+    /// Время на сервере: только подсказка для сортировки, слиянию оно не указ.
     public let updatedAt: Date
-    public let envelope: Data?          // nil — удалена
+    /// Всегда есть, и у удалённых тоже: внутри зашифрован весь `SyncRecord` (id, updatedAt, payload или nil) в JSON.
+    public let envelope: Data
 }
 public protocol SyncTransport: Sendable {
     func push(_ records: [EncryptedRecord], coupleID: String) async throws
@@ -247,7 +250,16 @@ public actor SyncEngine {
 }
 ```
 
+Правила, которые не видны из сигнатур (из ревью #91 и #93):
+- Слияние верит только времени и признаку удаления **из расшифрованного** `SyncRecord`; `id` внутри конверта должен давать тот же `documentID`, иначе запись отбрасывается.
+- Надгробие ставится только для id, которые этот телефон понимает (известный вид записи): более старая версия приложения не должна стирать у партнёра записи новых видов.
+- Правкой считается только то, что изменилось на этом телефоне (сравнение байтов `payloads` до и после локальной правки), а не разница между `known` и пересобранными данными.
+- `SyncRecordMapper.apply` заменяет все синхронизируемые поля, поэтому вызывать его можно только с полным слитым набором записей (`known` + `outbox`), никогда с частичным.
+
 - [ ] **Шаг 1: тесты (падают):**
+  - `replayedOldEnvelopeLoses`: сервер отдаёт старый конверт с новым серверным временем → у устройства остаётся новая запись.
+  - `forgedDeletionIgnored`: сервер помечает документ удалённым или подменяет конверт мусором → запись на устройстве цела.
+  - `unknownKindNeverTombstoned`: запись неизвестного вида от партнёра не превращается у нас в удаление.
   - `laterEditWins`, `tombstoneWinsTie`, `winnerIsSymmetric` (`winner(a,b) == winner(b,a)`).
   - `twoDevicesConcurrentEditsBothSurvive`: устройство A отмечает месячные, устройство B без сети записывает секс; оба `sync` → у обоих и то и другое (Review Focus 2).
   - `offlineChangeSentLater`: транспорт бросает ошибку → outbox не пуст; транспорт снова работает → запись дошла до второго устройства.
@@ -317,7 +329,7 @@ protocol AuthService: Sendable {
 **Files:**
 - Create: `App/OneToOne/Backend/KeychainKeyStore.swift`: `save(_ key: CoupleKey, coupleID: String)`, `load(coupleID:) -> CoupleKey?`, `delete(coupleID:)`.
 - Create: `App/OneToOne/Backend/PairingService.swift` (протокол) и `AppwritePairingService.swift`: `createCouple() async throws -> String`, `createInvite(coupleID:) async throws -> (code: String, expiresAt: Date)`, `acceptInvite(code:) async throws -> String`, работа с `keyRequests`.
-- Create: `Packages/OneToOneKit/Sources/Sync/Pairing/KeyHandoff.swift`: чистая логика шагов передачи ключа (`waiting → answered → delivered/rejected`) поверх `KeyExchange`, с тестами `handoffDeliversKeyAfterBothConfirm`, `rejectedHandoffNeverSendsKey`, `expiredRequestIgnored`.
+- Create: `Packages/OneToOneKit/Sources/Sync/Pairing/KeyHandoff.swift`: чистая логика шагов передачи ключа поверх `KeyExchange` с обязательством: `waiting` (запрашивающий опубликовал только `requesterKeyCommitment = SHA-256(свой открытый ключ)`) → `answered` (отвечающий опубликовал свой открытый ключ) → `revealed` (запрашивающий раскрыл открытый ключ; отвечающий проверяет его хэш с обязательством, иначе `rejected`) → оба показывают код и подтверждают → `delivered` (отвечающий выкладывает завёрнутый ключ) или `rejected`. Тесты: `handoffDeliversKeyAfterBothConfirm`, `rejectedHandoffNeverSendsKey`, `expiredRequestIgnored`, `revealNotMatchingCommitmentRejected`, `responderKeyRequiredBeforeReveal` (запрашивающий не раскрывает ключ, пока нет ответа). Поля `keyRequests` — по схеме задачи 2 (`requesterKeyCommitment`, статус `revealed`).
 - Create: `App/OneToOne/Features/Pairing/InvitePartnerView.swift`, `JoinCoupleView.swift`, `VerifyCodeView.swift`.
 - Modify: `App/OneToOne/AppModel+Onboarding.swift`: после `createCouple` создать пару на сервере и ключ. Если на телефоне уже были записи, загрузить их в пару (**режется вторым**). Тот, кто входит по коду, перед заменой своих записей видит предупреждение.
 - Modify: знакомство: предупреждение «Если вы оба потеряете телефоны, записи пропадут».
