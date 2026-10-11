@@ -36,6 +36,7 @@ public enum CryptoError: Error, Equatable {
 extension Data {
     /// Байты строчными hex-цифрами: «0a1b…».
     var hexString: String {
-        map { String(format: "%02x", $0) }.joined()
+        let digits = Array("0123456789abcdef".utf8)
+        return String(decoding: flatMap { [digits[Int($0 >> 4)], digits[Int($0 & 0x0f)]] }, as: UTF8.self)
     }
 }

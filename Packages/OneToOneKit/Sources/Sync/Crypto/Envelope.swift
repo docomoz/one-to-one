@@ -9,7 +9,7 @@ enum Envelope {
     private static let nonceSize = 12
     private static let tagSize = 16
 
-    static func seal(_ plaintext: Data, key: SymmetricKey, aad: Data, nonce: AES.GCM.Nonce = AES.GCM.Nonce()) throws(CryptoError) -> Data {
+    static func seal(_ plaintext: Data, key: SymmetricKey, aad: Data, nonce: AES.GCM.Nonce) throws(CryptoError) -> Data {
         let box: AES.GCM.SealedBox
         do {
             box = try AES.GCM.seal(plaintext, using: key, nonce: nonce, authenticating: aad)

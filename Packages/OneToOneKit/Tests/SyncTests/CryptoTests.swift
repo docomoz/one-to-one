@@ -120,8 +120,10 @@ private let coupleID = "6708f1c2a9b3e4d5c6f7"
     #expect(id.allSatisfy { "0123456789abcdef".contains($0) })
 }
 
-@Test func documentIDDoesNotContainRecordID() {
-    let id = RecordIDHasher.documentID(for: "period:2026-10-11", key: CoupleKey())
+@Test func documentIDDoesNotContainRecordID() throws {
+    // Ключ фиксированный: у случайного hex-id подстрока «2026» иногда встречается сама собой.
+    let key = try CoupleKey(rawRepresentation: Data(0..<32))
+    let id = RecordIDHasher.documentID(for: "period:2026-10-11", key: key)
 
     #expect(!id.contains("period"))
     #expect(!id.contains("2026"))
@@ -147,6 +149,17 @@ private let coupleID = "6708f1c2a9b3e4d5c6f7"
 
     #expect(throws: CryptoError.authenticationFailed) {
         try KeyExchange.unwrap(wrapped, with: KeyExchangePair(), from: partner.publicKey)
+    }
+}
+
+@Test func wrappedKeyBoundToDirection() throws {
+    // AAD — оба открытых ключа по порядку «от кого, кому»: конверт не открыть как отправленный в обратную сторону.
+    let partner = KeyExchangePair()
+    let newPhone = KeyExchangePair()
+    let wrapped = try KeyExchange.wrap(CoupleKey(), from: partner, to: newPhone.publicKey)
+
+    #expect(throws: CryptoError.authenticationFailed) {
+        try KeyExchange.unwrap(wrapped, with: partner, from: newPhone.publicKey)
     }
 }
 
@@ -197,7 +210,8 @@ private let coupleID = "6708f1c2a9b3e4d5c6f7"
 
 // MARK: - Тестовые векторы из docs/crypto.md
 
-/// Строки вида `имя = значение` из блоков с векторами в `docs/crypto.md`.
+/// Строки вида `имя = значение` из раздела «Тестовые векторы» в `docs/crypto.md`.
+/// Формулы выше по файлу тоже похожи на `имя = значение`, поэтому читаем только этот раздел.
 private func docVectors() throws -> [String: String] {
     let doc = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent() // SyncTests
@@ -207,12 +221,14 @@ private func docVectors() throws -> [String: String] {
         .deletingLastPathComponent() // корень репозитория
         .appending(path: "docs/crypto.md")
     let text = try String(contentsOf: doc, encoding: .utf8)
+    let section = text[try #require(text.range(of: "\n## Тестовые векторы\n")).upperBound...]
     var vectors: [String: String] = [:]
-    for line in text.split(separator: "\n") {
+    for line in section.split(separator: "\n") {
         let parts = line.split(separator: "=", maxSplits: 1)
         guard parts.count == 2 else { continue }
         let name = parts[0].trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty, name.allSatisfy({ $0.isLowercase || $0 == "_" || $0.isNumber }) else { continue }
+        guard !name.isEmpty, name.allSatisfy({ ("a"..."z").contains($0) || $0 == "_" }) else { continue }
+        #expect(vectors[name] == nil, "Вектор \(name) записан дважды")
         vectors[name] = parts[1].trimmingCharacters(in: .whitespaces)
     }
     return vectors

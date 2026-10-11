@@ -38,19 +38,22 @@ public enum KeyExchange {
     }
 
     /// Ключ обёртки = HKDF-SHA256(общий секрет X25519, salt: пусто, info: "one-to-one key-wrap v1"), затем AES.GCM.
-    /// Формат результата как у конверта записи, без AAD.
+    /// Формат результата как у конверта записи; AAD = открытый ключ отправителя || открытый ключ получателя.
     public static func wrap(_ key: CoupleKey, from: KeyExchangePair, to peerPublicKey: Data) throws(CryptoError) -> Data {
         try wrap(key, from: from, to: peerPublicKey, nonce: AES.GCM.Nonce())
     }
 
     public static func unwrap(_ wrapped: Data, with: KeyExchangePair, from peerPublicKey: Data) throws(CryptoError) -> CoupleKey {
-        let raw = try Envelope.open(wrapped, key: wrapKey(from: with, to: peerPublicKey), aad: Data())
+        let aad = peerPublicKey + with.publicKey
+        let raw = try Envelope.open(wrapped, key: wrapKey(from: with, to: peerPublicKey), aad: aad)
         return try CoupleKey(rawRepresentation: raw)
     }
 
     /// С заданным nonce: только для тестовых векторов. В приложении nonce всегда случайный.
     static func wrap(_ key: CoupleKey, from: KeyExchangePair, to peerPublicKey: Data, nonce: AES.GCM.Nonce) throws(CryptoError) -> Data {
-        try Envelope.seal(key.rawRepresentation, key: wrapKey(from: from, to: peerPublicKey), aad: Data(), nonce: nonce)
+        // AAD привязывает конверт к ключам, по которым считали проверочный код, и к направлению передачи.
+        let aad = from.publicKey + peerPublicKey
+        return try Envelope.seal(key.rawRepresentation, key: wrapKey(from: from, to: peerPublicKey), aad: aad, nonce: nonce)
     }
 
     /// Одинаковый на обоих устройствах: X25519 даёт один и тот же общий секрет с обеих сторон.

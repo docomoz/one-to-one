@@ -5,6 +5,7 @@ import Foundation
 public enum RecordCipher {
     /// Конверт: [0x01] + AES.GCM combined (nonce 12 + шифротекст + тег 16). AAD = utf8("\(coupleID)/\(documentID)").
     /// AAD привязывает конверт к документу и паре: сервер не может переставить его в другой документ.
+    /// `documentID` — всегда id из `RecordIDHasher` (32 hex), в id пары Appwrite нет `/`: склейка однозначна.
     public static func seal(_ plaintext: Data, documentID: String, coupleID: String, key: CoupleKey) throws(CryptoError) -> Data {
         try seal(plaintext, documentID: documentID, coupleID: coupleID, key: key, nonce: AES.GCM.Nonce())
     }
