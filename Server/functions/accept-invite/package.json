@@ -1,0 +1,17 @@
+{
+  "name": "accept-invite",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Функция Appwrite: вход в пару по коду приглашения",
+  "type": "module",
+  "main": "src/main.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test 'test/**/*.test.js'"
+  },
+  "dependencies": {
+    "node-appwrite": "29.2.0"
+  }
+}
