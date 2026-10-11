@@ -34,6 +34,7 @@ private struct HerDayCard: View {
                     .font(.title3.weight(.semibold))
             }
         }
+        .dayCardTextLimit()
     }
 
     /// «овуляция» → «Овуляция».
@@ -51,4 +52,14 @@ private struct HerDayCard: View {
         DayCard(forecast: ovulation, herMood: nil, isWoman: false)
     }
     .padding()
+}
+
+#Preview("Крупный шрифт") {
+    let follicular = CycleForecast(phase: .follicular, dayOfCycle: 8, averageLength: 28, nextPeriodStart: nil)
+    VStack {
+        DayCard(forecast: follicular, herMood: nil, isWoman: true)
+        DayCard(forecast: follicular, herMood: nil, isWoman: false)
+    }
+    .padding()
+    .dynamicTypeSize(.accessibility5)
 }

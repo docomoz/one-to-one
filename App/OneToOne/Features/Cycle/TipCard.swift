@@ -15,6 +15,7 @@ struct TipCard: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .dayCardTextLimit()
     }
 }
 
@@ -24,4 +25,10 @@ struct TipCard: View {
         TipCard(tip: Tip(text: "Сегодня лучше не подходить. Серьёзно.", isEstimate: false))
     }
     .padding()
+}
+
+#Preview("Крупный шрифт") {
+    TipCard(tip: Tip(text: "Пик формы. Комплимент сработает вдвойне.", isEstimate: true))
+        .padding()
+        .dynamicTypeSize(.accessibility5)
 }
