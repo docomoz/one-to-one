@@ -241,10 +241,11 @@ public enum SyncMerger {
     public static func winner(_ a: SyncRecord, _ b: SyncRecord) -> SyncRecord
 }
 public actor SyncEngine {
-    public init(coupleID: String, key: CoupleKey, transport: SyncTransport, state: SyncState)
-    /// Сравнивает `data` с известным и кладёт отличия в outbox с временем `now`.
-    public func recordLocalChange(_ data: AppData, now: Date)
-    /// Отправляет outbox, забирает новое, сливает. Возвращает данные для экранов. Без сети бросает ошибку, outbox сохраняется.
+    public init(coupleID: String, key: CoupleKey, transport: any SyncTransport, state: SyncState)
+    /// Сравнивает данные до и после правки и кладёт отличия в outbox с временем `now` (сделано в #82:
+    /// сравнение с известным стирало бы записи партнёра, если правят данные, где их ещё нет).
+    public func recordLocalChange(from old: AppData, to new: AppData, now: Date)
+    /// Забирает новое, сливает, отправляет outbox. Возвращает данные для экранов. Без сети бросает ошибку, outbox сохраняется.
     public func sync(local: AppData) async throws -> AppData
     public var state: SyncState { get }      // приложение сохраняет его в `SyncState.json`
 }
