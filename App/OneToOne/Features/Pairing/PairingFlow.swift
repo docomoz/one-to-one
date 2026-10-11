@@ -103,13 +103,15 @@ final class PairingFlow {
         if let coupleID, isCoupleOnServer, let key = keys.load(coupleID: coupleID) {
             model.startSync(coupleID: coupleID, key: key, transport: makeTransport())
         } else if model.data.isPaired, joiningCoupleID == nil {
-            await registerCouple()
+            // В фоне: ошибку не показываем, экран может быть любым. Повторим через минуту.
+            await registerCouple(quietly: true)
         }
     }
 
     /// Создаёт пару на сервере для пары из знакомства. Id и ключ появляются до вызова сервера и сохраняются:
     /// повтор после ошибки или потерянного ответа идёт с ними же, и вторая пара не появляется.
-    func registerCouple() async {
+    /// `quietly` — фоновая попытка: без крутилки и без текста ошибки на экране.
+    func registerCouple(quietly: Bool = false) async {
         // Пара уже на сервере. Если ключа нет, новый не придумываем: у партнёра старый (восстановление — #86).
         guard !isCoupleOnServer else {
             startSyncIfReady()
@@ -121,15 +123,20 @@ final class PairingFlow {
                 try keys.save(CoupleKey(), coupleID: id)
             } catch {
                 Self.log.error("Ключ пары не сохранился в Keychain: \(error)")
-                errorMessage = PairingError.server.message
+                if !quietly { errorMessage = PairingError.server.message }
                 return
             }
         }
         coupleID = id
-        await perform {
-            _ = try await service.createCouple(coupleID: id)
-            isCoupleOnServer = true
-            startSyncIfReady()
+        let create = {
+            _ = try await self.service.createCouple(coupleID: id)
+            self.isCoupleOnServer = true
+            self.startSyncIfReady()
+        }
+        if quietly {
+            do { try await create() } catch { Self.log.error("Пара на сервере не создалась, повторим: \(error)") }
+        } else {
+            await perform(create)
         }
     }
 

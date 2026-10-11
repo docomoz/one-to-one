@@ -111,6 +111,24 @@ private func sexEntry(_ day: Int) -> SexEntry {
 }
 
 @MainActor
+@Test func backgroundRegistrationRetriesSilently() async throws {
+    // Пару создали без сети: раз в минуту пробуем снова, ошибку на экран не выводим.
+    let couple = try Couple2()
+    couple.dasha.service.failure.withLock { $0 = .network }
+
+    await couple.dasha.flow.prepareSync()
+
+    #expect(couple.dasha.flow.errorMessage == nil)
+    #expect(!couple.dasha.flow.isWorking)
+    #expect(!couple.dasha.defaults.isCoupleOnServer)
+
+    await couple.dasha.flow.prepareSync()
+
+    #expect(couple.dasha.defaults.isCoupleOnServer)
+    #expect(couple.dasha.model.isSyncStarted)
+}
+
+@MainActor
 @Test func launchStartsSyncWithStoredKey() async throws {
     let couple = try Couple2()
     await couple.dasha.flow.registerCouple()

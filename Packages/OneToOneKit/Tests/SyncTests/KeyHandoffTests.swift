@@ -140,6 +140,14 @@ private func exchangeUntilCodes(requester: inout KeyHandoffRequester, responder:
     #expect(requester.commitment != pair.publicKey)
 }
 
+@Test func unansweredRequestExpiresForRequester() throws {
+    // Партнёр так и не открыл приложение: телефон без ключа перестаёт ждать.
+    var requester = KeyHandoffRequester()
+    let row = newRequest(requester)
+
+    #expect(throws: KeyHandoffError.expired) { try requester.reveal(after: row, now: row.expiresAt) }
+}
+
 @Test func expiredRequestNotRevealed() throws {
     var requester = KeyHandoffRequester()
     var responder = KeyHandoffResponder(key: CoupleKey())

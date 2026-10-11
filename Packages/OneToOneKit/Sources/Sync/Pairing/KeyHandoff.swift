@@ -62,10 +62,10 @@ public struct KeyHandoffRequester: Sendable {
     /// Раскрыть свой ключ, если второй телефон уже ответил. `nil` — ещё не ответил (или уже раскрыли), ждём.
     public mutating func reveal(after request: KeyRequest, now: Date) throws(KeyHandoffError) -> KeyRequestUpdate? {
         if request.status == .rejected { throw .rejected }
-        guard responderPublicKey == nil, request.status == .answered,
-              let responderKey = request.responderPublicKey
-        else { return nil }
+        guard responderPublicKey == nil else { return nil }
+        // Никто не ответил вовремя (или ответили, но срок вышел): ключ не раскрываем, просим заново.
         if request.isExpired(at: now) { throw .expired }
+        guard request.status == .answered, let responderKey = request.responderPublicKey else { return nil }
         guard responderKey.count == KeyHandoff.publicKeySize else { throw .invalidKey }
         responderPublicKey = responderKey
         return .reveal(requesterPublicKey: pair.publicKey)
