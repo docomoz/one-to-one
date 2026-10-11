@@ -27,10 +27,10 @@ struct PairingDefaults: @unchecked Sendable {
         nonmutating set { defaults.set(newValue, forKey: Keys.joiningCoupleID) }
     }
 
-    /// Своя пара без партнёра, из которой нужно выйти после входа в пару партнёра (повторяем, пока не выйдет).
-    var coupleToLeave: String? {
-        get { defaults.string(forKey: Keys.coupleToLeave) }
-        nonmutating set { defaults.set(newValue, forKey: Keys.coupleToLeave) }
+    /// Свои пары без партнёра, из которых нужно выйти после входа в пару партнёра (повторяем, пока не выйдет).
+    var couplesToLeave: [String] {
+        get { defaults.stringArray(forKey: Keys.couplesToLeave) ?? [] }
+        nonmutating set { defaults.set(newValue, forKey: Keys.couplesToLeave) }
     }
 
     /// Партнёр уже в паре: приглашать больше некого.
@@ -43,7 +43,7 @@ struct PairingDefaults: @unchecked Sendable {
         static let coupleID = "pairing.coupleID"
         static let isCoupleOnServer = "pairing.isCoupleOnServer"
         static let joiningCoupleID = "pairing.joiningCoupleID"
-        static let coupleToLeave = "pairing.coupleToLeave"
+        static let couplesToLeave = "pairing.couplesToLeave"
         static let partnerJoined = "pairing.partnerJoined"
     }
 }

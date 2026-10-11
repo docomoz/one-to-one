@@ -5,15 +5,18 @@ import Sync
 extension PairingFlow {
     /// Код приглашения для партнёра. Пары на сервере ещё нет (не было сети) — сначала создаёт её.
     func createInvite() async {
+        guard !isWorking else { return }
+        isWorking = true
+        errorMessage = nil
+        defer { isWorking = false }
         if !isCoupleOnServer { await registerCouple() }
         guard let coupleID, isCoupleOnServer else { return }
-        await perform {
-            do {
-                invite = try await service.createInvite(coupleID: coupleID)
-            } catch PairingError.coupleFull {
-                partnerJoined = true
-                throw PairingError.coupleFull
-            }
+        do {
+            invite = try await service.createInvite(coupleID: coupleID)
+        } catch {
+            let error = Self.pairingError(error)
+            if error == .coupleFull { partnerJoined = true }
+            errorMessage = error.message
         }
     }
 
@@ -28,20 +31,29 @@ extension PairingFlow {
     /// Есть ли новый запрос ключа от телефона партнёра. Если есть — отвечаем своим открытым ключом
     /// и ждём, пока тот раскроет свой (`pollIncoming`).
     func checkIncoming() async {
-        guard incomingStep == nil, !isPolling, let coupleID, isCoupleOnServer,
-              let key = keys.load(coupleID: coupleID)
-        else { return }
+        guard incomingStep == nil, !isPolling else { return }
         isPolling = true
         defer { isPolling = false }
+        await answerNewestRequest()
+    }
+
+    /// Ответить на самый новый ждущий запрос. Шаг ставим до записи на сервер: если ответ потеряется,
+    /// `pollIncoming` отправит его ещё раз.
+    private func answerNewestRequest(replacing current: KeyRequest? = nil) async {
+        guard let coupleID, isCoupleOnServer, let key = keys.load(coupleID: coupleID) else { return }
         do {
             let requests = try await service.keyRequests(coupleID: coupleID)
-            guard let request = KeyHandoff.pendingRequest(in: requests, now: now()) else { return }
+            guard let request = KeyHandoff.pendingRequest(in: requests, now: now()),
+                  request.id != incomingRequestID
+            else { return }
+            // Телефон партнёра начал заново (перезапуск, «Начать заново»): старый запрос закрываем.
+            if let current { try? await service.update(current, with: .reject) }
             var responder = KeyHandoffResponder(key: key)
             let update = try responder.answer(request, now: now())
-            try await service.update(request, with: update)
             self.responder = responder
             incomingRequestID = request.id
             incomingStep = .waiting
+            try await service.update(request, with: update)
         } catch {
             // Не ответили — попробуем при следующей проверке.
             Self.log.error("Не удалось ответить на запрос ключа: \(error)")
@@ -58,10 +70,20 @@ extension PairingFlow {
                 incomingStep = .failed(.expired)
                 return
             }
+            // Наш ответ не дошёл до сервера: отправляем ещё раз.
+            if request.status == .waiting, request.responderPublicKey == nil, !request.isExpired(at: now()) {
+                try await service.update(request, with: .answer(responderPublicKey: responder.publicKey))
+                return
+            }
             do {
                 let code = try responder.verify(request, now: now())
                 self.responder = responder
-                if let code { incomingStep = .verify(code: code) }
+                if let code {
+                    incomingStep = .verify(code: code)
+                } else {
+                    // Пока ждём раскрытия, телефон партнёра мог начать заново новым запросом.
+                    await answerNewestRequest(replacing: request)
+                }
             } catch {
                 self.responder = responder
                 // Подмену видим только мы: говорим второму телефону, что ключа не будет.
@@ -110,5 +132,6 @@ extension PairingFlow {
         incomingStep = nil
         responder = nil
         incomingRequestID = nil
+        errorMessage = nil
     }
 }

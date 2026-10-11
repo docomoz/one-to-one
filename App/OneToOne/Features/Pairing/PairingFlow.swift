@@ -61,6 +61,8 @@ final class PairingFlow {
     @ObservationIgnored var incomingRequestID: String?
     /// Опрос сервера из таймера и с экрана может прийти одновременно: шаг передачи ключа идёт один.
     @ObservationIgnored var isPolling = false
+    /// Идущая попытка создать пару на сервере: её ждут все, кто зовёт `registerCouple`.
+    @ObservationIgnored var registration: Task<PairingError?, Never>?
 
     init(model: AppModel, service: any PairingService, keys: any CoupleKeyStoring = KeychainKeyStore(),
          defaults: PairingDefaults = PairingDefaults(), now: @escaping () -> Date = Date.init,
@@ -90,16 +92,17 @@ final class PairingFlow {
     // MARK: - Создание пары и запуск синхронизации
 
     /// Знакомство закончено: пара на сервере, синхронизация, приглашение партнёра.
+    /// Ошибку здесь не показываем: экран приглашения сам попробует ещё раз и покажет, что не так.
     func coupleCreated() async {
         presentsInvite = true
-        await registerCouple()
+        await registerCouple(quietly: true)
         await model.syncNow()
     }
 
     /// При запуске и раз в минуту, пока приложение открыто: дожать то, что не получилось без сети,
     /// и запустить синхронизацию. Для уже запущенной пары `startSync` ничего не делает.
     func prepareSync() async {
-        await leaveOldCouple()
+        await leaveOldCouples()
         if let coupleID, isCoupleOnServer, let key = keys.load(coupleID: coupleID) {
             model.startSync(coupleID: coupleID, key: key, transport: makeTransport())
         } else if model.data.isPaired, joiningCoupleID == nil {
@@ -110,34 +113,47 @@ final class PairingFlow {
 
     /// Создаёт пару на сервере для пары из знакомства. Id и ключ появляются до вызова сервера и сохраняются:
     /// повтор после ошибки или потерянного ответа идёт с ними же, и вторая пара не появляется.
-    /// `quietly` — фоновая попытка: без крутилки и без текста ошибки на экране.
+    /// Одновременные вызовы (знакомство, экран приглашения, таймер) ждут одну и ту же попытку.
+    /// `quietly` — фоновая попытка: без текста ошибки на экране.
     func registerCouple(quietly: Bool = false) async {
         // Пара уже на сервере. Если ключа нет, новый не придумываем: у партнёра старый (восстановление — #86).
         guard !isCoupleOnServer else {
             startSyncIfReady()
             return
         }
+        let attempt = registration ?? Task { await self.createCoupleOnServer() }
+        registration = attempt
+        let error = await attempt.value
+        if registration == attempt { registration = nil }
+        if !quietly { errorMessage = error?.message }
+    }
+
+    /// Одна попытка создать пару на сервере. Возвращает ошибку или `nil`, если получилось.
+    private func createCoupleOnServer() async -> PairingError? {
         let id = coupleID ?? Self.newCoupleID()
         if keys.load(coupleID: id) == nil {
             do {
                 try keys.save(CoupleKey(), coupleID: id)
             } catch {
                 Self.log.error("Ключ пары не сохранился в Keychain: \(error)")
-                if !quietly { errorMessage = PairingError.server.message }
-                return
+                return .server
             }
         }
         coupleID = id
-        let create = {
-            _ = try await self.service.createCouple(coupleID: id)
-            self.isCoupleOnServer = true
-            self.startSyncIfReady()
+        do {
+            _ = try await service.createCouple(coupleID: id)
+        } catch {
+            Self.log.error("Пара на сервере не создалась: \(error)")
+            return Self.pairingError(error)
         }
-        if quietly {
-            do { try await create() } catch { Self.log.error("Пара на сервере не создалась, повторим: \(error)") }
-        } else {
-            await perform(create)
+        // Пока ждали сервер, телефон мог войти в пару партнёра: эту, свою, тогда покидаем.
+        guard coupleID == id else {
+            defaults.couplesToLeave.append(id)
+            return nil
         }
+        isCoupleOnServer = true
+        startSyncIfReady()
+        return nil
     }
 
     func startSyncIfReady() {
@@ -145,20 +161,21 @@ final class PairingFlow {
         model.startSync(coupleID: coupleID, key: key, transport: makeTransport())
     }
 
-    /// Своя пара без партнёра после входа в пару партнёра: выйти на сервере и забыть её ключ.
+    /// Свои пары без партнёра после входа в пару партнёра: выйти на сервере и забыть их ключи.
     /// Без сети не выйдет — повторим при следующем `prepareSync`.
-    func leaveOldCouple() async {
-        guard let old = defaults.coupleToLeave else { return }
-        do {
-            try await service.leaveCouple(coupleID: old)
-        } catch PairingError.notMember {
-            // Уже вышли.
-        } catch {
-            Self.log.error("Не удалось выйти из старой пары, повторим позже: \(error)")
-            return
+    func leaveOldCouples() async {
+        for old in defaults.couplesToLeave {
+            do {
+                try await service.leaveCouple(coupleID: old)
+            } catch PairingError.notMember {
+                // Уже вышли.
+            } catch {
+                Self.log.error("Не удалось выйти из старой пары, повторим позже: \(error)")
+                continue
+            }
+            keys.delete(coupleID: old)
+            defaults.couplesToLeave.removeAll { $0 == old }
         }
-        keys.delete(coupleID: old)
-        defaults.coupleToLeave = nil
     }
 
     func clearError() {

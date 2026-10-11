@@ -38,7 +38,14 @@ struct InvitePartnerView: View {
             }
         }
         .onAppear { pairing.isInviteScreenVisible = true }
-        .onDisappear { pairing.isInviteScreenVisible = false }
+        .onDisappear {
+            pairing.isInviteScreenVisible = false
+            // Закончившуюся сверку не показываем ещё раз окном поверх; идущая продолжится в нём.
+            switch pairing.incomingStep {
+            case .done, .failed: pairing.dismissIncoming()
+            default: break
+            }
+        }
         .task {
             if pairing.invite == nil { await pairing.createInvite() }
         }
@@ -69,12 +76,12 @@ struct InvitePartnerView: View {
                         Text("Действует до \(invite.expiresAt.formatted(.dateTime.day().month(.wide)))")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                    } else if pairing.isWorking {
+                    } else if let error = pairing.errorMessage, !pairing.isWorking {
+                        AuthFooter(error: error, hint: "")
+                        Button("Попробовать ещё раз") { Task { await pairing.createInvite() } }
+                    } else {
                         ProgressView()
                             .padding(.vertical, 16)
-                    } else {
-                        AuthFooter(error: pairing.errorMessage ?? PairingError.server.message, hint: "")
-                        Button("Попробовать ещё раз") { Task { await pairing.createInvite() } }
                     }
                 }
                 .frame(maxWidth: .infinity)

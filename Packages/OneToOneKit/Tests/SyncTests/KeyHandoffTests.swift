@@ -158,3 +158,25 @@ private func exchangeUntilCodes(requester: inout KeyHandoffRequester, responder:
         try requester.reveal(after: row, now: row.expiresAt)
     }
 }
+
+@Test func revealRepeatsUntilServerHasIt() throws {
+    // Раскрытие записалось, а ответ сервера потерялся — или не записалось вовсе. Оба случая не должны застрять.
+    var requester = KeyHandoffRequester()
+    var responder = KeyHandoffResponder(key: CoupleKey())
+    var row = newRequest(requester)
+    row = row.applying(try responder.answer(row, now: now))
+    let first = try #require(try requester.reveal(after: row, now: now))
+
+    #expect(try requester.reveal(after: row, now: now) == first, "не записалось: отправить ещё раз")
+    #expect(try requester.reveal(after: row.applying(first), now: now) == nil, "записалось: больше не нужно")
+}
+
+@Test func responderWaitsWhileItsAnswerIsNotOnServer() throws {
+    let requester = KeyHandoffRequester()
+    var responder = KeyHandoffResponder(key: CoupleKey())
+    let row = newRequest(requester)
+    let answer = try responder.answer(row, now: now)
+
+    #expect(try responder.verify(row, now: now) == nil)
+    #expect(answer == .answer(responderPublicKey: responder.publicKey))
+}

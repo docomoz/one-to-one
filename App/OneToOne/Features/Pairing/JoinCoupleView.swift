@@ -8,10 +8,13 @@ struct JoinCoupleView: View {
     @Environment(AppModel.self) private var model
     @State private var code = ""
     @State private var confirmsReplace = false
+    /// Есть ли записи, которые заменятся. Считаем один раз: каждый перерасчёт перебирает все данные.
+    @State private var hasRecords = false
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        Group {
+        // ZStack, а не Group: модификаторы Group достались бы каждой ветке, и `.task` перезапускался бы при смене шага.
+        ZStack {
             if let step = pairing.joinStep {
                 ScrollView {
                     VerifyCodeView(
@@ -24,6 +27,10 @@ struct JoinCoupleView: View {
                     if step != .done {
                         Button("Не входить в пару", role: .destructive) { Task { await pairing.cancelJoin() } }
                             .disabled(pairing.isWorking)
+                        if let error = pairing.errorMessage {
+                            AuthFooter(error: error, hint: "")
+                                .padding(.horizontal, 20)
+                        }
                     }
                 }
                 .task {
@@ -33,17 +40,23 @@ struct JoinCoupleView: View {
                     }
                 }
             } else if pairing.joiningCoupleID != nil {
-                // Вошли по коду раньше, но ключ не получили (например, закрыли приложение): просим заново.
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .task { await pairing.startKeyRequest() }
             } else {
                 form
             }
         }
         .background(Palette.background)
         .navigationTitle("Код от партнёра")
-        .onAppear { pairing.clearError() }
+        .onAppear {
+            pairing.clearError()
+            hasRecords = model.hasSyncedRecords
+        }
+        // Вошли по коду раньше, но ключ не получили (например, закрыли приложение): просим заново.
+        // Задача на всём экране, а не на крутилке: та пропадёт, как только начнётся запрос, и отменила бы его.
+        .task {
+            if pairing.joiningCoupleID != nil, pairing.joinStep == nil { await pairing.startKeyRequest() }
+        }
     }
 
     private var form: some View {
@@ -60,7 +73,7 @@ struct JoinCoupleView: View {
                 AuthFooter(error: pairing.errorMessage,
                            hint: "8 букв и цифр из сообщения партнёра. Он найдёт код в настройках пары: «Пригласить партнёра».")
             }
-            if model.hasSyncedRecords {
+            if hasRecords {
                 Section {
                     Label("Записи на этом телефоне заменятся записями пары. Свои записи сюда не перенесутся.",
                           systemImage: "exclamationmark.triangle")
@@ -90,7 +103,7 @@ struct JoinCoupleView: View {
 
     private func submit() {
         guard canSubmit else { return }
-        if model.hasSyncedRecords {
+        if hasRecords {
             confirmsReplace = true
         } else {
             join()

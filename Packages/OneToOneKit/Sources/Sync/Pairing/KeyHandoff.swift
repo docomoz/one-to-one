@@ -59,10 +59,14 @@ public struct KeyHandoffRequester: Sendable {
         responderPublicKey.map { KeyExchange.verificationCode(pair.publicKey, $0) }
     }
 
-    /// Раскрыть свой ключ, если второй телефон уже ответил. `nil` — ещё не ответил (или уже раскрыли), ждём.
+    /// Раскрыть свой ключ, если второй телефон уже ответил. `nil` — ещё не ответил или раскрытие уже на сервере.
+    /// Если раскрытие не дошло до сервера (потерялся ответ), повторный вызов вернёт его же: отправить ещё раз.
     public mutating func reveal(after request: KeyRequest, now: Date) throws(KeyHandoffError) -> KeyRequestUpdate? {
         if request.status == .rejected { throw .rejected }
-        guard responderPublicKey == nil else { return nil }
+        if let responderPublicKey {
+            guard request.responderPublicKey == responderPublicKey else { throw .keyChanged }
+            return request.status == .answered ? .reveal(requesterPublicKey: pair.publicKey) : nil
+        }
         // Никто не ответил вовремя (или ответили, но срок вышел): ключ не раскрываем, просим заново.
         if request.isExpired(at: now) { throw .expired }
         guard request.status == .answered, let responderKey = request.responderPublicKey else { return nil }
@@ -113,6 +117,9 @@ public struct KeyHandoffResponder: Sendable {
         self.pair = pair
     }
 
+    /// Свой открытый ключ: им отвечаем, в том числе повторно, если ответ не дошёл до сервера.
+    public var publicKey: Data { pair.publicKey }
+
     /// Ответить своим открытым ключом и запомнить обязательство.
     public mutating func answer(_ request: KeyRequest, now: Date) throws(KeyHandoffError) -> KeyRequestUpdate {
         guard request.status == .waiting else { throw .unexpectedStatus }
@@ -127,6 +134,11 @@ public struct KeyHandoffResponder: Sendable {
         if request.status == .rejected { throw .rejected }
         switch phase {
         case .answered(let commitment):
+            // Наш ответ ещё не дошёл до сервера: ждём (приложение отправит `answer` ещё раз).
+            if request.status == .waiting, request.responderPublicKey == nil {
+                if request.isExpired(at: now) { throw .expired }
+                return nil
+            }
             // Ключ второго телефона в строке должен остаться нашим: иначе это уже не наш обмен.
             guard request.responderPublicKey == pair.publicKey else { throw .keyChanged }
             guard request.status == .revealed, let revealed = request.requesterPublicKey else {

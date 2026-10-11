@@ -16,6 +16,8 @@ extension PairingFlow {
     /// Так же начинаем заново после отказа, истёкшего срока или перезапуска приложения.
     func startKeyRequest() async {
         guard let coupleID = joiningCoupleID else { return }
+        // Старый запрос закрываем: телефон партнёра не должен ждать раскрытия, которого не будет.
+        await abandonKeyRequest()
         let requester = KeyHandoffRequester()
         joinStep = .waiting
         do {
@@ -41,10 +43,13 @@ extension PairingFlow {
                 return
             }
             if joinStep == .waiting {
-                if let update = try requester.reveal(after: request, now: now()) {
-                    try await service.update(request, with: update)
-                    self.requester = requester
-                    if let code = requester.verificationCode { joinStep = .verify(code: code) }
+                // Запоминаем до записи: если ответ сервера потеряется, следующий опрос отправит раскрытие ещё раз
+                // или увидит, что оно уже на сервере.
+                let update = try requester.reveal(after: request, now: now())
+                self.requester = requester
+                if let update { try await service.update(request, with: update) }
+                if let code = requester.verificationCode, update != nil || request.status == .revealed {
+                    joinStep = .verify(code: code)
                 }
             } else if let key = try requester.receive(request, now: now()) {
                 await finishJoin(key: key)
@@ -67,22 +72,29 @@ extension PairingFlow {
 
     /// «Не совпадает»: говорим телефону партнёра, что ключ не нужен.
     func rejectJoin() async {
-        if let id = joinRequestID, let request = try? await service.keyRequest(id: id) {
-            try? await service.update(request, with: .reject)
-        }
-        requester = nil
+        await abandonKeyRequest()
         joinStep = .failed(.rejected)
+    }
+
+    /// Закрыть свой запрос ключа на сервере (если ещё не закрыт) и забыть его.
+    private func abandonKeyRequest() async {
+        let id = joinRequestID
+        requester = nil
+        joinRequestID = nil
+        guard let id, let request = try? await service.keyRequest(id: id),
+              request.status != .delivered, request.status != .rejected
+        else { return }
+        try? await service.update(request, with: .reject)
     }
 
     /// Передумали входить: выходим из пары партнёра, свои записи остаются как были.
     func cancelJoin() async {
         guard let coupleID = joiningCoupleID else { return }
         await perform {
+            await abandonKeyRequest()
             try await service.leaveCouple(coupleID: coupleID)
             joiningCoupleID = nil
             joinStep = nil
-            requester = nil
-            joinRequestID = nil
         }
     }
 
@@ -97,7 +109,9 @@ extension PairingFlow {
             joinStep = .failed(.server)
             return
         }
-        if let old = coupleID, old != newCoupleID { defaults.coupleToLeave = old }
+        if let old = coupleID, old != newCoupleID, !defaults.couplesToLeave.contains(old) {
+            defaults.couplesToLeave.append(old)
+        }
         // Сначала остановить старую синхронизацию: иначе стирание записей ушло бы в старую пару.
         model.stopSync()
         model.replaceWithJoinedCouple()
@@ -110,7 +124,7 @@ extension PairingFlow {
         invite = nil
         joinStep = .done
         startSyncIfReady()
-        await leaveOldCouple()
+        await leaveOldCouples()
         await model.syncNow()
     }
 

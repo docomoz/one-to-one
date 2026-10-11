@@ -129,6 +129,21 @@ private func sexEntry(_ day: Int) -> SexEntry {
 }
 
 @MainActor
+@Test func inviteRightAfterOnboardingWaitsForRegistration() async throws {
+    // Знакомство создаёт пару на сервере, а экран приглашения в это же время просит код.
+    let couple = try Couple2()
+    couple.dasha.service.latency.withLock { $0 = .milliseconds(50) }
+
+    async let created: Void = couple.dasha.flow.coupleCreated()
+    async let invited: Void = couple.dasha.flow.createInvite()
+    _ = await (created, invited)
+
+    #expect(couple.dasha.flow.invite != nil)
+    #expect(couple.dasha.flow.errorMessage == nil)
+    #expect(couple.pairing.state.withLock { $0.teams.count } == 1)
+}
+
+@MainActor
 @Test func launchStartsSyncWithStoredKey() async throws {
     let couple = try Couple2()
     await couple.dasha.flow.registerCouple()
@@ -232,6 +247,56 @@ private func sexEntry(_ day: Int) -> SexEntry {
     #expect(couple.pairing.requests.allSatisfy { $0.status == .waiting })
 }
 
+@MainActor
+@Test func responderSwitchesToJoinersNewRequest() async throws {
+    // Максим перезапустил приложение, пока Даша ждала раскрытия: её телефон переходит на новый запрос.
+    let couple = try Couple2()
+    await couple.dasha.flow.coupleCreated()
+    await couple.dasha.flow.createInvite()
+    await couple.maxim.flow.join(code: try #require(couple.dasha.flow.invite?.code))
+    await couple.dasha.flow.checkIncoming()
+    let restarted = Phone(user: "maxim", pairing: couple.pairing, sync: couple.sync)
+    restarted.defaults.joiningCoupleID = couple.maxim.defaults.joiningCoupleID
+    let flow = PairingFlow(model: restarted.model, service: couple.maxim.service, keys: restarted.keys,
+                           defaults: restarted.defaults, makeTransport: { FakeSyncTransport(server: couple.sync) })
+    await flow.startKeyRequest()
+
+    await couple.dasha.flow.pollIncoming()
+    await flow.pollJoin()
+    await couple.dasha.flow.pollIncoming()
+
+    guard case .verify(let dashaCode) = couple.dasha.flow.incomingStep, case .verify(let maximCode) = flow.joinStep else {
+        Issue.record("Нет кода: \(String(describing: couple.dasha.flow.incomingStep)) / \(String(describing: flow.joinStep))")
+        return
+    }
+    #expect(dashaCode == maximCode)
+}
+
+@MainActor
+@Test func lostResponsesDoNotStallHandoff() async throws {
+    // Ответ Даши и раскрытие Максима записались на сервер, но ответы сервера потерялись.
+    let couple = try Couple2()
+    await couple.dasha.flow.coupleCreated()
+    await couple.dasha.flow.createInvite()
+    await couple.maxim.flow.join(code: try #require(couple.dasha.flow.invite?.code))
+    couple.dasha.service.loseNextUpdateResponse.withLock { $0 = true }
+    await couple.dasha.flow.checkIncoming()
+    couple.maxim.service.loseNextUpdateResponse.withLock { $0 = true }
+    await couple.maxim.flow.pollJoin()
+    #expect(couple.maxim.flow.joinStep == .waiting)
+
+    await couple.maxim.flow.pollJoin()
+    await couple.dasha.flow.pollIncoming()
+
+    guard case .verify(let dashaCode) = couple.dasha.flow.incomingStep,
+          case .verify(let maximCode) = couple.maxim.flow.joinStep
+    else {
+        Issue.record("Нет кода: \(String(describing: couple.dasha.flow.incomingStep)) / \(String(describing: couple.maxim.flow.joinStep))")
+        return
+    }
+    #expect(dashaCode == maximCode)
+}
+
 // MARK: - Записи
 
 @MainActor
@@ -268,7 +333,7 @@ private func sexEntry(_ day: Int) -> SexEntry {
     #expect(couple.pairing.left.contains { $0 == (oldID, "maxim") })
     #expect(couple.maxim.keys.load(coupleID: oldID) == nil)
     #expect(couple.maxim.defaults.coupleID == couple.dasha.defaults.coupleID)
-    #expect(couple.maxim.defaults.coupleToLeave == nil)
+    #expect(couple.maxim.defaults.couplesToLeave.isEmpty)
     #expect(couple.maxim.model.data.couple == couple.dasha.model.data.couple)
 }
 

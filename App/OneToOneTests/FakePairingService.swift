@@ -36,18 +36,23 @@ final class FakePairingService: PairingService {
     let server: FakePairingServer
     let userID: String
     let failure = Mutex<PairingError?>(nil)
+    /// Задержка каждого ответа: чтобы вызовы с экрана и из таймера шли одновременно, как в жизни.
+    let latency = Mutex<Duration?>(nil)
+    /// Следующая запись в строку запроса дойдёт до сервера, а ответ потеряется (ошибка сети).
+    let loseNextUpdateResponse = Mutex(false)
 
     init(server: FakePairingServer = FakePairingServer(), userID: String) {
         self.server = server
         self.userID = userID
     }
 
-    private func checkFailure() throws {
+    private func checkFailure() async throws {
+        if let latency = latency.withLock({ $0 }) { try? await Task.sleep(for: latency) }
         if let error = failure.withLock({ error in defer { error = nil }; return error }) { throw error }
     }
 
     func createCouple(coupleID: String) async throws -> String {
-        try checkFailure()
+        try await checkFailure()
         return try server.state.withLock { state in
             if let members = state.teams[coupleID] {
                 guard members.contains(userID) else { throw PairingError.notMember }
@@ -61,7 +66,7 @@ final class FakePairingService: PairingService {
     }
 
     func createInvite(coupleID: String) async throws -> InviteCode {
-        try checkFailure()
+        try await checkFailure()
         return try server.state.withLock { state in
             guard let members = state.teams[coupleID], members.contains(userID) else { throw PairingError.notMember }
             guard members.count == 1 else { throw PairingError.coupleFull }
@@ -74,7 +79,7 @@ final class FakePairingService: PairingService {
     }
 
     func acceptInvite(code: String) async throws -> String {
-        try checkFailure()
+        try await checkFailure()
         return try server.state.withLock { state in
             guard let coupleID = state.invites[code], let members = state.teams[coupleID] else {
                 throw PairingError.inviteNotFound
@@ -88,7 +93,7 @@ final class FakePairingService: PairingService {
     }
 
     func leaveCouple(coupleID: String) async throws {
-        try checkFailure()
+        try await checkFailure()
         server.state.withLock { state in
             state.left.append((coupleID, userID))
             state.teams[coupleID]?.removeAll { $0 == userID }
@@ -97,12 +102,12 @@ final class FakePairingService: PairingService {
     }
 
     func memberCount(coupleID: String) async throws -> Int {
-        try checkFailure()
+        try await checkFailure()
         return server.members(coupleID).count
     }
 
     func createKeyRequest(coupleID: String, commitment: Data, expiresAt: Date) async throws -> KeyRequest {
-        try checkFailure()
+        try await checkFailure()
         return try server.state.withLock { state in
             guard state.teams[coupleID]?.contains(userID) == true else { throw PairingError.notMember }
             let request = KeyRequest(id: "req\(state.nextID)", coupleID: coupleID, requesterUserID: userID,
@@ -114,13 +119,13 @@ final class FakePairingService: PairingService {
     }
 
     func keyRequest(id: String) async throws -> KeyRequest? {
-        try checkFailure()
+        try await checkFailure()
         guard let request = server.state.withLock({ $0.requests[id] }) else { return nil }
         return server.tamper.withLock { $0 }.map { $0(request, userID) } ?? request
     }
 
     func keyRequests(coupleID: String) async throws -> [KeyRequest] {
-        try checkFailure()
+        try await checkFailure()
         let tamper = server.tamper.withLock { $0 }
         let requests: [KeyRequest] = server.state.withLock { state in
             guard state.teams[coupleID]?.contains(userID) == true else { return [] }
@@ -130,10 +135,13 @@ final class FakePairingService: PairingService {
     }
 
     func update(_ request: KeyRequest, with update: KeyRequestUpdate) async throws {
-        try checkFailure()
+        try await checkFailure()
         server.state.withLock { state in
             guard let stored = state.requests[request.id] else { return }
             state.requests[request.id] = stored.applying(update)
+        }
+        if loseNextUpdateResponse.withLock({ lose in defer { lose = false }; return lose }) {
+            throw PairingError.network
         }
     }
 }

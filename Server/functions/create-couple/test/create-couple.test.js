@@ -113,6 +113,22 @@ test('createCoupleDeletesTeamWhenJoinFails', async () => {
     assert.equal(fake.teamsById.has('couple1'), false, 'пустая команда не остаётся');
 });
 
+test('createCoupleConcurrentRetryKeepsTeam', async () => {
+    // Два вызова с одним id одновременно: второй добавил Анну раньше первого. Первый не удаляет команду.
+    const fake = withAnna();
+    const createMembership = fake.teams.createMembership;
+    fake.teams.createMembership = async (params) => {
+        fake.teams.createMembership = createMembership;
+        await createMembership(params); // «второй вызов» успел первым
+        throw Object.assign(new Error('Membership already exists'), { code: 409 });
+    };
+
+    const result = await create(fake, 'anna');
+
+    assert.deepEqual(result, { status: 200, body: { coupleId: 'couple1' } });
+    assert.deepEqual(fake.memberIds('couple1'), ['anna']);
+});
+
 test('mainTakesCallerFromHeaderNotFromBody', async () => {
     const fake = withAnna();
     fake.addUser('mallory');

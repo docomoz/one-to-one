@@ -35,8 +35,11 @@ export async function createCouple({ callerId, body }, services) {
         // С ключом сервера членство создаётся сразу подтверждённым, без письма.
         await teams.createMembership({ teamId: coupleId, roles: ['partner'], userId: callerId });
     } catch (thrown) {
+        // Два одновременных вызова с одним id: второй уже добавил вызывающего — пара есть, это успех.
+        const after = confirmedOnly((await coupleMemberships(teams, coupleId).catch(() => null)) ?? []);
+        if (after.some((membership) => membership.userId === callerId)) return ok({ coupleId });
         // Пустая команда никому не нужна; если удалить не вышло, её дочистит `leave-couple`.
-        if (created) await teams.delete({ teamId: coupleId }).catch(() => {});
+        if (created && after.length === 0) await teams.delete({ teamId: coupleId }).catch(() => {});
         throw thrown;
     }
     return ok({ coupleId });

@@ -15,7 +15,8 @@ extension AppModel {
 
     /// Есть ли на телефоне записи, которые пропадут при входе в пару партнёра.
     var hasSyncedRecords: Bool {
-        !SyncRecordMapper.payloads(from: data).isEmpty
+        // Без кодирования в JSON: стираем синхронизируемые поля и сравниваем.
+        SyncRecordMapper.apply([:], to: data) != data
     }
 
     /// Вошли в пару партнёра по коду: свои записи и «кто я» стираются, их место займут записи пары
