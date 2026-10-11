@@ -23,9 +23,12 @@ struct PreviewPairingService: PairingService {
 }
 
 extension PairingFlow {
+    /// Каждый раз с чистыми настройками пары: иначе состояние прошлого превью (например, «уже в паре») перешло бы в следующее.
     static func preview(model: AppModel) -> PairingFlow {
-        PairingFlow(model: model, service: PreviewPairingService(), keys: InMemoryKeyStore(),
-                    defaults: PairingDefaults(defaults: UserDefaults(suiteName: "preview-pairing")!))
+        let suite = "preview-pairing"
+        UserDefaults.standard.removePersistentDomain(forName: suite)
+        return PairingFlow(model: model, service: PreviewPairingService(), keys: InMemoryKeyStore(),
+                           defaults: PairingDefaults(defaults: UserDefaults(suiteName: suite)!))
     }
 }
 
