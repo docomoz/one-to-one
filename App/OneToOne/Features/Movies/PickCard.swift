@@ -63,7 +63,7 @@ struct PickCard: View {
 #Preview {
     VStack {
         PickCard(state: .noPick, onOpen: {}, onNewPick: {})
-        PickCard(state: .partnerStarted(partnerName: "Даша", mood: .light), onOpen: {}, onNewPick: {})
+        PickCard(state: .partnerStarted(partnerName: "Аня", mood: .light), onOpen: {}, onNewPick: {})
     }
     .padding()
 }

@@ -3,8 +3,8 @@ import Foundation
 import Testing
 @testable import Sync
 
-private let man = Person(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000A")!, name: "Максим", sex: .male)
-private let woman = Person(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000B")!, name: "Даша", sex: .female)
+private let man = Person(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000A")!, name: "Боря", sex: .male)
+private let woman = Person(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000B")!, name: "Аня", sex: .female)
 
 private func day(_ number: Int) -> DayKey { DayKey(year: 2026, month: 10, day: number) }
 

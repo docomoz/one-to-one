@@ -49,8 +49,8 @@ private let other = Movie(id: 2, title: "Брат", year: 1997, genres: ["дра
 }
 
 @Test func partnerIDIsTheOtherPerson() throws {
-    let man = Person(id: UUID(), name: "Макс", sex: .male)
-    let woman = Person(id: UUID(), name: "Даша", sex: .female)
+    let man = Person(id: UUID(), name: "Боря", sex: .male)
+    let woman = Person(id: UUID(), name: "Аня", sex: .female)
     var data = AppData()
     data.couple = try Couple.make(man, woman)
 

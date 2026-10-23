@@ -11,4 +11,4 @@ iOS-приложение для пар (можно пользоваться и �
 
 ## Команда
 - Дарья: [@DariaPrishchepa](https://github.com/DariaPrishchepa)
-- Максюша: [@docomoz](https://github.com/docomoz)
+- Максим: [@docomoz](https://github.com/docomoz)

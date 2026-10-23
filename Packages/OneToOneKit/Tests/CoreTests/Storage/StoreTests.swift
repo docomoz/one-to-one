@@ -4,8 +4,8 @@ import Testing
 
 /// AppData, где заполнено каждое поле: так проверяем, что сохраняется всё, а не только пара.
 private func filledData() throws -> AppData {
-    let man = Person(name: "Максим", sex: .male)
-    let woman = Person(name: "Даша", sex: .female)
+    let man = Person(name: "Боря", sex: .male)
+    let woman = Person(name: "Аня", sex: .female)
     let day = DayKey(year: 2026, month: 3, day: 14)
     let date = Date(timeIntervalSince1970: 1_773_500_000)
     let movie = Movie(id: 326, title: "Побег из Шоушенка", year: 1994, genres: ["драма"],
@@ -116,8 +116,8 @@ private func tempDirectory() -> URL {
 }
 
 @Test func appDataIsPairedOnlyWithOwnMeID() throws {
-    let man = Person(name: "Максим", sex: .male)
-    let woman = Person(name: "Даша", sex: .female)
+    let man = Person(name: "Боря", sex: .male)
+    let woman = Person(name: "Аня", sex: .female)
     var data = AppData()
     #expect(!data.isPaired)
     data.couple = try Couple.make(man, woman)

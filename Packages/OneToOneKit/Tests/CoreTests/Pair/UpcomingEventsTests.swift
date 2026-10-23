@@ -7,8 +7,8 @@ private let today = DayKey(year: 2026, month: 10, day: 10)
 /// Данные с парой, где «я» — он, и днём рождения у неё `herBirthday` (месяц, число).
 private func data(herBirthday: (Int, Int)? = nil, togetherSince: DayKey? = nil)
     -> (data: AppData, woman: Person) {
-    let man = Person(name: "Максюша", sex: .male)
-    let woman = Person(name: "Даша", sex: .female,
+    let man = Person(name: "Боря", sex: .male)
+    let woman = Person(name: "Аня", sex: .female,
                        birthDate: herBirthday.map { DayKey(year: 1995, month: $0.0, day: $0.1) })
     var data = AppData()
     if herBirthday != nil {

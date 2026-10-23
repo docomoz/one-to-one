@@ -13,7 +13,7 @@
 ## Global Constraints
 - Без новых зависимостей.
 - Тексты интерфейса только на русском; копирайт — как в спецификации, дословно.
-- Имена не склоняем: «🎂 Даша: День рождения через 12 дней» (заглавная «День» после двоеточия — решение пользователя).
+- Имена не склоняем: «🎂 Аня: День рождения через 12 дней» (заглавная «День» после двоеточия — решение пользователя).
 - Цифры главной — из `StatsCalculator.stats(_:today:)`, подсказка — из `TipProvider.tip(forecast:herMood:)`, без своих подсчётов.
 - «Сегодня» пересчитывается через `onDayChange` (`Features/Cycle/DayChange.swift`).
 - Логика: `cd Packages/OneToOneKit && swift test`. Приложение: `xcodegen generate && xcodebuild test -project OneToOne.xcodeproj -scheme OneToOne -destination 'platform=iOS Simulator,name=iPhone 17'`.
@@ -57,7 +57,7 @@
 }
 ```
 
-В `BirthdayCalculatorTests` пара `man` (Максюша) и `woman` (Даша) через `Couple.make`, `meID` = id мужчины, `today = DayKey(year: 2026, month: 10, day: 10)`:
+В `BirthdayCalculatorTests` пара `man` (Боря) и `woman` (Аня) через `Couple.make`, `meID` = id мужчины, `today = DayKey(year: 2026, month: 10, day: 10)`:
 - `noBirthDatesIsNil`: оба без `birthDate` → `nil`.
 - `partnerBirthdayIn12Days`: у неё 22.10.1995 → `UpcomingBirthday(person: woman, isMe: false, daysLeft: 12)`.
 - `myBirthdayIsMe`: у него 11.10.1990 → `isMe == true`, `daysLeft == 1`.
@@ -130,8 +130,8 @@ Expected: все тесты пакета зелёные.
 - Consumes: `daysText(_:)`, `UpcomingBirthday`, `BirthdayCalculator.upcoming(couple:meID:today:within:)` (задача 1); `CheerProvider.cheer(forecast:)` (задача 2); `StatsCalculator`, `CycleCalculator.forecast`, `TipProvider.tip`, `TipCard`, `CyclePhase.title`, `LogSexView(defaults:)`, `model.orgasmDefaults`, `onDayChange`.
 - Produces: `HomeView(pickMovie: @escaping () -> Void)`.
 
-- [ ] **Step 1: тест текстов** (`UpcomingBirthdayTextTests`, `Person(name: "Даша", sex: .female)`):
-  - партнёр 12 → «🎂 Даша: День рождения через 12 дней»; 1 → «🎂 Даша: День рождения завтра»; 0 → «🎉 Даша: День рождения сегодня!»;
+- [ ] **Step 1: тест текстов** (`UpcomingBirthdayTextTests`, `Person(name: "Аня", sex: .female)`):
+  - партнёр 12 → «🎂 Аня: День рождения через 12 дней»; 1 → «🎂 Аня: День рождения завтра»; 0 → «🎉 Аня: День рождения сегодня!»;
   - я 21 → «🎂 Твой день рождения через 21 день»; 1 → «🎂 Твой день рождения завтра»; 0 → «🎉 С днём рождения!».
 
 - [ ] **Step 2: запустить** тесты приложения (команда из Global Constraints) → не собирается.

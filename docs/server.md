@@ -6,14 +6,14 @@
 
 | Что | Где |
 |---|---|
-| Сервер | Timeweb Cloud, **временно Амстердам (Нидерланды)**: в Москве и Питере не было свободных мест. Ubuntu 24.04, 2 vCPU / 2 ГБ RAM / 30 ГБ NVMe + swap 4 ГБ, IP `194.87.44.100`, аккаунт Максима. Перед публикацией переехать в Россию (см. «Переезд в Россию») и поднять до 4 ГБ RAM |
-| Адрес API | `https://api.194-87-44-100.sslip.io/v1` — пока без своего домена (sslip.io сам указывает на IP из имени). Перед публикацией переехать на свой домен, см. «Переезд на свой домен» |
-| Консоль Appwrite | `https://api.194-87-44-100.sslip.io/console` (вход: почта и пароль администратора из менеджера паролей Максима). Регистрация закрыта (`_APP_CONSOLE_WHITELIST_ROOT=enabled`): других людей приглашать из консоли, Organization → Members |
-| Проект | `one-to-one`, Project ID `6acbe1c5001b61609635`, платформа Apple `com.docomoz.onetoone`, вход только Email OTP |
+| Сервер | Timeweb Cloud, **временно Амстердам (Нидерланды)**: в Москве и Питере не было свободных мест. Ubuntu 24.04, 2 vCPU / 2 ГБ RAM / 30 ГБ NVMe + swap 4 ГБ, IP в менеджере паролей, аккаунт Максима. Перед публикацией переехать в Россию (см. «Переезд в Россию») и поднять до 4 ГБ RAM |
+| Адрес API | `https://<адрес>/v1`, где `<адрес>` — `api.<IP через дефисы>.sslip.io`: пока без своего домена (sslip.io сам указывает на IP из имени). Точное значение — `APPWRITE_ENDPOINT` в `Config/App.xcconfig`. Перед публикацией переехать на свой домен, см. «Переезд на свой домен» |
+| Консоль Appwrite | `https://<адрес>/console` (вход: почта и пароль администратора из менеджера паролей). Регистрация закрыта (`_APP_CONSOLE_WHITELIST_ROOT=enabled`): других людей приглашать из консоли, Organization → Members |
+| Проект | `one-to-one`, Project ID — `APPWRITE_PROJECT_ID` в `Config/App.xcconfig`, платформа Apple `com.docomoz.onetoone`, вход только Email OTP |
 | Appwrite | версия 2.4.0, база PostgreSQL, файлы и `.env` в `/root/appwrite` на сервере |
-| Почта для кодов | на время разработки SMTP Gmail (Google Workspace `maxim@docomoz.com`, пароль приложения). Перед публикацией — сервис рассылок с отправителем на своём домене (Unisender Go) |
+| Почта для кодов | на время разработки SMTP Gmail (рабочий ящик Google Workspace Максима, пароль приложения). Перед публикацией — сервис рассылок с отправителем на своём домене (Unisender Go) |
 | Резервные копии | автоматические бэкапы Timeweb, ежедневно (хранятся отдельно от сервера). Перед запуском добавить ежедневный дамп базы в S3 |
-| SSH | `ssh -i ~/.ssh/one-to-one-timeweb root@194.87.44.100` (ключ на Маке Максима; второй ключ для Дарьи добавлять в `/root/.ssh/authorized_keys`) |
+| SSH | `ssh -i ~/.ssh/one-to-one-timeweb root@<IP>` (ключ у Максима; второй ключ для Дарьи добавлять в `/root/.ssh/authorized_keys`) |
 | Схема базы и функции | `Server/appwrite.config.json` и `Server/functions/`, выкладываются командой `appwrite push`, см. «Схема и функции» |
 
 Секреты (пароль администратора консоли, секретный ключ Appwrite из мастера, пароль приложения Gmail, позже ключи S3) хранятся только в менеджере паролей и в `/root/appwrite/.env` на сервере. В git их нет.
@@ -57,10 +57,10 @@
 ## Проверка, что всё работает
 
 ```bash
-curl -s https://api.194-87-44-100.sslip.io/v1/health/version
+curl -s https://<адрес>/v1/health/version
 # Письмо с кодом на тестовую почту:
-curl -s -X POST https://api.194-87-44-100.sslip.io/v1/account/tokens/email \
-  -H 'Content-Type: application/json' -H 'X-Appwrite-Project: 6acbe1c5001b61609635' \
+curl -s -X POST https://<адрес>/v1/account/tokens/email \
+  -H 'Content-Type: application/json' -H 'X-Appwrite-Project: <Project ID>' \
   -d '{"userId":"unique()","email":"<тестовая почта>"}'
 ```
 Письмо с кодом должно прийти, не в спам. Тест создаёт неподтверждённого пользователя в проекте — удалить его в консоли (Auth → Users).
@@ -123,7 +123,7 @@ cd Server/functions/create-invite && npm ci && npm test   # так же в ос�
 1. Один раз поставить Appwrite CLI: `brew install appwrite`, проверить `appwrite --version` (нужна 28.x или новее).
 2. Один раз войти в консоль. Пароль вводишь сам, Claude его не видит:
    ```bash
-   appwrite login --endpoint https://api.194-87-44-100.sslip.io/v1
+   appwrite login --endpoint https://<адрес>/v1
    ```
    Почта и пароль — администратора консоли из менеджера паролей.
 3. Выложить всё из папки `Server/` (там лежит `appwrite.config.json` с id проекта):
@@ -131,7 +131,7 @@ cd Server/functions/create-invite && npm ci && npm test   # так же в ос�
    cd Server && appwrite push all
    ```
    CLI покажет, что создаст или поменяет, и спросит подтверждение. Если спросит про удаление таблицы или колонки, которых нет в файле, — сначала разобраться, откуда они (удаление стирает данные). Первая сборка функций на 2 ГБ RAM может идти несколько минут.
-4. Проверить в консоли (`https://api.194-87-44-100.sslip.io/console` → проект `one-to-one`):
+4. Проверить в консоли (`https://<адрес>/console` → проект `one-to-one`):
    - Databases → `main`: таблицы `records`, `keyRequests`, `invites`, у каждой колонки и индексы в статусе available. В Settings таблиц `records` и `keyRequests` включено Row security, а в правах таблицы только Create для Users; у `invites` прав нет вовсе.
    - Functions: шесть функций, у каждой активная сборка (deployment) в статусе ready, runtime Node.js 22. Execute access — Users, кроме `cleanup-expired`: у неё доступа нет ни у кого, зато в Settings → Schedule стоит `0 3 * * *`.
    - `cleanup-expired` можно запустить сразу кнопкой Execute в консоли: ответ `{"invites": 0, "keyRequests": 0}` (или сколько было просроченных), в логе выполнения строка «Удалено просроченных…».
@@ -152,8 +152,8 @@ cd Server/functions/create-invite && npm ci && npm test   # так же в ос�
    ```
 3. Вызов функции (подставить JWT, id функции и тело):
    ```bash
-   API=https://api.194-87-44-100.sslip.io/v1
-   call() { curl -s -X POST "$API/functions/$1/executions" -H 'X-Appwrite-Project: 6acbe1c5001b61609635' \
+   API=https://<адрес>/v1
+   call() { curl -s -X POST "$API/functions/$1/executions" -H 'X-Appwrite-Project: <Project ID>' \
      -H "X-Appwrite-JWT: $2" -H 'Content-Type: application/json' -d "{\"body\": $(printf '%s' "$3" | jq -Rs .)}" \
      | jq '{responseStatusCode, responseBody}'; }
    call create-couple "$JWT_ANNA" '{"coupleId":"test-couple"}'
@@ -189,7 +189,7 @@ cd Server/functions/create-invite && npm ci && npm test   # так же в ос�
 
 ## Переезд на свой домен (перед публикацией)
 
-1. Запись `A` для `api.<домен>` → `194.87.44.100`.
+1. Запись `A` для `api.<домен>` → `<IP>`.
 2. В `/root/appwrite/.env`: `_APP_DOMAIN` и `_APP_DOMAIN_TARGET` = `api.<домен>`; `docker compose up -d`.
 3. Сертификат: `docker compose exec appwrite ssl --domain=api.<домен>`.
 4. В приложении поменять адрес API (`Config/App.xcconfig`, появится в #83) и выпустить новую сборку. Данные никуда не переезжают.
@@ -222,5 +222,5 @@ cd Server/functions/create-invite && npm ci && npm test   # так же в ос�
 
 | Дата | Что сделано |
 |---|---|
-| 2026-10-11 | Сервер в Амстердаме (в Москве и Питере не было мест), Appwrite 2.4.0 на `api.194-87-44-100.sslip.io`, сертификат выпущен вручную, Timeweb открыл почтовые порты (тикет N12816391), SMTP Gmail, тестовое письмо с кодом дошло. Проект `one-to-one` создан. |
+| 2026-10-11 | Сервер в Амстердаме (в Москве и Питере не было мест), Appwrite 2.4.0 на `<адрес>`, сертификат выпущен вручную, Timeweb открыл почтовые порты, SMTP Gmail, тестовое письмо с кодом дошло. Проект `one-to-one` создан. |
 | 2026-10-14 | Документы поправлены: сервер с самого начала в Амстердаме, а не в Питере. Добавлен раздел «Переезд в Россию». |

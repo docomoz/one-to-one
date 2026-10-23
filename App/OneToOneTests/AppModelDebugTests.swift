@@ -5,8 +5,8 @@ import Testing
 
 @MainActor
 @Test func switchMeTogglesAndSaves() throws {
-    let man = Person(name: "Макс", sex: .male)
-    let woman = Person(name: "Даша", sex: .female)
+    let man = Person(name: "Боря", sex: .male)
+    let woman = Person(name: "Аня", sex: .female)
     var data = AppData()
     data.couple = try Couple.make(man, woman)
     data.meID = man.id
@@ -32,9 +32,9 @@ import Testing
 
 @MainActor
 @Test func modelCurrentPickFollowsData() throws {
-    let man = Person(name: "Макс", sex: .male)
+    let man = Person(name: "Боря", sex: .male)
     var data = AppData()
-    data.couple = try Couple.make(man, Person(name: "Даша", sex: .female))
+    data.couple = try Couple.make(man, Person(name: "Аня", sex: .female))
     data.meID = man.id
     let model = AppModel(store: InMemoryStore(data))
 

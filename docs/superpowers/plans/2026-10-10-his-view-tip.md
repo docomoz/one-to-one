@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** у Максюши есть вкладка «Цикл»: подсказка дня и календарь, где каждый день закрашен цветом фазы.
+**Goal:** у него есть вкладка «Цикл»: подсказка дня и календарь, где каждый день закрашен цветом фазы.
 
 **Architecture:** логика подсказки и фазы на день лежит в `Core` (пакет `OneToOneKit`, тесты `swift test`). Экраны в `App/OneToOne/Features/Cycle/` переиспользуют `MonthGridView` из #16.
 

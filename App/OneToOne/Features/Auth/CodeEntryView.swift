@@ -76,6 +76,6 @@ struct CodeEntryView: View {
         CodeEntryView()
     }
     .environment(auth)
-    .task { await auth.sendCode(to: "dasha@example.com") }
+    .task { await auth.sendCode(to: "anya@example.com") }
 }
 #endif

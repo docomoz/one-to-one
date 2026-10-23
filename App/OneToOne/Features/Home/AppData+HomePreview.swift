@@ -6,8 +6,8 @@ extension AppData {
     static func homePreview(meIsWoman: Bool) -> AppData {
         let today = DayKey(.now)
         let birthday = today.adding(days: 12)
-        let man = Person(name: "Максюша", sex: .male, birthDate: DayKey(year: 1990, month: birthday.month, day: birthday.day))
-        let woman = Person(name: "Даша", sex: .female, birthDate: DayKey(year: 1995, month: birthday.month, day: birthday.day))
+        let man = Person(name: "Боря", sex: .male, birthDate: DayKey(year: 1990, month: birthday.month, day: birthday.day))
+        let woman = Person(name: "Аня", sex: .female, birthDate: DayKey(year: 1995, month: birthday.month, day: birthday.day))
         var data = AppData()
         data.couple = try? Couple.make(man, woman)
         let anniversary = today.adding(days: 20)

@@ -29,6 +29,6 @@ struct QRCodeView: View {
 }
 
 #Preview {
-    QRCodeView(text: VerifyQR.payload(requestID: "6acbe1c5001b61609635", code: "042917"))
+    QRCodeView(text: VerifyQR.payload(requestID: "0123456789abcdef0123", code: "042917"))
         .frame(width: 200)
 }

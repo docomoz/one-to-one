@@ -3,8 +3,8 @@ import Foundation
 import Testing
 @testable import OneToOne
 
-private let man = Person(name: "Макс", sex: .male)
-private let woman = Person(name: "Даша", sex: .female)
+private let man = Person(name: "Боря", sex: .male)
+private let woman = Person(name: "Аня", sex: .female)
 private let amelie = Movie(id: 1, title: "Амели", year: 2001, genres: ["комедия"], overview: "", posterURL: nil)
 private let brat = Movie(id: 2, title: "Брат", year: 1997, genres: ["драма"], overview: "", posterURL: nil)
 
@@ -37,7 +37,7 @@ private func started() -> (AppData, PickSession) {
     var (data, session) = started()
     data.swipe(.no, movie: brat, in: session, by: man.id, at: .now)
 
-    #expect(DeckEnd.make(data, session: session) == .waitForPartner(partnerName: "Даша"))
+    #expect(DeckEnd.make(data, session: session) == .waitForPartner(partnerName: "Аня"))
 }
 
 @Test func deckEndNoMoviesWhenNobodySwiped() {

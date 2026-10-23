@@ -25,11 +25,11 @@ private func makeFlow(_ service: FakeAuthService, now: @escaping () -> Date = { 
     let flow = makeFlow(service)
     await flow.start()
 
-    await flow.sendCode(to: "  Dasha@Mail.RU ")
+    await flow.sendCode(to: "  Anya@Example.COM ")
 
-    #expect(service.sentTo == ["dasha@mail.ru"])
-    #expect(flow.pending?.email == "dasha@mail.ru")
-    #expect(flow.pending?.userID == "user-dasha@mail.ru")
+    #expect(service.sentTo == ["anya@example.com"])
+    #expect(flow.pending?.email == "anya@example.com")
+    #expect(flow.pending?.userID == "user-anya@example.com")
     #expect(flow.errorMessage == nil)
 }
 
@@ -40,7 +40,7 @@ private func makeFlow(_ service: FakeAuthService, now: @escaping () -> Date = { 
     let flow = makeFlow(service)
     await flow.start()
 
-    await flow.sendCode(to: "dasha@mail.ru")
+    await flow.sendCode(to: "anya@example.com")
 
     #expect(flow.pending == nil)
     #expect(flow.errorMessage == AuthError.network.message)
@@ -51,7 +51,7 @@ private func makeFlow(_ service: FakeAuthService, now: @escaping () -> Date = { 
     let service = FakeAuthService()
     let flow = makeFlow(service)
     await flow.start()
-    await flow.sendCode(to: "dasha@mail.ru")
+    await flow.sendCode(to: "anya@example.com")
 
     await flow.confirm(code: "000000")
 
@@ -69,7 +69,7 @@ private func makeFlow(_ service: FakeAuthService, now: @escaping () -> Date = { 
     let service = FakeAuthService()
     let flow = makeFlow(service)
     await flow.start()
-    await flow.sendCode(to: "dasha@mail.ru")
+    await flow.sendCode(to: "anya@example.com")
     await flow.confirm(code: "123456")
 
     #expect(flow.screen(isPaired: false) == .consent)
@@ -170,7 +170,7 @@ private func makeFlow(_ service: FakeAuthService, now: @escaping () -> Date = { 
     let service = FakeAuthService()
     let flow = makeFlow(service, now: { now })
     await flow.start()
-    await flow.sendCode(to: "dasha@mail.ru")
+    await flow.sendCode(to: "anya@example.com")
 
     #expect(flow.resendDelay(at: now) == 60)
     now = start.addingTimeInterval(59.5)
@@ -189,7 +189,7 @@ private func makeFlow(_ service: FakeAuthService, now: @escaping () -> Date = { 
 @Test func changeEmailReturnsToEmailStep() async {
     let flow = makeFlow(FakeAuthService())
     await flow.start()
-    await flow.sendCode(to: "dasha@mail.ru")
+    await flow.sendCode(to: "anya@example.com")
     await flow.confirm(code: "000000")
 
     flow.changeEmail()
@@ -224,12 +224,12 @@ private func makeFlow(_ service: FakeAuthService, now: @escaping () -> Date = { 
 }
 
 @Test func emailNeedsAtAndDomain() {
-    #expect(AuthFlow.isPlausibleEmail("dasha@mail.ru"))
-    #expect(AuthFlow.isPlausibleEmail(" Dasha@Mail.ru "))
-    #expect(!AuthFlow.isPlausibleEmail("dasha"))
-    #expect(!AuthFlow.isPlausibleEmail("dasha@mail"))
-    #expect(!AuthFlow.isPlausibleEmail("@mail.ru"))
-    #expect(!AuthFlow.isPlausibleEmail("da sha@mail.ru"))
+    #expect(AuthFlow.isPlausibleEmail("anya@example.com"))
+    #expect(AuthFlow.isPlausibleEmail(" Anya@Example.com "))
+    #expect(!AuthFlow.isPlausibleEmail("anya"))
+    #expect(!AuthFlow.isPlausibleEmail("anya@mail"))
+    #expect(!AuthFlow.isPlausibleEmail("@example.com"))
+    #expect(!AuthFlow.isPlausibleEmail("an ya@example.com"))
 }
 
 @Test func codeKeepsOnlySixDigits() {

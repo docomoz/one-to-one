@@ -4,9 +4,9 @@ import Testing
 @testable import Sync
 
 private let man = Person(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000A")!,
-                         name: "Максим", sex: .male, birthDate: DayKey(year: 1990, month: 5, day: 1))
+                         name: "Боря", sex: .male, birthDate: DayKey(year: 1990, month: 5, day: 1))
 private let woman = Person(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000B")!,
-                           name: "Даша", sex: .female)
+                           name: "Аня", sex: .female)
 private let day = DayKey(year: 2026, month: 3, day: 14)
 private let sessionID = UUID(uuidString: "00000000-0000-0000-0000-0000000000C1")!
 private let sexID = UUID(uuidString: "00000000-0000-0000-0000-0000000000D1")!

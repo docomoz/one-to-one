@@ -7,8 +7,8 @@ private let today = DayKey(year: 2026, month: 10, day: 10)
 /// Пара, где «я» — он. Дни рождения задаются как (месяц, число).
 private func couple(his: (Int, Int)? = nil, hers: (Int, Int)? = nil, herYear: Int = 1995)
     -> (couple: Couple, man: Person, woman: Person) {
-    let man = Person(name: "Максюша", sex: .male, birthDate: his.map { DayKey(year: 1990, month: $0.0, day: $0.1) })
-    let woman = Person(name: "Даша", sex: .female, birthDate: hers.map { DayKey(year: herYear, month: $0.0, day: $0.1) })
+    let man = Person(name: "Боря", sex: .male, birthDate: his.map { DayKey(year: 1990, month: $0.0, day: $0.1) })
+    let woman = Person(name: "Аня", sex: .female, birthDate: hers.map { DayKey(year: herYear, month: $0.0, day: $0.1) })
     return (try! Couple.make(man, woman), man, woman)
 }
 
