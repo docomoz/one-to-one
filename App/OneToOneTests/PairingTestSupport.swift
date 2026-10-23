@@ -35,63 +35,63 @@ struct Phone {
     }
 }
 
-/// Двое и общие серверы. Даша создаёт пару в знакомстве, Максим войдёт по коду.
+/// Двое и общие серверы. Аня создаёт пару в знакомстве, Боря войдёт по коду.
 @MainActor
 struct Couple2 {
     let pairing = FakePairingServer()
     let sync = FakeSyncServer()
-    let dasha: Phone
-    let maxim: Phone
+    let anya: Phone
+    let borya: Phone
 
-    init(maximData: AppData = AppData(), dashaEntries: [SexEntry] = []) throws {
-        dasha = Phone(user: "dasha", pairing: pairing, sync: sync)
-        maxim = Phone(user: "maxim", pairing: pairing, sync: sync, data: maximData)
-        try dasha.model.createCouple(me: PersonDraft(sex: .female, name: "Даша", birthDate: pairingAdult),
-                                     partner: PersonDraft(sex: .male, name: "Максим", birthDate: pairingAdult), today: pairingToday)
-        for entry in dashaEntries { dasha.model.update { $0.sexEntries.append(entry) } }
+    init(boryaData: AppData = AppData(), anyaEntries: [SexEntry] = []) throws {
+        anya = Phone(user: "anya", pairing: pairing, sync: sync)
+        borya = Phone(user: "borya", pairing: pairing, sync: sync, data: boryaData)
+        try anya.model.createCouple(me: PersonDraft(sex: .female, name: "Аня", birthDate: pairingAdult),
+                                     partner: PersonDraft(sex: .male, name: "Боря", birthDate: pairingAdult), today: pairingToday)
+        for entry in anyaEntries { anya.model.update { $0.sexEntries.append(entry) } }
     }
 
-    /// Даша зарегистрировала пару и пригласила, Максим ввёл код, телефоны дошли до показа кода.
-    func untilCodes() async throws -> (dashaCode: String, maximCode: String) {
-        // Как в знакомстве: пара на сервере и первая синхронизация, записи Даши уходят в пару.
-        await dasha.flow.coupleCreated()
-        await dasha.flow.createInvite()
-        let code = try #require(dasha.flow.invite?.code)
-        await maxim.flow.join(code: code)
-        await dasha.flow.checkIncoming()
-        await maxim.flow.pollJoin()
-        await dasha.flow.pollIncoming()
-        guard case .verify(let dashaCode) = dasha.flow.incomingStep,
-              case .verify(let maximCode) = maxim.flow.joinStep
+    /// Аня зарегистрировала пару и пригласила, Боря ввёл код, телефоны дошли до показа кода.
+    func untilCodes() async throws -> (anyaCode: String, boryaCode: String) {
+        // Как в знакомстве: пара на сервере и первая синхронизация, записи Ани уходят в пару.
+        await anya.flow.coupleCreated()
+        await anya.flow.createInvite()
+        let code = try #require(anya.flow.invite?.code)
+        await borya.flow.join(code: code)
+        await anya.flow.checkIncoming()
+        await borya.flow.pollJoin()
+        await anya.flow.pollIncoming()
+        guard case .verify(let anyaCode) = anya.flow.incomingStep,
+              case .verify(let boryaCode) = borya.flow.joinStep
         else {
-            Issue.record("Нет кода: \(String(describing: dasha.flow.incomingStep)) / \(String(describing: maxim.flow.joinStep))")
+            Issue.record("Нет кода: \(String(describing: anya.flow.incomingStep)) / \(String(describing: borya.flow.joinStep))")
             throw CancellationError()
         }
-        return (dashaCode, maximCode)
+        return (anyaCode, boryaCode)
     }
 
-    /// Оба подтвердили код: ключ переходит к Максиму.
+    /// Оба подтвердили код: ключ переходит к Боре.
     func confirmBoth() async {
-        await maxim.flow.confirmJoin()
-        await dasha.flow.confirmIncoming()
-        await maxim.flow.pollJoin()
+        await borya.flow.confirmJoin()
+        await anya.flow.confirmIncoming()
+        await borya.flow.pollJoin()
     }
 
-    /// Пара готова: ключ у обоих, Максим выбрал себя, записи на обоих телефонах.
+    /// Пара готова: ключ у обоих, Боря выбрал себя, записи на обоих телефонах.
     func paired() async throws {
         _ = try await untilCodes()
-        await dasha.model.syncNow()
+        await anya.model.syncNow()
         await confirmBoth()
-        dasha.flow.dismissIncoming()
-        let placeholder = try #require(maxim.model.data.couple?.man)
-        try maxim.model.claimPerson(PersonDraft(id: placeholder.id, sex: .male, name: placeholder.name,
+        anya.flow.dismissIncoming()
+        let placeholder = try #require(borya.model.data.couple?.man)
+        try borya.model.claimPerson(PersonDraft(id: placeholder.id, sex: .male, name: placeholder.name,
                                                 birthDate: placeholder.birthDate), today: pairingToday)
-        await maxim.model.syncNow()
-        await dasha.model.syncNow()
+        await borya.model.syncNow()
+        await anya.model.syncNow()
     }
 
     var coupleID: String {
-        get throws { try #require(dasha.defaults.coupleID) }
+        get throws { try #require(anya.defaults.coupleID) }
     }
 }
 

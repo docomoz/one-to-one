@@ -57,13 +57,13 @@
 
 // PersonTests.swift
 @Test func personDecodesWithoutBirthDate() throws {
-    let json = #"{"id": "\#(UUID())", "name": "Даша", "sex": "female"}"#
+    let json = #"{"id": "\#(UUID())", "name": "Аня", "sex": "female"}"#
     let person = try JSONDecoder().decode(Person.self, from: Data(json.utf8))
     #expect(person.birthDate == nil)
 }
 
 @Test func personRoundTripsBirthDate() throws {
-    let person = Person(name: "Даша", sex: .female, birthDate: DayKey(year: 1996, month: 5, day: 12))
+    let person = Person(name: "Аня", sex: .female, birthDate: DayKey(year: 1996, month: 5, day: 12))
     let decoded = try JSONDecoder().decode(Person.self, from: JSONEncoder().encode(person))
     #expect(decoded == person)
 }
@@ -100,9 +100,9 @@ private let today = DayKey(year: 2026, month: 10, day: 10)
 private let adult = DayKey(year: 1996, month: 5, day: 12)
 
 @Test func draftTrimsName() throws {
-    let draft = PersonDraft(sex: .female, name: "  Даша ", birthDate: adult)
+    let draft = PersonDraft(sex: .female, name: "  Аня ", birthDate: adult)
     let person = try draft.validated(today: today)
-    #expect(person == Person(id: draft.id, name: "Даша", sex: .female, birthDate: adult))
+    #expect(person == Person(id: draft.id, name: "Аня", sex: .female, birthDate: adult))
 }
 
 @Test func draftRejectsEmptyOrSpacesName() {
@@ -111,33 +111,33 @@ private let adult = DayKey(year: 1996, month: 5, day: 12)
 }
 
 @Test func draftRequiresBirthDate() {
-    #expect(throws: OnboardingError.noBirthDate) { try PersonDraft(sex: .male, name: "Максим").validated(today: today) }
-    #expect(!PersonDraft(sex: .male, name: "Максим").isFilled)
-    #expect(PersonDraft(sex: .male, name: "Максим", birthDate: adult).isFilled)
+    #expect(throws: OnboardingError.noBirthDate) { try PersonDraft(sex: .male, name: "Боря").validated(today: today) }
+    #expect(!PersonDraft(sex: .male, name: "Боря").isFilled)
+    #expect(PersonDraft(sex: .male, name: "Боря", birthDate: adult).isFilled)
 }
 
 @Test func draftRejectsUnder18() throws {
-    let almost = PersonDraft(sex: .male, name: "Максим", birthDate: DayKey(year: 2008, month: 10, day: 11))
+    let almost = PersonDraft(sex: .male, name: "Боря", birthDate: DayKey(year: 2008, month: 10, day: 11))
     #expect(throws: OnboardingError.tooYoung) { try almost.validated(today: today) }
-    let exactly = PersonDraft(sex: .male, name: "Максим", birthDate: DayKey(year: 2008, month: 10, day: 10))
+    let exactly = PersonDraft(sex: .male, name: "Боря", birthDate: DayKey(year: 2008, month: 10, day: 10))
     _ = try exactly.validated(today: today)
 }
 
 @Test func coupleFromDraftsRejectsSameSex() {
-    let me = PersonDraft(sex: .female, name: "Даша", birthDate: adult)
+    let me = PersonDraft(sex: .female, name: "Аня", birthDate: adult)
     let partner = PersonDraft(sex: .female, name: "Аня", birthDate: adult)
     #expect(throws: OnboardingError.sameSex) { try Couple.make(me: me, partner: partner, today: today) }
 }
 
 @Test func coupleFromDraftsChecksPartnerAge() {
-    let me = PersonDraft(sex: .female, name: "Даша", birthDate: adult)
-    let partner = PersonDraft(sex: .male, name: "Максим", birthDate: DayKey(year: 2010, month: 1, day: 1))
+    let me = PersonDraft(sex: .female, name: "Аня", birthDate: adult)
+    let partner = PersonDraft(sex: .male, name: "Боря", birthDate: DayKey(year: 2010, month: 1, day: 1))
     #expect(throws: OnboardingError.tooYoung) { try Couple.make(me: me, partner: partner, today: today) }
 }
 
 @Test func coupleFromDraftsKeepsIDs() throws {
-    let me = PersonDraft(sex: .female, name: "Даша", birthDate: adult)
-    let partner = PersonDraft(sex: .male, name: "Максим", birthDate: adult)
+    let me = PersonDraft(sex: .female, name: "Аня", birthDate: adult)
+    let partner = PersonDraft(sex: .male, name: "Боря", birthDate: adult)
     let couple = try Couple.make(me: me, partner: partner, today: today)
     #expect(couple.woman.id == me.id)
     #expect(couple.man.id == partner.id)
@@ -150,7 +150,7 @@ private let adult = DayKey(year: 1996, month: 5, day: 12)
 
 // StoreTests.swift
 @Test func appDataIsPairedOnlyWithOwnMeID() throws {
-    let man = Person(name: "Максим", sex: .male), woman = Person(name: "Даша", sex: .female)
+    let man = Person(name: "Боря", sex: .male), woman = Person(name: "Аня", sex: .female)
     var data = AppData()
     #expect(!data.isPaired)
     data.couple = try Couple.make(man, woman)
@@ -188,8 +188,8 @@ private let adult = DayKey(year: 1996, month: 5, day: 12)
 @Test func createCoupleSavesCoupleAndMe() throws {
     let store = InMemoryStore()
     let model = AppModel(store: store)
-    let me = PersonDraft(sex: .female, name: "Даша", birthDate: adult)
-    let partner = PersonDraft(sex: .male, name: "Максим", birthDate: adult)
+    let me = PersonDraft(sex: .female, name: "Аня", birthDate: adult)
+    let partner = PersonDraft(sex: .male, name: "Боря", birthDate: adult)
 
     try model.createCouple(me: me, partner: partner, today: today)
 
@@ -202,7 +202,7 @@ private let adult = DayKey(year: 1996, month: 5, day: 12)
 @Test func createCoupleSameSexChangesNothing() {
     let store = InMemoryStore()
     let model = AppModel(store: store)
-    let me = PersonDraft(sex: .female, name: "Даша", birthDate: adult)
+    let me = PersonDraft(sex: .female, name: "Аня", birthDate: adult)
     let partner = PersonDraft(sex: .female, name: "Аня", birthDate: adult)
 
     #expect(throws: OnboardingError.sameSex) { try model.createCouple(me: me, partner: partner, today: today) }

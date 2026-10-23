@@ -41,7 +41,7 @@ struct PairingPreviewScreen: View {
     @State private var model: AppModel
     @State private var pairing: PairingFlow
     @State private var auth = AuthFlow.preview(signedIn: true)
-    @State private var partner = PersonDraft(sex: .male, name: "Максим", birthDate: DayKey(year: 1994, month: 3, day: 2))
+    @State private var partner = PersonDraft(sex: .male, name: "Боря", birthDate: DayKey(year: 1994, month: 3, day: 2))
 
     init(screen: String) {
         self.screen = screen
@@ -64,7 +64,7 @@ struct PairingPreviewScreen: View {
         case "restoreVerify":
             pairing.restoringCoupleID = "preview-couple"
             pairing.joinStep = .verify(code: "042917")
-            pairing.joinRequestID = "6acbe1c5001b61609635"
+            pairing.joinRequestID = "0123456789abcdef0123"
         case "settings":
             (pairing.coupleID, pairing.isCoupleOnServer, pairing.partnerJoined) = ("preview-couple", true, true)
         default: break

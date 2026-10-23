@@ -3,8 +3,8 @@ import Foundation
 import Testing
 @testable import OneToOne
 
-private let man = Person(name: "Макс", sex: .male)
-private let woman = Person(name: "Даша", sex: .female)
+private let man = Person(name: "Боря", sex: .male)
+private let woman = Person(name: "Аня", sex: .female)
 private let film = Movie(id: 1, title: "Амели", year: 2001, genres: ["комедия"], overview: "", posterURL: nil)
 
 private func pairedData(me: Person = man) -> AppData {
@@ -22,7 +22,7 @@ private func pairedData(me: Person = man) -> AppData {
     var data = pairedData()
     _ = data.startPick(mood: .light, startedBy: woman.id, at: .now)
 
-    #expect(PickCardState.make(data) == .partnerStarted(partnerName: "Даша", mood: .light))
+    #expect(PickCardState.make(data) == .partnerStarted(partnerName: "Аня", mood: .light))
 }
 
 @Test func inProgressAfterMySwipe() {

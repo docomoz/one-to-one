@@ -18,7 +18,7 @@ import Testing
 @Test func appModelUpdateSavesImmediately() throws {
     let store = InMemoryStore()
     let model = AppModel(store: store)
-    let me = Person(name: "Максим", sex: .male)
+    let me = Person(name: "Боря", sex: .male)
 
     model.update { $0.meID = me.id }
 

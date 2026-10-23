@@ -10,8 +10,8 @@ private let adult = DayKey(year: 1996, month: 5, day: 12)
 @Test func createCoupleSavesCoupleAndMe() throws {
     let store = InMemoryStore()
     let model = AppModel(store: store)
-    let me = PersonDraft(sex: .female, name: "Даша", birthDate: adult)
-    let partner = PersonDraft(sex: .male, name: "Максим", birthDate: adult)
+    let me = PersonDraft(sex: .female, name: "Аня", birthDate: adult)
+    let partner = PersonDraft(sex: .male, name: "Боря", birthDate: adult)
 
     try model.createCouple(me: me, partner: partner, today: today)
 
@@ -24,7 +24,7 @@ private let adult = DayKey(year: 1996, month: 5, day: 12)
 @Test func createCoupleSameSexChangesNothing() throws {
     let store = InMemoryStore()
     let model = AppModel(store: store)
-    let me = PersonDraft(sex: .female, name: "Даша", birthDate: adult)
+    let me = PersonDraft(sex: .female, name: "Аня", birthDate: adult)
     let partner = PersonDraft(sex: .female, name: "Аня", birthDate: adult)
 
     #expect(throws: OnboardingError.sameSex) { try model.createCouple(me: me, partner: partner, today: today) }

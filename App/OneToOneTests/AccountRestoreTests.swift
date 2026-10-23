@@ -25,57 +25,57 @@ private func sexEntry(_ day: Int) -> SexEntry {
 
 @MainActor
 @Test func reinstallWithKeyInKeychainReusesIt() async throws {
-    // Даша удалила и поставила приложение заново: настройки и записи пропали, Keychain остался.
-    let couple = try Couple2(dashaEntries: [sexEntry(3)])
+    // Аня удалила и поставила приложение заново: настройки и записи пропали, Keychain остался.
+    let couple = try Couple2(anyaEntries: [sexEntry(3)])
     try await couple.paired()
     let coupleID = try couple.coupleID
-    let reinstalled = Phone(user: "dasha", pairing: couple.pairing, sync: couple.sync, keys: couple.dasha.keys)
+    let reinstalled = Phone(user: "anya", pairing: couple.pairing, sync: couple.sync, keys: couple.anya.keys)
 
-    await reinstalled.flow.prepareAccount(userID: "dasha")
+    await reinstalled.flow.prepareAccount(userID: "anya")
     await reinstalled.flow.prepareSync()
     await reinstalled.model.syncNow()
 
-    #expect(reinstalled.flow.isAccountReady(for: "dasha"))
+    #expect(reinstalled.flow.isAccountReady(for: "anya"))
     #expect(reinstalled.flow.restoringCoupleID == nil)
     #expect(reinstalled.defaults.coupleID == coupleID)
     #expect(reinstalled.defaults.partnerJoined)
     #expect(reinstalled.model.data.sexEntries.count == 1)
-    #expect(reinstalled.model.data.couple == couple.dasha.model.data.couple)
+    #expect(reinstalled.model.data.couple == couple.anya.model.data.couple)
     #expect(reinstalled.flow.awaitsProfile, "кто я в паре, выбирает заново")
 }
 
 @MainActor
 @Test func newPhoneWithoutKeyRestoresViaPartner() async throws {
-    let couple = try Couple2(dashaEntries: [sexEntry(3)])
+    let couple = try Couple2(anyaEntries: [sexEntry(3)])
     try await couple.paired()
     let coupleID = try couple.coupleID
-    let newPhone = Phone(user: "maxim", pairing: couple.pairing, sync: couple.sync)
+    let newPhone = Phone(user: "borya", pairing: couple.pairing, sync: couple.sync)
 
-    await newPhone.flow.prepareAccount(userID: "maxim")
+    await newPhone.flow.prepareAccount(userID: "borya")
     #expect(newPhone.flow.restoringCoupleID == coupleID)
-    #expect(newPhone.flow.isAccountReady(for: "maxim"))
+    #expect(newPhone.flow.isAccountReady(for: "borya"))
 
     await newPhone.flow.startKeyRequest()
-    await couple.dasha.flow.checkIncoming()
+    await couple.anya.flow.checkIncoming()
     await newPhone.flow.pollJoin()
-    await couple.dasha.flow.pollIncoming()
-    guard case .verify(let dashaCode) = couple.dasha.flow.incomingStep,
+    await couple.anya.flow.pollIncoming()
+    guard case .verify(let anyaCode) = couple.anya.flow.incomingStep,
           case .verify(let newCode) = newPhone.flow.joinStep
     else {
-        Issue.record("Нет кода: \(String(describing: couple.dasha.flow.incomingStep)) / \(String(describing: newPhone.flow.joinStep))")
+        Issue.record("Нет кода: \(String(describing: couple.anya.flow.incomingStep)) / \(String(describing: newPhone.flow.joinStep))")
         return
     }
-    #expect(dashaCode == newCode)
+    #expect(anyaCode == newCode)
     await newPhone.flow.confirmJoin()
-    await couple.dasha.flow.confirmIncoming()
+    await couple.anya.flow.confirmIncoming()
     await newPhone.flow.pollJoin()
 
-    #expect(newPhone.keys.load(coupleID: coupleID) == couple.dasha.keys.load(coupleID: coupleID))
+    #expect(newPhone.keys.load(coupleID: coupleID) == couple.anya.keys.load(coupleID: coupleID))
     #expect(newPhone.flow.restoringCoupleID == nil)
     #expect(newPhone.defaults.coupleID == coupleID)
     #expect(newPhone.model.data.sexEntries.count == 1)
     #expect(newPhone.flow.awaitsProfile)
-    #expect(couple.pairing.members(coupleID).sorted() == ["dasha", "maxim"], "из пары никто не вышел")
+    #expect(couple.pairing.members(coupleID).sorted() == ["anya", "borya"], "из пары никто не вышел")
 }
 
 @MainActor
@@ -120,122 +120,122 @@ private func sexEntry(_ day: Int) -> SexEntry {
 @Test func sameAccountOfflineStartsWithoutServer() async throws {
     // Обычный запуск без сети: пара уже известна, сервер не спрашиваем.
     let couple = try Couple2()
-    await couple.dasha.flow.coupleCreated()
-    await couple.dasha.flow.prepareAccount(userID: "dasha")
-    couple.dasha.service.failure.withLock { $0 = .network }
+    await couple.anya.flow.coupleCreated()
+    await couple.anya.flow.prepareAccount(userID: "anya")
+    couple.anya.service.failure.withLock { $0 = .network }
 
-    await couple.dasha.flow.prepareAccount(userID: "dasha")
+    await couple.anya.flow.prepareAccount(userID: "anya")
 
-    #expect(couple.dasha.flow.isAccountReady(for: "dasha"))
-    #expect(couple.dasha.model.data.isPaired)
+    #expect(couple.anya.flow.isAccountReady(for: "anya"))
+    #expect(couple.anya.model.data.isPaired)
 }
 
 // MARK: - Другой аккаунт на том же телефоне
 
 @MainActor
 @Test func differentAccountWipesStaleData() async throws {
-    // Даша вышла не через «Выйти» (например, приложение упало), на телефоне вошла Вера.
-    let couple = try Couple2(dashaEntries: [sexEntry(3)])
-    await couple.dasha.flow.coupleCreated()
-    await couple.dasha.flow.prepareAccount(userID: "dasha")
+    // Аня вышла не через «Выйти» (например, приложение упало), на телефоне вошла Вера.
+    let couple = try Couple2(anyaEntries: [sexEntry(3)])
+    await couple.anya.flow.coupleCreated()
+    await couple.anya.flow.prepareAccount(userID: "anya")
     let coupleID = try couple.coupleID
-    couple.dasha.service.signIn(as: "vera")
+    couple.anya.service.signIn(as: "vera")
 
-    await couple.dasha.flow.prepareAccount(userID: "vera")
+    await couple.anya.flow.prepareAccount(userID: "vera")
 
-    #expect(!couple.dasha.model.hasSyncedRecords)
-    #expect(!couple.dasha.model.data.isPaired)
-    #expect(!couple.dasha.model.isSyncStarted)
-    #expect(couple.dasha.defaults.coupleID == nil)
-    #expect(couple.dasha.defaults.ownerUserID == "vera")
-    #expect(couple.dasha.model.syncStateStore.load(coupleID: coupleID) == SyncState())
-    #expect(couple.dasha.flow.isAccountReady(for: "vera"))
+    #expect(!couple.anya.model.hasSyncedRecords)
+    #expect(!couple.anya.model.data.isPaired)
+    #expect(!couple.anya.model.isSyncStarted)
+    #expect(couple.anya.defaults.coupleID == nil)
+    #expect(couple.anya.defaults.ownerUserID == "vera")
+    #expect(couple.anya.model.syncStateStore.load(coupleID: coupleID) == SyncState())
+    #expect(couple.anya.flow.isAccountReady(for: "vera"))
 }
 
 @MainActor
 @Test func firstAccountAdoptsExistingData() async throws {
     // Записи появились до аккаунтов: первый вошедший — их хозяин.
-    let couple = try Couple2(dashaEntries: [sexEntry(3)])
+    let couple = try Couple2(anyaEntries: [sexEntry(3)])
 
-    await couple.dasha.flow.prepareAccount(userID: "dasha")
+    await couple.anya.flow.prepareAccount(userID: "anya")
 
-    #expect(couple.dasha.model.data.sexEntries.count == 1)
-    #expect(couple.dasha.defaults.ownerUserID == "dasha")
+    #expect(couple.anya.model.data.sexEntries.count == 1)
+    #expect(couple.anya.defaults.ownerUserID == "anya")
 }
 
 // MARK: - Выход из аккаунта
 
 @MainActor
 @Test func signOutWipesLocalDataButKeepsKeyForReturn() async throws {
-    let couple = try Couple2(dashaEntries: [sexEntry(3)])
+    let couple = try Couple2(anyaEntries: [sexEntry(3)])
     try await couple.paired()
     let coupleID = try couple.coupleID
-    await couple.maxim.flow.prepareAccount(userID: "maxim")
-    let fake = FakeAuthService(signedInUserID: "maxim", consent: 1)
+    await couple.borya.flow.prepareAccount(userID: "borya")
+    let fake = FakeAuthService(signedInUserID: "borya", consent: 1)
     let auth = AuthFlow(auth: fake, consent: fake)
     await auth.start()
-    #expect(await !couple.maxim.flow.hasUnsentChanges())
+    #expect(await !couple.borya.flow.hasUnsentChanges())
 
-    await couple.maxim.flow.signOut(auth: auth)
+    await couple.borya.flow.signOut(auth: auth)
 
     #expect(auth.userID == nil)
-    #expect(!couple.maxim.model.hasSyncedRecords)
-    #expect(couple.maxim.defaults.coupleID == nil)
-    #expect(!couple.maxim.model.isSyncStarted)
-    #expect(couple.maxim.model.syncStateStore.load(coupleID: coupleID) == SyncState())
-    #expect(couple.pairing.members(coupleID).sorted() == ["dasha", "maxim"], "из пары не вышел")
+    #expect(!couple.borya.model.hasSyncedRecords)
+    #expect(couple.borya.defaults.coupleID == nil)
+    #expect(!couple.borya.model.isSyncStarted)
+    #expect(couple.borya.model.syncStateStore.load(coupleID: coupleID) == SyncState())
+    #expect(couple.pairing.members(coupleID).sorted() == ["anya", "borya"], "из пары не вышел")
 
     // Вернулся с той же почтой: ключ в Keychain, записи снова с сервера.
-    await couple.maxim.flow.prepareAccount(userID: "maxim")
-    await couple.maxim.flow.prepareSync()
-    await couple.maxim.model.syncNow()
-    #expect(couple.maxim.model.data.sexEntries.count == 1)
+    await couple.borya.flow.prepareAccount(userID: "borya")
+    await couple.borya.flow.prepareSync()
+    await couple.borya.model.syncNow()
+    #expect(couple.borya.model.data.sexEntries.count == 1)
 }
 
 @MainActor
 @Test func unsentChangesAreReportedBeforeSignOut() async throws {
     let couple = try Couple2()
     try await couple.paired()
-    couple.maxim.transport.isOffline = true
-    couple.maxim.model.update { $0.sexEntries.append(sexEntry(9)) }
+    couple.borya.transport.isOffline = true
+    couple.borya.model.update { $0.sexEntries.append(sexEntry(9)) }
 
-    #expect(await couple.maxim.flow.hasUnsentChanges())
+    #expect(await couple.borya.flow.hasUnsentChanges())
 }
 
 @MainActor
 @Test func signOutFailureKeepsData() async throws {
-    let couple = try Couple2(dashaEntries: [sexEntry(3)])
+    let couple = try Couple2(anyaEntries: [sexEntry(3)])
     try await couple.paired()
-    let fake = FakeAuthService(signedInUserID: "maxim", consent: 1)
+    let fake = FakeAuthService(signedInUserID: "borya", consent: 1)
     fake.signOutError = .network
     let auth = AuthFlow(auth: fake, consent: fake)
     await auth.start()
 
-    await couple.maxim.flow.signOut(auth: auth)
+    await couple.borya.flow.signOut(auth: auth)
 
-    #expect(auth.userID == "maxim")
-    #expect(couple.maxim.model.data.sexEntries.count == 1)
-    #expect(couple.maxim.defaults.coupleID != nil)
+    #expect(auth.userID == "borya")
+    #expect(couple.borya.model.data.sexEntries.count == 1)
+    #expect(couple.borya.defaults.coupleID != nil)
 }
 
 // MARK: - Два телефона с ключом
 
 @MainActor
 @Test func onlyOnePhoneAnswersWhenBothCheckAtOnce() async throws {
-    // У Максима новый телефон, а старый ещё жив: на запрос могут ответить и Даша, и старый телефон Максима.
-    let couple = try Couple2(dashaEntries: [sexEntry(3)])
+    // У Бори новый телефон, а старый ещё жив: на запрос могут ответить и Аня, и старый телефон Бори.
+    let couple = try Couple2(anyaEntries: [sexEntry(3)])
     try await couple.paired()
-    let newPhone = Phone(user: "maxim", pairing: couple.pairing, sync: couple.sync)
-    await newPhone.flow.prepareAccount(userID: "maxim")
+    let newPhone = Phone(user: "borya", pairing: couple.pairing, sync: couple.sync)
+    await newPhone.flow.prepareAccount(userID: "borya")
     await newPhone.flow.startKeyRequest()
-    couple.dasha.service.latency.withLock { $0 = .milliseconds(30) }
-    couple.maxim.service.latency.withLock { $0 = .milliseconds(30) }
+    couple.anya.service.latency.withLock { $0 = .milliseconds(30) }
+    couple.borya.service.latency.withLock { $0 = .milliseconds(30) }
 
-    async let dasha: Void = couple.dasha.flow.checkIncoming()
-    async let oldMaxim: Void = couple.maxim.flow.checkIncoming()
-    _ = await (dasha, oldMaxim)
+    async let anya: Void = couple.anya.flow.checkIncoming()
+    async let oldBorya: Void = couple.borya.flow.checkIncoming()
+    _ = await (anya, oldBorya)
 
-    let answering = [couple.dasha.flow, couple.maxim.flow].filter { $0.incomingStep != nil }
+    let answering = [couple.anya.flow, couple.borya.flow].filter { $0.incomingStep != nil }
     #expect(answering.count == 1)
     #expect(couple.pairing.requests.allSatisfy { $0.status != .rejected })
 
@@ -252,22 +252,22 @@ private func sexEntry(_ day: Int) -> SexEntry {
 
 @MainActor
 @Test func overwrittenAnswerWithdrawsQuietly() async throws {
-    // Ответ Даши перезаписал другой телефон уже после её проверки: она не отказывает запросу и не показывает код.
+    // Ответ Ани перезаписал другой телефон уже после её проверки: она не отказывает запросу и не показывает код.
     let couple = try Couple2()
     try await couple.paired()
-    let newPhone = Phone(user: "maxim", pairing: couple.pairing, sync: couple.sync)
-    await newPhone.flow.prepareAccount(userID: "maxim")
+    let newPhone = Phone(user: "borya", pairing: couple.pairing, sync: couple.sync)
+    await newPhone.flow.prepareAccount(userID: "borya")
     await newPhone.flow.startKeyRequest()
-    await couple.dasha.flow.checkIncoming()
-    #expect(couple.dasha.flow.incomingStep == .waiting)
+    await couple.anya.flow.checkIncoming()
+    #expect(couple.anya.flow.incomingStep == .waiting)
     couple.pairing.state.withLock { state in
         for id in state.requests.keys { state.requests[id]?.responderPublicKey = KeyExchangePair().publicKey }
     }
 
-    await couple.dasha.flow.pollIncoming()
-    await couple.dasha.flow.checkIncoming()
+    await couple.anya.flow.pollIncoming()
+    await couple.anya.flow.checkIncoming()
 
-    #expect(couple.dasha.flow.incomingStep == nil)
+    #expect(couple.anya.flow.incomingStep == nil)
     #expect(couple.pairing.requests.allSatisfy { $0.status != .rejected })
 }
 
@@ -275,14 +275,14 @@ private func sexEntry(_ day: Int) -> SexEntry {
 @Test func requesterNeverAnswersItsOwnRequest() async throws {
     // Телефон с ключом сам просит ключ (например, ключ не открылся) — на свой же запрос он не отвечает.
     let couple = try Couple2()
-    await couple.dasha.flow.coupleCreated()
+    await couple.anya.flow.coupleCreated()
     let coupleID = try couple.coupleID
-    couple.dasha.flow.restoringCoupleID = coupleID
-    await couple.dasha.flow.startKeyRequest()
+    couple.anya.flow.restoringCoupleID = coupleID
+    await couple.anya.flow.startKeyRequest()
 
-    await couple.dasha.flow.checkIncoming()
+    await couple.anya.flow.checkIncoming()
 
-    #expect(couple.dasha.flow.incomingStep == nil)
+    #expect(couple.anya.flow.incomingStep == nil)
     #expect(couple.pairing.requests.allSatisfy { $0.status == .waiting && $0.responderPublicKey == nil })
 }
 
@@ -292,13 +292,13 @@ private func sexEntry(_ day: Int) -> SexEntry {
 @Test func scannedQRWithSameCodeDeliversKey() async throws {
     let couple = try Couple2()
     _ = try await couple.untilCodes()
-    let payload = try #require(couple.maxim.flow.verifyQRPayload)
+    let payload = try #require(couple.borya.flow.verifyQRPayload)
 
-    await couple.dasha.flow.confirmIncoming(scanned: payload)
-    await couple.maxim.flow.confirmJoin()
+    await couple.anya.flow.confirmIncoming(scanned: payload)
+    await couple.borya.flow.confirmJoin()
 
-    #expect(couple.dasha.flow.incomingStep == .done)
-    #expect(couple.maxim.flow.joinStep == .done)
+    #expect(couple.anya.flow.incomingStep == .done)
+    #expect(couple.borya.flow.joinStep == .done)
 }
 
 @MainActor
@@ -307,9 +307,9 @@ private func sexEntry(_ day: Int) -> SexEntry {
     _ = try await couple.untilCodes()
     let requestID = try #require(couple.pairing.requests.first?.id)
 
-    await couple.dasha.flow.confirmIncoming(scanned: VerifyQR.payload(requestID: requestID, code: "000000"))
+    await couple.anya.flow.confirmIncoming(scanned: VerifyQR.payload(requestID: requestID, code: "000000"))
 
-    #expect(couple.dasha.flow.incomingStep == .failed(.rejected))
+    #expect(couple.anya.flow.incomingStep == .failed(.rejected))
     #expect(couple.pairing.requests.allSatisfy { $0.wrappedKey == nil })
 }
 
@@ -317,13 +317,13 @@ private func sexEntry(_ day: Int) -> SexEntry {
 @Test func scannedQRFromOtherRequestIsIgnored() async throws {
     let couple = try Couple2()
     _ = try await couple.untilCodes()
-    let before = couple.dasha.flow.incomingStep
+    let before = couple.anya.flow.incomingStep
 
-    await couple.dasha.flow.confirmIncoming(scanned: VerifyQR.payload(requestID: "other", code: "123456"))
-    await couple.dasha.flow.confirmIncoming(scanned: "https://example.com")
+    await couple.anya.flow.confirmIncoming(scanned: VerifyQR.payload(requestID: "other", code: "123456"))
+    await couple.anya.flow.confirmIncoming(scanned: "https://example.com")
 
-    #expect(couple.dasha.flow.incomingStep == before)
-    #expect(couple.dasha.flow.errorMessage == VerifyQR.wrongQRMessage)
+    #expect(couple.anya.flow.incomingStep == before)
+    #expect(couple.anya.flow.errorMessage == VerifyQR.wrongQRMessage)
 }
 
 @Test func qrPayloadRoundTrips() {
@@ -338,26 +338,26 @@ private func sexEntry(_ day: Int) -> SexEntry {
 @MainActor
 @Test func backupWithoutKeyAsksPartnerAndKeepsData() async throws {
     // Новый iPhone из резервной копии: записи и настройки пары вернулись, ключ (только этого устройства) — нет.
-    let couple = try Couple2(dashaEntries: [sexEntry(3)])
+    let couple = try Couple2(anyaEntries: [sexEntry(3)])
     try await couple.paired()
     let coupleID = try couple.coupleID
-    let restored = Phone(user: "maxim", pairing: couple.pairing, sync: couple.sync, data: couple.maxim.model.data)
+    let restored = Phone(user: "borya", pairing: couple.pairing, sync: couple.sync, data: couple.borya.model.data)
     restored.defaults.coupleID = coupleID
     restored.defaults.isCoupleOnServer = true
-    restored.defaults.ownerUserID = "maxim"
+    restored.defaults.ownerUserID = "borya"
     let flow = PairingFlow(model: restored.model, service: restored.service, keys: restored.keys,
                            defaults: restored.defaults, makeTransport: { restored.transport })
 
-    await flow.prepareAccount(userID: "maxim")
+    await flow.prepareAccount(userID: "borya")
     #expect(flow.restoringCoupleID == coupleID)
     #expect(restored.model.data.isPaired)
 
     await flow.startKeyRequest()
-    await couple.dasha.flow.checkIncoming()
+    await couple.anya.flow.checkIncoming()
     await flow.pollJoin()
-    await couple.dasha.flow.pollIncoming()
+    await couple.anya.flow.pollIncoming()
     await flow.confirmJoin()
-    await couple.dasha.flow.confirmIncoming()
+    await couple.anya.flow.confirmIncoming()
     await flow.pollJoin()
 
     #expect(flow.restoringCoupleID == nil)
@@ -398,10 +398,10 @@ private func sexEntry(_ day: Int) -> SexEntry {
 @Test func signOutClosesOpenKeyRequest() async throws {
     let couple = try Couple2()
     try await couple.paired()
-    let newPhone = Phone(user: "maxim", pairing: couple.pairing, sync: couple.sync)
-    await newPhone.flow.prepareAccount(userID: "maxim")
+    let newPhone = Phone(user: "borya", pairing: couple.pairing, sync: couple.sync)
+    await newPhone.flow.prepareAccount(userID: "borya")
     await newPhone.flow.startKeyRequest()
-    let fake = FakeAuthService(signedInUserID: "maxim", consent: 1)
+    let fake = FakeAuthService(signedInUserID: "borya", consent: 1)
     let auth = AuthFlow(auth: fake, consent: fake)
     await auth.start()
 
@@ -415,18 +415,18 @@ private func sexEntry(_ day: Int) -> SexEntry {
 
 @MainActor
 @Test func staleLookupDoesNotTouchNextAccount() async throws {
-    // Поиск пары для Даши ещё шёл, когда она вышла и на телефоне вошла Вера.
+    // Поиск пары для Ани ещё шёл, когда она вышла и на телефоне вошла Вера.
     let couple = try Couple2()
-    await couple.dasha.flow.coupleCreated()
-    let reinstalled = Phone(user: "dasha", pairing: couple.pairing, sync: couple.sync, keys: couple.dasha.keys)
+    await couple.anya.flow.coupleCreated()
+    let reinstalled = Phone(user: "anya", pairing: couple.pairing, sync: couple.sync, keys: couple.anya.keys)
     reinstalled.service.latency.withLock { $0 = .milliseconds(50) }
 
-    async let first: Void = reinstalled.flow.prepareAccount(userID: "dasha")
+    async let first: Void = reinstalled.flow.prepareAccount(userID: "anya")
     try await Task.sleep(for: .milliseconds(10))
     reinstalled.flow.forgetLocalData()
     reinstalled.defaults.ownerUserID = "vera"
     await first
 
     #expect(reinstalled.defaults.coupleID == nil)
-    #expect(!reinstalled.flow.isAccountReady(for: "dasha"))
+    #expect(!reinstalled.flow.isAccountReady(for: "anya"))
 }

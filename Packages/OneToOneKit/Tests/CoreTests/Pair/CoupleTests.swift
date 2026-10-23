@@ -2,9 +2,9 @@ import Foundation
 import Testing
 @testable import Core
 
-private let man1 = Person(id: UUID(), name: "Максим", sex: .male)
+private let man1 = Person(id: UUID(), name: "Боря", sex: .male)
 private let man2 = Person(id: UUID(), name: "Иван", sex: .male)
-private let woman1 = Person(id: UUID(), name: "Даша", sex: .female)
+private let woman1 = Person(id: UUID(), name: "Аня", sex: .female)
 private let woman2 = Person(id: UUID(), name: "Аня", sex: .female)
 
 @Test func coupleRejectsSameSex() {
@@ -20,7 +20,7 @@ private let woman2 = Person(id: UUID(), name: "Аня", sex: .female)
 
 @Test func coupleDecodingRejectsSameSex() throws {
     let json = """
-    {"man": {"id": "\(man1.id)", "name": "Максим", "sex": "male"},
+    {"man": {"id": "\(man1.id)", "name": "Боря", "sex": "male"},
      "woman": {"id": "\(man2.id)", "name": "Иван", "sex": "male"}}
     """
     #expect(throws: CoupleError.sameSex) {

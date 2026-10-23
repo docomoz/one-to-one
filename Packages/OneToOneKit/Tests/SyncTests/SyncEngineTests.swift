@@ -3,8 +3,8 @@ import Foundation
 import Testing
 @testable import Sync
 
-private let man = Person(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000A")!, name: "Максим", sex: .male)
-private let woman = Person(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000B")!, name: "Даша", sex: .female)
+private let man = Person(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000A")!, name: "Боря", sex: .male)
+private let woman = Person(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000B")!, name: "Аня", sex: .female)
 private let coupleID = "6708f1c2a9b3e4d5c6f7"
 private let day = DayKey(year: 2026, month: 10, day: 11)
 
@@ -386,7 +386,7 @@ func forgedDeletionIgnored(forgery: String) async throws {
 
     let documents = her.transport.server.documents(coupleID: coupleID)
     #expect(documents.count == 4)
-    let forbidden = ["period", "sex", "herMood", "couple", "2026", "Даша", "Максим", "wants"].map { Data($0.utf8) }
+    let forbidden = ["period", "sex", "herMood", "couple", "2026", "Аня", "Боря", "wants"].map { Data($0.utf8) }
     for (id, document) in documents {
         // Только hex: ни вида, ни даты в id нет.
         #expect(id.count == 32 && id.allSatisfy(\.isHexDigit))

@@ -2,8 +2,8 @@ import Foundation
 import Testing
 @testable import Core
 
-private let man = Person(name: "Макс", sex: .male)
-private let woman = Person(name: "Даша", sex: .female)
+private let man = Person(name: "Боря", sex: .male)
+private let woman = Person(name: "Аня", sex: .female)
 private let couple = try! Couple.make(man, woman)
 private let session = UUID()
 

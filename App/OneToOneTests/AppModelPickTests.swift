@@ -4,8 +4,8 @@ import MovieAPI
 import Testing
 @testable import OneToOne
 
-private let man = Person(name: "Макс", sex: .male)
-private let woman = Person(name: "Даша", sex: .female)
+private let man = Person(name: "Боря", sex: .male)
+private let woman = Person(name: "Аня", sex: .female)
 private let film = Movie(id: 1, title: "Амели", year: 2001, genres: ["комедия"], overview: "", posterURL: nil)
 
 /// Каталог без сети: на всё отвечает одним фильмом.

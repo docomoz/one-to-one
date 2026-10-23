@@ -32,7 +32,7 @@ extension AuthFlow {
         let step = arguments[index + 1]
         let flow = preview(signedIn: step == "consent")
         if step == "code" {
-            Task { await flow.sendCode(to: "dasha@example.com") }
+            Task { await flow.sendCode(to: "anya@example.com") }
         }
         return flow
     }

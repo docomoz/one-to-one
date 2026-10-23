@@ -17,78 +17,78 @@ private func sexEntry(_ day: Int) -> SexEntry {
 @Test func createdCoupleRegistersOnServerAndStartsSync() async throws {
     let couple = try Couple2()
 
-    await couple.dasha.flow.registerCouple()
+    await couple.anya.flow.registerCouple()
 
-    let coupleID = try #require(couple.dasha.defaults.coupleID)
-    #expect(couple.dasha.defaults.isCoupleOnServer)
-    #expect(couple.pairing.members(coupleID) == ["dasha"])
-    #expect(couple.dasha.keys.load(coupleID: coupleID) != nil)
-    #expect(couple.dasha.model.isSyncStarted)
+    let coupleID = try #require(couple.anya.defaults.coupleID)
+    #expect(couple.anya.defaults.isCoupleOnServer)
+    #expect(couple.pairing.members(coupleID) == ["anya"])
+    #expect(couple.anya.keys.load(coupleID: coupleID) != nil)
+    #expect(couple.anya.model.isSyncStarted)
 }
 
 @MainActor
 @Test func registerRetryKeepsCoupleIDAndKey() async throws {
     let couple = try Couple2()
-    couple.dasha.service.failure.withLock { $0 = .network }
+    couple.anya.service.failure.withLock { $0 = .network }
 
-    await couple.dasha.flow.registerCouple()
+    await couple.anya.flow.registerCouple()
 
-    #expect(couple.dasha.flow.errorMessage == PairingError.network.message)
-    #expect(!couple.dasha.defaults.isCoupleOnServer)
-    #expect(!couple.dasha.model.isSyncStarted)
-    let coupleID = try #require(couple.dasha.defaults.coupleID)
-    let key = try #require(couple.dasha.keys.load(coupleID: coupleID))
+    #expect(couple.anya.flow.errorMessage == PairingError.network.message)
+    #expect(!couple.anya.defaults.isCoupleOnServer)
+    #expect(!couple.anya.model.isSyncStarted)
+    let coupleID = try #require(couple.anya.defaults.coupleID)
+    let key = try #require(couple.anya.keys.load(coupleID: coupleID))
 
-    await couple.dasha.flow.registerCouple()
+    await couple.anya.flow.registerCouple()
 
-    #expect(couple.dasha.defaults.coupleID == coupleID)
-    #expect(couple.dasha.keys.load(coupleID: coupleID) == key)
-    #expect(couple.dasha.defaults.isCoupleOnServer)
-    #expect(couple.dasha.flow.errorMessage == nil)
+    #expect(couple.anya.defaults.coupleID == coupleID)
+    #expect(couple.anya.keys.load(coupleID: coupleID) == key)
+    #expect(couple.anya.defaults.isCoupleOnServer)
+    #expect(couple.anya.flow.errorMessage == nil)
 }
 
 @MainActor
 @Test func backgroundRegistrationRetriesSilently() async throws {
     // Пару создали без сети: раз в минуту пробуем снова, ошибку на экран не выводим.
     let couple = try Couple2()
-    couple.dasha.service.failure.withLock { $0 = .network }
+    couple.anya.service.failure.withLock { $0 = .network }
 
-    await couple.dasha.flow.prepareSync()
+    await couple.anya.flow.prepareSync()
 
-    #expect(couple.dasha.flow.errorMessage == nil)
-    #expect(!couple.dasha.flow.isWorking)
-    #expect(!couple.dasha.defaults.isCoupleOnServer)
+    #expect(couple.anya.flow.errorMessage == nil)
+    #expect(!couple.anya.flow.isWorking)
+    #expect(!couple.anya.defaults.isCoupleOnServer)
 
-    await couple.dasha.flow.prepareSync()
+    await couple.anya.flow.prepareSync()
 
-    #expect(couple.dasha.defaults.isCoupleOnServer)
-    #expect(couple.dasha.model.isSyncStarted)
+    #expect(couple.anya.defaults.isCoupleOnServer)
+    #expect(couple.anya.model.isSyncStarted)
 }
 
 @MainActor
 @Test func inviteRightAfterOnboardingWaitsForRegistration() async throws {
     // Знакомство создаёт пару на сервере, а экран приглашения в это же время просит код.
     let couple = try Couple2()
-    couple.dasha.service.latency.withLock { $0 = .milliseconds(50) }
+    couple.anya.service.latency.withLock { $0 = .milliseconds(50) }
 
-    async let created: Void = couple.dasha.flow.coupleCreated()
-    async let invited: Void = couple.dasha.flow.createInvite()
+    async let created: Void = couple.anya.flow.coupleCreated()
+    async let invited: Void = couple.anya.flow.createInvite()
     _ = await (created, invited)
 
-    #expect(couple.dasha.flow.invite != nil)
-    #expect(couple.dasha.flow.errorMessage == nil)
+    #expect(couple.anya.flow.invite != nil)
+    #expect(couple.anya.flow.errorMessage == nil)
     #expect(couple.pairing.state.withLock { $0.teams.count } == 1)
 }
 
 @MainActor
 @Test func launchStartsSyncWithStoredKey() async throws {
     let couple = try Couple2()
-    await couple.dasha.flow.registerCouple()
-    let coupleID = try #require(couple.dasha.defaults.coupleID)
+    await couple.anya.flow.registerCouple()
+    let coupleID = try #require(couple.anya.defaults.coupleID)
     // Перезапуск: новый AppModel и PairingFlow на тех же Keychain и настройках.
-    let model = AppModel(store: InMemoryStore(couple.dasha.model.data))
-    let flow = PairingFlow(model: model, service: couple.dasha.service, keys: couple.dasha.keys,
-                           defaults: couple.dasha.defaults, makeTransport: { FakeSyncTransport(server: couple.sync) })
+    let model = AppModel(store: InMemoryStore(couple.anya.model.data))
+    let flow = PairingFlow(model: model, service: couple.anya.service, keys: couple.anya.keys,
+                           defaults: couple.anya.defaults, makeTransport: { FakeSyncTransport(server: couple.sync) })
 
     await flow.prepareSync()
 
@@ -101,22 +101,22 @@ private func sexEntry(_ day: Int) -> SexEntry {
 @MainActor
 @Test func inviteDeliversKeyAfterBothConfirm() async throws {
     let couple = try Couple2()
-    let (dashaCode, maximCode) = try await couple.untilCodes()
-    #expect(dashaCode == maximCode)
+    let (anyaCode, boryaCode) = try await couple.untilCodes()
+    #expect(anyaCode == boryaCode)
 
-    // Даша подтвердила, Максим ещё нет: ключ он не берёт.
-    await couple.dasha.flow.confirmIncoming()
-    await couple.maxim.flow.pollJoin()
-    #expect(couple.maxim.defaults.isCoupleOnServer == false)
+    // Аня подтвердила, Боря ещё нет: ключ он не берёт.
+    await couple.anya.flow.confirmIncoming()
+    await couple.borya.flow.pollJoin()
+    #expect(couple.borya.defaults.isCoupleOnServer == false)
 
-    await couple.maxim.flow.confirmJoin()
+    await couple.borya.flow.confirmJoin()
 
-    let coupleID = try #require(couple.dasha.defaults.coupleID)
-    #expect(couple.maxim.defaults.coupleID == coupleID)
-    #expect(couple.maxim.keys.load(coupleID: coupleID) == couple.dasha.keys.load(coupleID: coupleID))
-    #expect(couple.maxim.flow.joinStep == .done)
-    #expect(couple.dasha.flow.incomingStep == .done)
-    #expect(couple.maxim.model.syncCoupleID == coupleID)
+    let coupleID = try #require(couple.anya.defaults.coupleID)
+    #expect(couple.borya.defaults.coupleID == coupleID)
+    #expect(couple.borya.keys.load(coupleID: coupleID) == couple.anya.keys.load(coupleID: coupleID))
+    #expect(couple.borya.flow.joinStep == .done)
+    #expect(couple.anya.flow.incomingStep == .done)
+    #expect(couple.borya.model.syncCoupleID == coupleID)
 }
 
 @MainActor
@@ -124,12 +124,12 @@ private func sexEntry(_ day: Int) -> SexEntry {
     let couple = try Couple2()
     _ = try await couple.untilCodes()
 
-    await couple.dasha.flow.rejectIncoming()
-    await couple.maxim.flow.confirmJoin()
+    await couple.anya.flow.rejectIncoming()
+    await couple.borya.flow.confirmJoin()
 
     #expect(couple.pairing.requests.allSatisfy { $0.wrappedKey == nil && $0.status == .rejected })
-    #expect(couple.maxim.flow.joinStep == .failed(.rejected))
-    #expect(couple.maxim.defaults.coupleID == nil)
+    #expect(couple.borya.flow.joinStep == .failed(.rejected))
+    #expect(couple.borya.defaults.coupleID == nil)
 }
 
 @MainActor
@@ -137,160 +137,160 @@ private func sexEntry(_ day: Int) -> SexEntry {
     let couple = try Couple2()
     _ = try await couple.untilCodes()
 
-    await couple.maxim.flow.rejectJoin()
-    await couple.dasha.flow.confirmIncoming()
+    await couple.borya.flow.rejectJoin()
+    await couple.anya.flow.confirmIncoming()
 
     #expect(couple.pairing.requests.allSatisfy { $0.wrappedKey == nil })
-    #expect(couple.dasha.flow.incomingStep == .failed(.rejected))
+    #expect(couple.anya.flow.incomingStep == .failed(.rejected))
 }
 
 @MainActor
 @Test func tamperedRevealIsRejectedByResponder() async throws {
-    // Сервер подменяет раскрытый ключ Максима, когда строку читает Даша: код ей не показывается.
+    // Сервер подменяет раскрытый ключ Бори, когда строку читает Аня: код ей не показывается.
     let couple = try Couple2()
     let fake = KeyExchangePair().publicKey
     couple.pairing.tamper.withLock {
         $0 = { request, reader in
             var request = request
-            if reader == "dasha", request.requesterPublicKey != nil { request.requesterPublicKey = fake }
+            if reader == "anya", request.requesterPublicKey != nil { request.requesterPublicKey = fake }
             return request
         }
     }
-    await couple.dasha.flow.registerCouple()
-    await couple.dasha.flow.createInvite()
-    await couple.maxim.flow.join(code: try #require(couple.dasha.flow.invite?.code))
-    await couple.dasha.flow.checkIncoming()
-    await couple.maxim.flow.pollJoin()
+    await couple.anya.flow.registerCouple()
+    await couple.anya.flow.createInvite()
+    await couple.borya.flow.join(code: try #require(couple.anya.flow.invite?.code))
+    await couple.anya.flow.checkIncoming()
+    await couple.borya.flow.pollJoin()
 
-    await couple.dasha.flow.pollIncoming()
+    await couple.anya.flow.pollIncoming()
 
-    #expect(couple.dasha.flow.incomingStep == .failed(.keyMismatch))
+    #expect(couple.anya.flow.incomingStep == .failed(.keyMismatch))
     #expect(couple.pairing.requests.allSatisfy { $0.status == .rejected && $0.wrappedKey == nil })
 }
 
 @MainActor
 @Test func expiredRequestIsNotAnswered() async throws {
     let couple = try Couple2()
-    await couple.dasha.flow.registerCouple()
-    await couple.dasha.flow.createInvite()
-    await couple.maxim.flow.join(code: try #require(couple.dasha.flow.invite?.code))
+    await couple.anya.flow.registerCouple()
+    await couple.anya.flow.createInvite()
+    await couple.borya.flow.join(code: try #require(couple.anya.flow.invite?.code))
     couple.pairing.state.withLock { state in
         for id in state.requests.keys { state.requests[id]?.expiresAt = .distantPast }
     }
 
-    await couple.dasha.flow.checkIncoming()
+    await couple.anya.flow.checkIncoming()
 
-    #expect(couple.dasha.flow.incomingStep == nil)
+    #expect(couple.anya.flow.incomingStep == nil)
     #expect(couple.pairing.requests.allSatisfy { $0.status == .waiting })
 }
 
 @MainActor
 @Test func responderSwitchesToJoinersNewRequest() async throws {
-    // Максим перезапустил приложение, пока Даша ждала раскрытия: её телефон переходит на новый запрос.
+    // Боря перезапустил приложение, пока Аня ждала раскрытия: её телефон переходит на новый запрос.
     let couple = try Couple2()
-    await couple.dasha.flow.coupleCreated()
-    await couple.dasha.flow.createInvite()
-    await couple.maxim.flow.join(code: try #require(couple.dasha.flow.invite?.code))
-    await couple.dasha.flow.checkIncoming()
-    let restarted = Phone(user: "maxim", pairing: couple.pairing, sync: couple.sync)
-    restarted.defaults.joiningCoupleID = couple.maxim.defaults.joiningCoupleID
-    let flow = PairingFlow(model: restarted.model, service: couple.maxim.service, keys: restarted.keys,
+    await couple.anya.flow.coupleCreated()
+    await couple.anya.flow.createInvite()
+    await couple.borya.flow.join(code: try #require(couple.anya.flow.invite?.code))
+    await couple.anya.flow.checkIncoming()
+    let restarted = Phone(user: "borya", pairing: couple.pairing, sync: couple.sync)
+    restarted.defaults.joiningCoupleID = couple.borya.defaults.joiningCoupleID
+    let flow = PairingFlow(model: restarted.model, service: couple.borya.service, keys: restarted.keys,
                            defaults: restarted.defaults, makeTransport: { FakeSyncTransport(server: couple.sync) })
     await flow.startKeyRequest()
 
-    await couple.dasha.flow.pollIncoming()
+    await couple.anya.flow.pollIncoming()
     await flow.pollJoin()
-    await couple.dasha.flow.pollIncoming()
+    await couple.anya.flow.pollIncoming()
 
-    guard case .verify(let dashaCode) = couple.dasha.flow.incomingStep, case .verify(let maximCode) = flow.joinStep else {
-        Issue.record("Нет кода: \(String(describing: couple.dasha.flow.incomingStep)) / \(String(describing: flow.joinStep))")
+    guard case .verify(let anyaCode) = couple.anya.flow.incomingStep, case .verify(let boryaCode) = flow.joinStep else {
+        Issue.record("Нет кода: \(String(describing: couple.anya.flow.incomingStep)) / \(String(describing: flow.joinStep))")
         return
     }
-    #expect(dashaCode == maximCode)
+    #expect(anyaCode == boryaCode)
 }
 
 @MainActor
 @Test func lostResponsesDoNotStallHandoff() async throws {
-    // Ответ Даши и раскрытие Максима записались на сервер, но ответы сервера потерялись.
+    // Ответ Ани и раскрытие Бори записались на сервер, но ответы сервера потерялись.
     let couple = try Couple2()
-    await couple.dasha.flow.coupleCreated()
-    await couple.dasha.flow.createInvite()
-    await couple.maxim.flow.join(code: try #require(couple.dasha.flow.invite?.code))
-    couple.dasha.service.loseNextUpdateResponse.withLock { $0 = true }
-    await couple.dasha.flow.checkIncoming()
-    couple.maxim.service.loseNextUpdateResponse.withLock { $0 = true }
-    await couple.maxim.flow.pollJoin()
-    #expect(couple.maxim.flow.joinStep == .waiting)
+    await couple.anya.flow.coupleCreated()
+    await couple.anya.flow.createInvite()
+    await couple.borya.flow.join(code: try #require(couple.anya.flow.invite?.code))
+    couple.anya.service.loseNextUpdateResponse.withLock { $0 = true }
+    await couple.anya.flow.checkIncoming()
+    couple.borya.service.loseNextUpdateResponse.withLock { $0 = true }
+    await couple.borya.flow.pollJoin()
+    #expect(couple.borya.flow.joinStep == .waiting)
 
-    await couple.maxim.flow.pollJoin()
-    await couple.dasha.flow.pollIncoming()
+    await couple.borya.flow.pollJoin()
+    await couple.anya.flow.pollIncoming()
 
-    guard case .verify(let dashaCode) = couple.dasha.flow.incomingStep,
-          case .verify(let maximCode) = couple.maxim.flow.joinStep
+    guard case .verify(let anyaCode) = couple.anya.flow.incomingStep,
+          case .verify(let boryaCode) = couple.borya.flow.joinStep
     else {
-        Issue.record("Нет кода: \(String(describing: couple.dasha.flow.incomingStep)) / \(String(describing: couple.maxim.flow.joinStep))")
+        Issue.record("Нет кода: \(String(describing: couple.anya.flow.incomingStep)) / \(String(describing: couple.borya.flow.joinStep))")
         return
     }
-    #expect(dashaCode == maximCode)
+    #expect(anyaCode == boryaCode)
 }
 
 // MARK: - Записи
 
 @MainActor
 @Test func creatorRecordsReachJoinerAndJoinerOwnRecordsStayOff() async throws {
-    // У Максима на телефоне были свои записи. После входа в пару у него записи Даши, его — нигде.
-    var maximData = AppData()
-    maximData.sexEntries = [sexEntry(1)]
-    let dashaEntry = sexEntry(5)
-    let couple = try Couple2(maximData: maximData, dashaEntries: [dashaEntry])
+    // У Бори на телефоне были свои записи. После входа в пару у него записи Ани, его — нигде.
+    var boryaData = AppData()
+    boryaData.sexEntries = [sexEntry(1)]
+    let anyaEntry = sexEntry(5)
+    let couple = try Couple2(boryaData: boryaData, anyaEntries: [anyaEntry])
     _ = try await couple.untilCodes()
-    await couple.dasha.model.syncNow()
+    await couple.anya.model.syncNow()
 
     await couple.confirmBoth()
 
-    #expect(couple.maxim.model.data.sexEntries == [dashaEntry])
-    #expect(couple.maxim.model.data.couple == couple.dasha.model.data.couple)
-    #expect(couple.maxim.model.data.meID == nil, "кто он в паре, Максим выберет сам")
-    await couple.dasha.model.syncNow()
-    #expect(couple.dasha.model.data.sexEntries == [dashaEntry])
+    #expect(couple.borya.model.data.sexEntries == [anyaEntry])
+    #expect(couple.borya.model.data.couple == couple.anya.model.data.couple)
+    #expect(couple.borya.model.data.meID == nil, "кто он в паре, Боря выберет сам")
+    await couple.anya.model.syncNow()
+    #expect(couple.anya.model.data.sexEntries == [anyaEntry])
 }
 
 @MainActor
 @Test func soloJoinerLeavesOldCoupleAndForgetsItsKey() async throws {
-    // Максим пользовался приложением один: у него своя пара на сервере.
+    // Боря пользовался приложением один: у него своя пара на сервере.
     let couple = try Couple2()
-    try couple.maxim.model.createCouple(me: PersonDraft(sex: .male, name: "Макс", birthDate: adult),
+    try couple.borya.model.createCouple(me: PersonDraft(sex: .male, name: "Боря", birthDate: adult),
                                         partner: PersonDraft(sex: .female, name: "Д.", birthDate: adult), today: today)
-    await couple.maxim.flow.registerCouple()
-    let oldID = try #require(couple.maxim.defaults.coupleID)
+    await couple.borya.flow.registerCouple()
+    let oldID = try #require(couple.borya.defaults.coupleID)
     _ = try await couple.untilCodes()
 
     await couple.confirmBoth()
 
-    #expect(couple.pairing.left.contains { $0 == (oldID, "maxim") })
-    #expect(couple.maxim.keys.load(coupleID: oldID) == nil)
-    #expect(couple.maxim.defaults.coupleID == couple.dasha.defaults.coupleID)
-    #expect(couple.maxim.defaults.couplesToLeave.isEmpty)
-    #expect(couple.maxim.model.data.couple == couple.dasha.model.data.couple)
+    #expect(couple.pairing.left.contains { $0 == (oldID, "borya") })
+    #expect(couple.borya.keys.load(coupleID: oldID) == nil)
+    #expect(couple.borya.defaults.coupleID == couple.anya.defaults.coupleID)
+    #expect(couple.borya.defaults.couplesToLeave.isEmpty)
+    #expect(couple.borya.model.data.couple == couple.anya.model.data.couple)
 }
 
 @MainActor
 @Test func joinerClaimsPartnerPlaceholderKeepingSex() async throws {
     let couple = try Couple2()
     _ = try await couple.untilCodes()
-    await couple.dasha.model.syncNow()
+    await couple.anya.model.syncNow()
     await couple.confirmBoth()
-    let placeholder = try #require(couple.maxim.model.data.couple?.man)
-    #expect(couple.maxim.flow.awaitsProfile)
+    let placeholder = try #require(couple.borya.model.data.couple?.man)
+    #expect(couple.borya.flow.awaitsProfile)
 
-    try couple.maxim.model.claimPerson(
-        PersonDraft(id: placeholder.id, sex: .male, name: "Максим Б.", birthDate: placeholder.birthDate), today: today)
+    try couple.borya.model.claimPerson(
+        PersonDraft(id: placeholder.id, sex: .male, name: "Боря Б.", birthDate: placeholder.birthDate), today: today)
 
-    #expect(couple.maxim.model.data.meID == placeholder.id)
-    #expect(couple.maxim.model.data.couple?.man.name == "Максим Б.")
-    #expect(couple.maxim.model.data.couple?.man.sex == .male)
-    #expect(couple.maxim.model.data.isPaired)
-    #expect(!couple.maxim.flow.awaitsProfile)
+    #expect(couple.borya.model.data.meID == placeholder.id)
+    #expect(couple.borya.model.data.couple?.man.name == "Боря Б.")
+    #expect(couple.borya.model.data.couple?.man.sex == .male)
+    #expect(couple.borya.model.data.isPaired)
+    #expect(!couple.borya.flow.awaitsProfile)
 }
 
 // MARK: - Ошибки

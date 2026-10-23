@@ -98,8 +98,8 @@ private let oct10 = DayKey(year: 2026, month: 10, day: 10)
 }
 
 @Test func meIsWomanOnlyOnHerPhone() throws {
-    let man = Person(name: "Максим", sex: .male)
-    let woman = Person(name: "Даша", sex: .female)
+    let man = Person(name: "Боря", sex: .male)
+    let woman = Person(name: "Аня", sex: .female)
     var data = AppData()
     #expect(!data.meIsWoman)
 

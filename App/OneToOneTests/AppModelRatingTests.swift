@@ -4,8 +4,8 @@ import MovieAPI
 import Testing
 @testable import OneToOne
 
-private let man = Person(name: "Макс", sex: .male)
-private let woman = Person(name: "Даша", sex: .female)
+private let man = Person(name: "Боря", sex: .male)
+private let woman = Person(name: "Аня", sex: .female)
 private let disliked = 5
 
 private func comedy(_ id: Int) -> Movie {

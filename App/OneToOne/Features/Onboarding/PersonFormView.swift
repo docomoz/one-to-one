@@ -74,7 +74,7 @@ struct PersonFormView: View {
 }
 
 #Preview {
-    @Previewable @State var draft = PersonDraft(sex: .male, name: "Максим")
+    @Previewable @State var draft = PersonDraft(sex: .male, name: "Боря")
     NavigationStack {
         PersonFormView(title: "Партнёр", draft: $draft, buttonTitle: "Создать пару", onSexPicked: {}) { () throws(OnboardingError) in
             throw .sameSex

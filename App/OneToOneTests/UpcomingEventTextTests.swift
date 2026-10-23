@@ -11,7 +11,7 @@ import Testing
 }
 
 @Test func eventTextDelegates() {
-    let birthday = UpcomingBirthday(person: Person(name: "Даша", sex: .female), isMe: false, daysLeft: 12)
+    let birthday = UpcomingBirthday(person: Person(name: "Аня", sex: .female), isMe: false, daysLeft: 12)
     let anniversary = UpcomingAnniversary(years: 3, daysLeft: 12)
 
     #expect(UpcomingEvent.birthday(birthday).text == birthday.text)
